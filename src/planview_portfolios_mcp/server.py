@@ -2,20 +2,44 @@
 
 import asyncio
 import atexit
+import sys
+import os
 
 from fastmcp import FastMCP
 
-from .client import close_client
-from .config import settings
-from .tools import (
-    allocate_resource,
-    create_project,
-    get_project,
-    get_resource,
-    list_projects,
-    list_resources,
-    update_project,
-)
+# Handle both package and direct execution contexts
+# If running as a script, add parent directories to path
+if __name__ == "__main__" or not __package__:
+    # Add src directory to path for absolute imports
+    _current_dir = os.path.dirname(os.path.abspath(__file__))
+    _src_dir = os.path.dirname(_current_dir)
+    if _src_dir not in sys.path:
+        sys.path.insert(0, _src_dir)
+    # Use absolute imports when not in package context
+    from planview_portfolios_mcp.client import close_client
+    from planview_portfolios_mcp.config import settings
+    from planview_portfolios_mcp.tools import (
+        allocate_resource,
+        create_project,
+        get_project,
+        get_resource,
+        list_projects,
+        list_resources,
+        update_project,
+    )
+else:
+    # Use relative imports when in package context
+    from .client import close_client
+    from .config import settings
+    from .tools import (
+        allocate_resource,
+        create_project,
+        get_project,
+        get_resource,
+        list_projects,
+        list_resources,
+        update_project,
+    )
 
 # Initialize FastMCP server
 mcp = FastMCP(

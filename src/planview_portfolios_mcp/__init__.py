@@ -6,8 +6,8 @@ project/portfolio management and resource management.
 
 __version__ = "0.1.0"
 
-# Export the mcp instance for FastMCP Cloud
-# This allows FastMCP Cloud to import: from planview_portfolios_mcp import mcp
-from .server import mcp
+# Note: FastMCP Cloud should import mcp directly from server module:
+# from planview_portfolios_mcp.server import mcp
+# This avoids relative import issues during package initialization
 
-__all__ = ["mcp", "__version__"]
+__all__ = ["__version__"]
