@@ -202,6 +202,10 @@ planview-portfolios-mcp/
 │       ├── __init__.py
 │       ├── server.py          # Main FastMCP server
 │       ├── config.py           # Configuration management
+│       ├── client.py           # Shared HTTP client with retry logic
+│       ├── exceptions.py       # Custom exception types
+│       ├── models.py           # Pydantic validation models
+│       ├── logging_config.py   # Logging configuration
 │       └── tools/
 │           ├── __init__.py
 │           ├── projects.py     # Project management tools

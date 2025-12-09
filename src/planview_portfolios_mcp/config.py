@@ -26,6 +26,11 @@ class PlanviewSettings(BaseSettings):
     server_name: str = "planview-portfolios-mcp"
     server_version: str = "0.1.0"
 
+    # Logging settings
+    log_level: str = "INFO"
+    log_format: str = "json"  # "json" or "text"
+    log_file: str | None = None
+
 
 # Global settings instance
 settings = PlanviewSettings()

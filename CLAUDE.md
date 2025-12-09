@@ -68,9 +68,17 @@ black src/ && ruff check src/ && mypy src/
 
 ### Core Components
 
-**server.py**: FastMCP server initialization and tool registration. Creates a single FastMCP instance and registers all tool functions from the tools modules. The server's `main()` function runs the async event loop.
+**server.py**: FastMCP server initialization and tool registration. Creates a single FastMCP instance and registers all tool functions from the tools modules. The server's `main()` function runs the async event loop. Includes cleanup handlers for graceful shutdown.
 
 **config.py**: Centralized configuration using Pydantic Settings. The `PlanviewSettings` class automatically loads from `.env` file and provides validated configuration values. A global `settings` instance is imported throughout the codebase.
+
+**client.py**: Shared HTTP client with connection pooling, automatic retry logic, and comprehensive error handling. Provides `get_client()` context manager for tools to use. Implements exponential backoff retry for transient failures (429, 502, 503, 504).
+
+**exceptions.py**: Custom exception hierarchy for Planview API errors. Provides specific exception types for different error scenarios (auth, validation, rate limiting, server errors, etc.) with clear error messages.
+
+**models.py**: Pydantic models for input validation and type safety. Includes models for project creation/updates, resource allocation, and list parameters. Validates date ranges, numeric constraints, and required fields.
+
+**logging_config.py**: Structured logging configuration with JSON formatter support. Configurable log levels and output formats (JSON or standard text). Supports file and console handlers.
 
 **tools/**: Contains tool implementations organized by domain:
 - `projects.py`: Project and portfolio management tools (list, get, create, update)
@@ -81,10 +89,11 @@ black src/ && ruff check src/ && mypy src/
 
 All tools follow a consistent async pattern:
 1. Accept a `ctx: Context` parameter from FastMCP (required first parameter)
-2. Use httpx AsyncClient for API calls
-3. Include authentication headers (Bearer token + X-Tenant-Id)
-4. Return typed data (dict[str, Any] or list[dict[str, Any]])
-5. Raise HTTP errors via `response.raise_for_status()`
+2. Use Pydantic models from `models.py` for input validation
+3. Use `get_client()` context manager from `client.py` for HTTP requests
+4. Use `make_request()` helper for automatic retry and error handling
+5. Return typed data (dict[str, Any] or list[dict[str, Any]])
+6. Raise custom exceptions from `exceptions.py` for clear error messages
 
 ### Authentication Flow
 
@@ -113,9 +122,16 @@ Settings are loaded from `.env` via Pydantic Settings with these behaviors:
 
 ### Current Implementation Limitations
 1. **Authentication**: Uses static API key instead of OAuth token generation
-2. **Error Handling**: Basic HTTP error raising without retry logic (despite MAX_RETRIES setting)
-3. **Pagination**: Not implemented (relies on limit parameter only)
-4. **Batching**: Single-record operations only (matches API constraint)
+2. **Pagination**: Not implemented (relies on limit parameter only)
+3. **Batching**: Single-record operations only (matches API constraint)
+
+### Error Handling & Retry Logic
+
+The implementation includes robust error handling:
+- Automatic retry with exponential backoff for transient failures (429, 502, 503, 504)
+- Custom exception types for different error scenarios
+- Connection pooling and reuse for better performance
+- Configurable retry attempts via `MAX_RETRIES` setting
 
 ### Tool-to-API Mapping
 - `list_projects` → `GET /projects` (filter by portfolio_id, status)
@@ -160,7 +176,9 @@ When creating tests:
 4. Access via global `settings` instance
 
 ### Modifying API Calls
-- All API calls use httpx AsyncClient with timeout from settings
-- Headers must include both Authorization and X-Tenant-Id
-- PATCH/POST requests need "Content-Type": "application/json"
-- Use `response.raise_for_status()` for error handling
+- Use `get_client()` context manager to get shared HTTP client
+- Use `make_request()` helper function for automatic retry and error handling
+- All requests automatically include authentication headers (Authorization + X-Tenant-Id)
+- PATCH/POST requests automatically include "Content-Type": "application/json"
+- Custom exceptions are raised automatically based on HTTP status codes
+- Use Pydantic models from `models.py` for input validation before API calls

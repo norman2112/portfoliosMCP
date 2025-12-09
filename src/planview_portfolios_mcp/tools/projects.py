@@ -1,11 +1,22 @@
 """Project and portfolio management tools for Planview Portfolios."""
 
+import logging
+from time import time
 from typing import Any
 
-import httpx
 from fastmcp import Context
+from pydantic import ValidationError
 
-from ..config import settings
+from ..client import get_client, make_request
+from ..exceptions import PlanviewValidationError
+from ..models import (
+    ListProjectsParams,
+    ProjectCreate,
+    ProjectResponse,
+    ProjectUpdate,
+)
+
+logger = logging.getLogger(__name__)
 
 
 async def list_projects(
@@ -25,23 +36,66 @@ async def list_projects(
     Returns:
         List of project dictionaries with project details
     """
-    params: dict[str, Any] = {"limit": limit}
-    if portfolio_id:
-        params["portfolio_id"] = portfolio_id
-    if status:
-        params["status"] = status
+    start_time = time()
+    logger.info(
+        "Listing projects",
+        extra={
+            "tool_name": "list_projects",
+            "portfolio_id": portfolio_id,
+            "status": status,
+            "limit": limit,
+        },
+    )
 
-    async with httpx.AsyncClient(timeout=settings.api_timeout) as client:
-        response = await client.get(
-            f"{settings.planview_api_url}/projects",
-            headers={
-                "Authorization": f"Bearer {settings.planview_api_key}",
-                "X-Tenant-Id": settings.planview_tenant_id,
-            },
-            params=params,
+    try:
+        # Validate parameters
+        validated_params = ListProjectsParams(
+            portfolio_id=portfolio_id,
+            status=status,
+            limit=limit,
         )
-        response.raise_for_status()
-        return response.json()
+    except ValidationError as e:
+        logger.error(
+            f"Invalid parameters for list_projects: {str(e)}",
+            extra={"tool_name": "list_projects", "error_type": "ValidationError"},
+        )
+        raise PlanviewValidationError(f"Invalid parameters: {str(e)}") from e
+
+    # Build query parameters
+    params: dict[str, Any] = {"limit": validated_params.limit}
+    if validated_params.portfolio_id:
+        params["portfolio_id"] = validated_params.portfolio_id
+    if validated_params.status:
+        params["status"] = validated_params.status
+
+    try:
+        async with get_client() as client:
+            response = await make_request(client, "GET", "/projects", params=params)
+            projects = response.json()
+
+            duration_ms = int((time() - start_time) * 1000)
+            logger.info(
+                f"Successfully listed {len(projects)} projects",
+                extra={
+                    "tool_name": "list_projects",
+                    "count": len(projects),
+                    "duration_ms": duration_ms,
+                },
+            )
+            return projects
+
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.error(
+            f"Failed to list projects: {str(e)}",
+            extra={
+                "tool_name": "list_projects",
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
+            exc_info=True,
+        )
+        raise
 
 
 async def get_project(ctx: Context, project_id: str) -> dict[str, Any]:
@@ -54,16 +108,55 @@ async def get_project(ctx: Context, project_id: str) -> dict[str, Any]:
     Returns:
         Dictionary containing detailed project information
     """
-    async with httpx.AsyncClient(timeout=settings.api_timeout) as client:
-        response = await client.get(
-            f"{settings.planview_api_url}/projects/{project_id}",
-            headers={
-                "Authorization": f"Bearer {settings.planview_api_key}",
-                "X-Tenant-Id": settings.planview_tenant_id,
+    start_time = time()
+    logger.info(
+        "Getting project details",
+        extra={"tool_name": "get_project", "project_id": project_id},
+    )
+
+    try:
+        async with get_client() as client:
+            response = await make_request(
+                client, "GET", f"/projects/{project_id}"
+            )
+            project_data = response.json()
+
+            # Try to parse as typed response
+            try:
+                project = ProjectResponse.model_validate(project_data)
+                result = project.model_dump(mode="json")
+            except ValidationError as e:
+                logger.warning(
+                    f"API response validation failed: {e}",
+                    extra={"tool_name": "get_project"},
+                )
+                # Return raw dict if validation fails (backward compatibility)
+                result = project_data
+
+            duration_ms = int((time() - start_time) * 1000)
+            logger.info(
+                "Successfully retrieved project",
+                extra={
+                    "tool_name": "get_project",
+                    "project_id": project_id,
+                    "duration_ms": duration_ms,
+                },
+            )
+            return result
+
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.error(
+            f"Failed to get project: {str(e)}",
+            extra={
+                "tool_name": "get_project",
+                "project_id": project_id,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
             },
+            exc_info=True,
         )
-        response.raise_for_status()
-        return response.json()
+        raise
 
 
 async def create_project(
@@ -89,30 +182,63 @@ async def create_project(
     Returns:
         Dictionary containing the created project details
     """
-    project_data: dict[str, Any] = {"name": name}
-    if description:
-        project_data["description"] = description
-    if portfolio_id:
-        project_data["portfolio_id"] = portfolio_id
-    if start_date:
-        project_data["start_date"] = start_date
-    if end_date:
-        project_data["end_date"] = end_date
-    if budget is not None:
-        project_data["budget"] = budget
+    start_time = time()
+    logger.info(
+        "Creating project",
+        extra={"tool_name": "create_project", "project_name": name},
+    )
 
-    async with httpx.AsyncClient(timeout=settings.api_timeout) as client:
-        response = await client.post(
-            f"{settings.planview_api_url}/projects",
-            headers={
-                "Authorization": f"Bearer {settings.planview_api_key}",
-                "X-Tenant-Id": settings.planview_tenant_id,
-                "Content-Type": "application/json",
-            },
-            json=project_data,
+    try:
+        # Validate inputs
+        validated = ProjectCreate(
+            name=name,
+            description=description,
+            portfolio_id=portfolio_id,
+            start_date=start_date,
+            end_date=end_date,
+            budget=budget,
         )
-        response.raise_for_status()
-        return response.json()
+    except ValidationError as e:
+        logger.error(
+            f"Invalid project data: {str(e)}",
+            extra={"tool_name": "create_project", "error_type": "ValidationError"},
+        )
+        raise PlanviewValidationError(f"Invalid project data: {str(e)}") from e
+
+    # Convert to dict for API (with ISO date format)
+    project_data = validated.model_dump(exclude_none=True, mode="json")
+
+    try:
+        async with get_client() as client:
+            response = await make_request(
+                client, "POST", "/projects", json=project_data
+            )
+            created_project = response.json()
+
+            duration_ms = int((time() - start_time) * 1000)
+            logger.info(
+                "Successfully created project",
+                extra={
+                    "tool_name": "create_project",
+                    "project_name": name,
+                    "duration_ms": duration_ms,
+                },
+            )
+            return created_project
+
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.error(
+            f"Failed to create project: {str(e)}",
+            extra={
+                "tool_name": "create_project",
+                "project_name": name,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
+            exc_info=True,
+        )
+        raise
 
 
 async def update_project(
@@ -140,29 +266,60 @@ async def update_project(
     Returns:
         Dictionary containing the updated project details
     """
-    update_data: dict[str, Any] = {}
-    if name:
-        update_data["name"] = name
-    if description:
-        update_data["description"] = description
-    if status:
-        update_data["status"] = status
-    if start_date:
-        update_data["start_date"] = start_date
-    if end_date:
-        update_data["end_date"] = end_date
-    if budget is not None:
-        update_data["budget"] = budget
+    start_time = time()
+    logger.info(
+        "Updating project",
+        extra={"tool_name": "update_project", "project_id": project_id},
+    )
 
-    async with httpx.AsyncClient(timeout=settings.api_timeout) as client:
-        response = await client.patch(
-            f"{settings.planview_api_url}/projects/{project_id}",
-            headers={
-                "Authorization": f"Bearer {settings.planview_api_key}",
-                "X-Tenant-Id": settings.planview_tenant_id,
-                "Content-Type": "application/json",
-            },
-            json=update_data,
+    try:
+        # Validate inputs
+        validated = ProjectUpdate(
+            name=name,
+            description=description,
+            status=status,
+            start_date=start_date,
+            end_date=end_date,
+            budget=budget,
         )
-        response.raise_for_status()
-        return response.json()
+    except ValidationError as e:
+        logger.error(
+            f"Invalid update data: {str(e)}",
+            extra={"tool_name": "update_project", "error_type": "ValidationError"},
+        )
+        raise PlanviewValidationError(f"Invalid update data: {str(e)}") from e
+
+    # Convert to dict for API (with ISO date format)
+    update_data = validated.model_dump(exclude_none=True, mode="json")
+
+    try:
+        async with get_client() as client:
+            response = await make_request(
+                client, "PATCH", f"/projects/{project_id}", json=update_data
+            )
+            updated_project = response.json()
+
+            duration_ms = int((time() - start_time) * 1000)
+            logger.info(
+                "Successfully updated project",
+                extra={
+                    "tool_name": "update_project",
+                    "project_id": project_id,
+                    "duration_ms": duration_ms,
+                },
+            )
+            return updated_project
+
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.error(
+            f"Failed to update project: {str(e)}",
+            extra={
+                "tool_name": "update_project",
+                "project_id": project_id,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
+            exc_info=True,
+        )
+        raise

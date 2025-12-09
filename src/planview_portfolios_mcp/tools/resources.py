@@ -1,11 +1,22 @@
 """Resource management tools for Planview Portfolios."""
 
+import logging
+from time import time
 from typing import Any
 
-import httpx
 from fastmcp import Context
+from pydantic import ValidationError
 
-from ..config import settings
+from ..client import get_client, make_request
+from ..exceptions import PlanviewValidationError
+from ..models import (
+    AllocationResponse,
+    ListResourcesParams,
+    ResourceAllocation,
+    ResourceResponse,
+)
+
+logger = logging.getLogger(__name__)
 
 
 async def list_resources(
@@ -27,25 +38,70 @@ async def list_resources(
     Returns:
         List of resource dictionaries with resource details
     """
-    params: dict[str, Any] = {"limit": limit}
-    if department:
-        params["department"] = department
-    if role:
-        params["role"] = role
-    if available is not None:
-        params["available"] = str(available).lower()
+    start_time = time()
+    logger.info(
+        "Listing resources",
+        extra={
+            "tool_name": "list_resources",
+            "department": department,
+            "role": role,
+            "available": available,
+            "limit": limit,
+        },
+    )
 
-    async with httpx.AsyncClient(timeout=settings.api_timeout) as client:
-        response = await client.get(
-            f"{settings.planview_api_url}/resources",
-            headers={
-                "Authorization": f"Bearer {settings.planview_api_key}",
-                "X-Tenant-Id": settings.planview_tenant_id,
-            },
-            params=params,
+    try:
+        # Validate parameters
+        validated_params = ListResourcesParams(
+            department=department,
+            role=role,
+            available=available,
+            limit=limit,
         )
-        response.raise_for_status()
-        return response.json()
+    except ValidationError as e:
+        logger.error(
+            f"Invalid parameters for list_resources: {str(e)}",
+            extra={"tool_name": "list_resources", "error_type": "ValidationError"},
+        )
+        raise PlanviewValidationError(f"Invalid parameters: {str(e)}") from e
+
+    # Build query parameters
+    params: dict[str, Any] = {"limit": validated_params.limit}
+    if validated_params.department:
+        params["department"] = validated_params.department
+    if validated_params.role:
+        params["role"] = validated_params.role
+    if validated_params.available is not None:
+        params["available"] = str(validated_params.available).lower()
+
+    try:
+        async with get_client() as client:
+            response = await make_request(client, "GET", "/resources", params=params)
+            resources = response.json()
+
+            duration_ms = int((time() - start_time) * 1000)
+            logger.info(
+                f"Successfully listed {len(resources)} resources",
+                extra={
+                    "tool_name": "list_resources",
+                    "count": len(resources),
+                    "duration_ms": duration_ms,
+                },
+            )
+            return resources
+
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.error(
+            f"Failed to list resources: {str(e)}",
+            extra={
+                "tool_name": "list_resources",
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
+            exc_info=True,
+        )
+        raise
 
 
 async def get_resource(ctx: Context, resource_id: str) -> dict[str, Any]:
@@ -59,16 +115,55 @@ async def get_resource(ctx: Context, resource_id: str) -> dict[str, Any]:
         Dictionary containing detailed resource information including
         current allocations, capacity, and skills
     """
-    async with httpx.AsyncClient(timeout=settings.api_timeout) as client:
-        response = await client.get(
-            f"{settings.planview_api_url}/resources/{resource_id}",
-            headers={
-                "Authorization": f"Bearer {settings.planview_api_key}",
-                "X-Tenant-Id": settings.planview_tenant_id,
+    start_time = time()
+    logger.info(
+        "Getting resource details",
+        extra={"tool_name": "get_resource", "resource_id": resource_id},
+    )
+
+    try:
+        async with get_client() as client:
+            response = await make_request(
+                client, "GET", f"/resources/{resource_id}"
+            )
+            resource_data = response.json()
+
+            # Try to parse as typed response
+            try:
+                resource = ResourceResponse.model_validate(resource_data)
+                result = resource.model_dump(mode="json")
+            except ValidationError as e:
+                logger.warning(
+                    f"API response validation failed: {e}",
+                    extra={"tool_name": "get_resource"},
+                )
+                # Return raw dict if validation fails (backward compatibility)
+                result = resource_data
+
+            duration_ms = int((time() - start_time) * 1000)
+            logger.info(
+                "Successfully retrieved resource",
+                extra={
+                    "tool_name": "get_resource",
+                    "resource_id": resource_id,
+                    "duration_ms": duration_ms,
+                },
+            )
+            return result
+
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.error(
+            f"Failed to get resource: {str(e)}",
+            extra={
+                "tool_name": "get_resource",
+                "resource_id": resource_id,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
             },
+            exc_info=True,
         )
-        response.raise_for_status()
-        return response.json()
+        raise
 
 
 async def allocate_resource(
@@ -94,25 +189,79 @@ async def allocate_resource(
     Returns:
         Dictionary containing the allocation details
     """
-    allocation_data: dict[str, Any] = {
-        "resource_id": resource_id,
-        "project_id": project_id,
-        "allocation_percentage": allocation_percentage,
-        "start_date": start_date,
-        "end_date": end_date,
-    }
-    if role:
-        allocation_data["role"] = role
+    start_time = time()
+    logger.info(
+        "Allocating resource",
+        extra={
+            "tool_name": "allocate_resource",
+            "resource_id": resource_id,
+            "project_id": project_id,
+            "allocation_percentage": allocation_percentage,
+        },
+    )
 
-    async with httpx.AsyncClient(timeout=settings.api_timeout) as client:
-        response = await client.post(
-            f"{settings.planview_api_url}/allocations",
-            headers={
-                "Authorization": f"Bearer {settings.planview_api_key}",
-                "X-Tenant-Id": settings.planview_tenant_id,
-                "Content-Type": "application/json",
-            },
-            json=allocation_data,
+    try:
+        # Validate inputs
+        validated = ResourceAllocation(
+            resource_id=resource_id,
+            project_id=project_id,
+            allocation_percentage=allocation_percentage,
+            start_date=start_date,
+            end_date=end_date,
+            role=role,
         )
-        response.raise_for_status()
-        return response.json()
+    except ValidationError as e:
+        logger.error(
+            f"Invalid allocation data: {str(e)}",
+            extra={"tool_name": "allocate_resource", "error_type": "ValidationError"},
+        )
+        raise PlanviewValidationError(f"Invalid allocation data: {str(e)}") from e
+
+    # Convert to dict for API (with ISO date format)
+    allocation_data = validated.model_dump(exclude_none=True, mode="json")
+
+    try:
+        async with get_client() as client:
+            response = await make_request(
+                client, "POST", "/allocations", json=allocation_data
+            )
+            created_allocation = response.json()
+
+            # Try to parse as typed response
+            try:
+                allocation = AllocationResponse.model_validate(created_allocation)
+                result = allocation.model_dump(mode="json")
+            except ValidationError as e:
+                logger.warning(
+                    f"API response validation failed: {e}",
+                    extra={"tool_name": "allocate_resource"},
+                )
+                # Return raw dict if validation fails (backward compatibility)
+                result = created_allocation
+
+            duration_ms = int((time() - start_time) * 1000)
+            logger.info(
+                "Successfully allocated resource",
+                extra={
+                    "tool_name": "allocate_resource",
+                    "resource_id": resource_id,
+                    "project_id": project_id,
+                    "duration_ms": duration_ms,
+                },
+            )
+            return result
+
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.error(
+            f"Failed to allocate resource: {str(e)}",
+            extra={
+                "tool_name": "allocate_resource",
+                "resource_id": resource_id,
+                "project_id": project_id,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
+            exc_info=True,
+        )
+        raise
