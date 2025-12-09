@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Model Context Protocol (MCP) server for integrating with Planview Portfolios, built with FastMCP. The server exposes Planview's project and resource management capabilities through MCP tools that can be used by Claude Desktop and other MCP clients.
+This is a Model Context Protocol (MCP) server for integrating with Planview Portfolios, built with FastMCP. The server is hosted on FastMCP Cloud at `https://portfolios-mcp.fastmcp.app/mcp` and exposes Planview's project and resource management capabilities through MCP tools that can be used by Claude Desktop and other MCP clients.
 
 ## Development Commands
 
@@ -26,6 +26,10 @@ cp .env.example .env
 ```
 
 ### Running the Server
+
+**Production**: The server is hosted on FastMCP Cloud at `https://portfolios-mcp.fastmcp.app/mcp`. No local server setup is required for end users.
+
+**Local Development**:
 ```bash
 # Standard run
 python -m planview_portfolios_mcp.server

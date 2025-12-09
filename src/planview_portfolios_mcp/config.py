@@ -15,8 +15,13 @@ class PlanviewSettings(BaseSettings):
 
     # Planview API Configuration
     planview_api_url: str = "https://api.planview.com"
-    planview_api_key: str = ""
+    planview_api_key: str = ""  # Deprecated: Use OAuth instead
     planview_tenant_id: str = ""
+
+    # OAuth Configuration
+    planview_client_id: str = ""
+    planview_client_secret: str = ""
+    use_oauth: bool = True  # Set to False to use static API key
 
     # API request settings
     api_timeout: int = 30

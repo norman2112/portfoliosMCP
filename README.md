@@ -1,6 +1,10 @@
 # Planview Portfolios MCP Server
 
-A Model Context Protocol (MCP) server for integrating with Planview Portfolios, built with [FastMCP](https://github.com/jlowin/fastmcp).
+A Model Context Protocol (MCP) server for integrating with Planview Portfolios, built with [FastMCP](https://github.com/jlowin/fastmcp). 
+
+**🌐 FastMCP Cloud URL**: `https://portfolios-mcp.fastmcp.app/mcp`
+
+This server is hosted on FastMCP Cloud, so no local installation is required. Simply configure your MCP client (e.g., Claude Desktop) to connect to the cloud instance with your Planview API credentials.
 
 ## Features
 
@@ -18,10 +22,73 @@ A Model Context Protocol (MCP) server for integrating with Planview Portfolios, 
 ## Installation
 
 ### Prerequisites
-- Python 3.10 or higher
-- Planview Portfolios API credentials (API key and tenant ID)
+- Planview Portfolios API credentials (OAuth client_id, client_secret, and tenant ID)
+- Access to FastMCP Cloud (no local installation required)
+
+### Obtaining API Credentials
+
+To use the Planview Portfolios API, you'll need three pieces of information:
+
+1. **Client ID** (`PLANVIEW_CLIENT_ID`)
+2. **Client Secret** (`PLANVIEW_CLIENT_SECRET`)
+3. **Tenant ID** (`PLANVIEW_TENANT_ID`)
+
+**Where to find these credentials:**
+
+- **Planview Admin Portal**: Log into your Planview Portfolios instance and navigate to:
+  - Administration → API Settings or
+  - Settings → Integrations → API Credentials
+  - Look for "OAuth Client" or "API Application" settings
+
+- **Contact your Planview Administrator**: If you don't have admin access, your organization's Planview administrator can:
+  - Create an OAuth client application
+  - Provide you with the Client ID and Client Secret
+  - Share your organization's Tenant ID
+
+- **Planview Developer Portal**: Check the [Planview Developer Portal](https://developer.planview.com) for:
+  - API documentation
+  - Registration process for API access
+  - Support resources
+
+**Note**: The Tenant ID is typically your organization's unique identifier in Planview. It may be visible in your Planview URL (e.g., `https://yourcompany.planview.com`) or provided by your administrator.
 
 ### Setup
+
+This MCP server is hosted on FastMCP Cloud, so no local installation is required. You just need to configure your Claude Desktop or MCP client to connect to the cloud instance.
+
+1. **Get your Planview API credentials**:
+   - See the [Obtaining API Credentials](#obtaining-api-credentials) section above
+   - **Need help finding your credentials?** See [CREDENTIALS.md](CREDENTIALS.md) for detailed instructions.
+
+2. **Configure your MCP client** (see [Configuring with Claude Desktop](#configuring-with-claude-desktop) below)
+
+## Usage
+
+### Configuring with Claude Desktop
+
+The Planview Portfolios MCP server is hosted on FastMCP Cloud. Add the following to your Claude Desktop configuration (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "planview-portfolios": {
+      "url": "https://portfolios-mcp.fastmcp.app/mcp",
+      "env": {
+        "PLANVIEW_CLIENT_ID": "your_client_id",
+        "PLANVIEW_CLIENT_SECRET": "your_client_secret",
+        "PLANVIEW_TENANT_ID": "your_tenant_id",
+        "USE_OAUTH": "true"
+      }
+    }
+  }
+}
+```
+
+**Note**: Replace the placeholder values with your actual Planview API credentials. The server will automatically handle OAuth token management (tokens are valid for 60 minutes and automatically refreshed).
+
+### Local Development (Optional)
+
+If you want to run the server locally for development or testing:
 
 1. **Clone or navigate to the project directory**:
    ```bash
@@ -37,8 +104,6 @@ A Model Context Protocol (MCP) server for integrating with Planview Portfolios, 
 3. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
-   # Or for development:
-   pip install -r requirements-dev.txt
    ```
 
 4. **Configure environment variables**:
@@ -47,51 +112,15 @@ A Model Context Protocol (MCP) server for integrating with Planview Portfolios, 
    # Edit .env and add your Planview API credentials
    ```
 
-5. **Edit `.env` with your credentials**:
+5. **Run the server**:
    ```bash
-   PLANVIEW_API_URL=https://api.planview.com
-   PLANVIEW_API_KEY=your_actual_api_key
-   PLANVIEW_TENANT_ID=your_actual_tenant_id
+   python -m planview_portfolios_mcp.server
    ```
 
-## Usage
-
-### Running the Server
-
-Start the MCP server:
-
-```bash
-python -m planview_portfolios_mcp.server
-```
-
-Or using the package directly:
-
-```bash
-python src/planview_portfolios_mcp/server.py
-```
-
-### Configuring with Claude Desktop
-
-Add to your Claude Desktop configuration (`claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "planview-portfolios": {
-      "command": "python",
-      "args": [
-        "-m",
-        "planview_portfolios_mcp.server"
-      ],
-      "cwd": "/path/to/planview-portfolios-mcp",
-      "env": {
-        "PLANVIEW_API_KEY": "your_api_key",
-        "PLANVIEW_TENANT_ID": "your_tenant_id"
-      }
-    }
-  }
-}
-```
+6. **Test OAuth token retrieval** (optional):
+   ```bash
+   python get_token.py
+   ```
 
 ## Available Tools
 
@@ -164,6 +193,8 @@ Allocate a resource to a project.
 
 ## Development
 
+This section is for developers who want to contribute to or modify the server code.
+
 ### Running Tests
 
 ```bash
@@ -216,13 +247,24 @@ planview-portfolios-mcp/
 
 ## Configuration
 
-The server uses environment variables for configuration. See `.env.example` for all available options:
+When connecting to the FastMCP Cloud instance, configure these environment variables in your MCP client (e.g., Claude Desktop's `claude_desktop_config.json`):
 
-- `PLANVIEW_API_URL`: Base URL for Planview API
-- `PLANVIEW_API_KEY`: Your API key for authentication
-- `PLANVIEW_TENANT_ID`: Your tenant identifier
-- `API_TIMEOUT`: Request timeout in seconds (default: 30)
-- `MAX_RETRIES`: Maximum retry attempts for failed requests (default: 3)
+**Required for OAuth Authentication:**
+- `PLANVIEW_CLIENT_ID`: OAuth client ID (required)
+- `PLANVIEW_CLIENT_SECRET`: OAuth client secret (required)
+- `PLANVIEW_TENANT_ID`: Your tenant identifier (required)
+
+**Optional Configuration:**
+- `PLANVIEW_API_URL`: Base URL for Planview API (default: https://api.planview.com)
+- `USE_OAUTH`: Enable OAuth authentication (default: true)
+- `PLANVIEW_API_KEY`: Legacy API key (deprecated, use OAuth instead)
+
+**OAuth Token Management**: The FastMCP Cloud server automatically handles OAuth token lifecycle:
+- Tokens are obtained using the `client_credentials` grant type
+- Tokens are cached and automatically refreshed when they expire (60 minutes)
+- Failed requests with 401 status will trigger automatic token refresh
+
+**Note**: For local development, see the [Local Development](#local-development-optional) section above. The server also supports additional configuration options like `API_TIMEOUT` and `MAX_RETRIES` for local instances.
 
 ## License
 

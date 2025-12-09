@@ -24,6 +24,7 @@ from .exceptions import (
     PlanviewTimeoutError,
     PlanviewValidationError,
 )
+from .oauth import get_oauth_token
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,19 @@ class PlanviewClient:
     async def __aenter__(self) -> httpx.AsyncClient:
         """Create and return HTTP client with connection pooling."""
         if self._client is None:
+            # Get authentication token
+            if settings.use_oauth:
+                try:
+                    token = await get_oauth_token()
+                    auth_header = f"Bearer {token}"
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to get OAuth token, falling back to API key: {e}"
+                    )
+                    auth_header = f"Bearer {settings.planview_api_key}"
+            else:
+                auth_header = f"Bearer {settings.planview_api_key}"
+
             self._client = httpx.AsyncClient(
                 base_url=settings.planview_api_url,
                 timeout=settings.api_timeout,
@@ -46,7 +60,7 @@ class PlanviewClient:
                     keepalive_expiry=30,
                 ),
                 headers={
-                    "Authorization": f"Bearer {settings.planview_api_key}",
+                    "Authorization": auth_header,
                     "X-Tenant-Id": settings.planview_tenant_id,
                     "Content-Type": "application/json",
                 },
@@ -132,6 +146,22 @@ async def make_request(
     """
     try:
         response = await client.request(method, url, **kwargs)
+
+        # If we get 401 and using OAuth, try refreshing token once
+        if (
+            response.status_code == 401
+            and settings.use_oauth
+            and "Authorization" not in kwargs.get("headers", {})
+        ):
+            logger.info("Got 401, refreshing OAuth token and retrying")
+            try:
+                # Refresh token and update client headers
+                token = await get_oauth_token(force_refresh=True)
+                client.headers["Authorization"] = f"Bearer {token}"
+                # Retry the request
+                response = await client.request(method, url, **kwargs)
+            except Exception as e:
+                logger.warning(f"Failed to refresh token: {e}")
 
         # Check if status code warrants retry
         if should_retry_status(response.status_code):
