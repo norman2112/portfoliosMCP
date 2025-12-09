@@ -76,7 +76,9 @@ async def list_resources(
 
     try:
         async with get_client() as client:
-            response = await make_request(client, "GET", "/resources", params=params)
+            response = await make_request(
+                client, "GET", "/public-api/v1/resources", params=params
+            )
             resources = response.json()
 
             duration_ms = int((time() - start_time) * 1000)
@@ -124,7 +126,7 @@ async def get_resource(ctx: Context, resource_id: str) -> dict[str, Any]:
     try:
         async with get_client() as client:
             response = await make_request(
-                client, "GET", f"/resources/{resource_id}"
+                client, "GET", f"/public-api/v1/resources/{resource_id}"
             )
             resource_data = response.json()
 
@@ -223,7 +225,7 @@ async def allocate_resource(
     try:
         async with get_client() as client:
             response = await make_request(
-                client, "POST", "/allocations", json=allocation_data
+                client, "POST", "/public-api/v1/allocations", json=allocation_data
             )
             created_allocation = response.json()
 

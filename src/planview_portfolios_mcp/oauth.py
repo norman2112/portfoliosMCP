@@ -77,15 +77,13 @@ class OAuthTokenManager:
 
         try:
             async with httpx.AsyncClient(timeout=settings.api_timeout) as client:
-                response = await client.post(
-                    token_url,
-                    json={
-                        "grant_type": "client_credentials",
-                        "client_id": settings.planview_client_id,
-                        "client_secret": settings.planview_client_secret,
-                    },
-                    headers={"Content-Type": "application/json"},
-                )
+                # Use multipart/form-data per API docs
+                form = {
+                    "grant_type": (None, "client_credentials"),
+                    "client_id": (None, settings.planview_client_id),
+                    "client_secret": (None, settings.planview_client_secret),
+                }
+                response = await client.post(token_url, files=form)
 
                 if response.status_code == 401:
                     raise PlanviewAuthError(

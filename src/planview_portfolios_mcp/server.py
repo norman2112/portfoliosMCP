@@ -22,9 +22,14 @@ if __name__ == "__main__" or not __package__:
         allocate_resource,
         create_project,
         get_project,
+        get_project_attributes,
         get_resource,
+        get_work,
+        get_work_attributes,
         list_projects,
         list_resources,
+        list_work,
+        oauth_ping,
         update_project,
     )
 else:
@@ -35,9 +40,14 @@ else:
         allocate_resource,
         create_project,
         get_project,
+        get_project_attributes,
         get_resource,
+        get_work,
+        get_work_attributes,
         list_projects,
         list_resources,
+        list_work,
+        oauth_ping,
         update_project,
     )
 
@@ -47,13 +57,16 @@ mcp = FastMCP(
     version=settings.server_version,
 )
 
-# Register project management tools
+# Register tools
+mcp.tool()(oauth_ping)
+mcp.tool()(get_project_attributes)
+mcp.tool()(get_work_attributes)
 mcp.tool()(list_projects)
 mcp.tool()(get_project)
 mcp.tool()(create_project)
 mcp.tool()(update_project)
-
-# Register resource management tools
+mcp.tool()(list_work)
+mcp.tool()(get_work)
 mcp.tool()(list_resources)
 mcp.tool()(get_resource)
 mcp.tool()(allocate_resource)

@@ -5,37 +5,30 @@ from time import time
 from typing import Any
 
 from fastmcp import Context
-from pydantic import ValidationError
 
 from ..client import get_client, make_request
 from ..exceptions import PlanviewValidationError
-from ..models import (
-    ListProjectsParams,
-    ProjectCreate,
-    ProjectResponse,
-    ProjectUpdate,
-)
 
 logger = logging.getLogger(__name__)
+
+
+def _format_attributes(attributes: list[str] | str | None) -> dict[str, str]:
+    """Convert attributes list/string to query param dict."""
+    if attributes is None:
+        return {}
+    if isinstance(attributes, str):
+        return {"attributes": attributes}
+    return {"attributes": ",".join(attributes)}
 
 
 async def list_projects(
     ctx: Context,
     portfolio_id: str | None = None,
     status: str | None = None,
-    limit: int = 50,
+    limit: int | None = None,
+    attributes: list[str] | str | None = None,
 ) -> list[dict[str, Any]]:
-    """List projects and portfolios from Planview.
-
-    Args:
-        ctx: FastMCP context
-        portfolio_id: Optional portfolio ID to filter projects
-        status: Optional status filter (e.g., 'active', 'completed', 'on-hold')
-        limit: Maximum number of projects to return (default: 50)
-
-    Returns:
-        List of project dictionaries with project details
-    """
+    """List projects (API support may vary by tenant)."""
     start_time = time()
     logger.info(
         "Listing projects",
@@ -47,38 +40,28 @@ async def list_projects(
         },
     )
 
-    try:
-        # Validate parameters
-        validated_params = ListProjectsParams(
-            portfolio_id=portfolio_id,
-            status=status,
-            limit=limit,
-        )
-    except ValidationError as e:
-        logger.error(
-            f"Invalid parameters for list_projects: {str(e)}",
-            extra={"tool_name": "list_projects", "error_type": "ValidationError"},
-        )
-        raise PlanviewValidationError(f"Invalid parameters: {str(e)}") from e
-
-    # Build query parameters
-    params: dict[str, Any] = {"limit": validated_params.limit}
-    if validated_params.portfolio_id:
-        params["portfolio_id"] = validated_params.portfolio_id
-    if validated_params.status:
-        params["status"] = validated_params.status
+    params: dict[str, Any] = {}
+    if portfolio_id:
+        params["portfolio_id"] = portfolio_id
+    if status:
+        params["status"] = status
+    if limit is not None:
+        params["limit"] = limit
+    params.update(_format_attributes(attributes))
 
     try:
         async with get_client() as client:
-            response = await make_request(client, "GET", "/projects", params=params)
+            response = await make_request(
+                client, "GET", "/public-api/v1/projects", params=params
+            )
             projects = response.json()
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(
-                f"Successfully listed {len(projects)} projects",
+                "Successfully listed projects",
                 extra={
                     "tool_name": "list_projects",
-                    "count": len(projects),
+                    "count": len(projects) if isinstance(projects, list) else 0,
                     "duration_ms": duration_ms,
                 },
             )
@@ -98,40 +81,27 @@ async def list_projects(
         raise
 
 
-async def get_project(ctx: Context, project_id: str) -> dict[str, Any]:
-    """Get detailed information about a specific project.
-
-    Args:
-        ctx: FastMCP context
-        project_id: The unique identifier of the project
-
-    Returns:
-        Dictionary containing detailed project information
-    """
+async def get_project(
+    ctx: Context, project_id: str, attributes: list[str] | str | None = None
+) -> dict[str, Any]:
+    """Get a single project by id."""
     start_time = time()
     logger.info(
         "Getting project details",
         extra={"tool_name": "get_project", "project_id": project_id},
     )
 
+    params = _format_attributes(attributes)
+
     try:
         async with get_client() as client:
             response = await make_request(
-                client, "GET", f"/projects/{project_id}"
+                client,
+                "GET",
+                f"/public-api/v1/projects/{project_id}",
+                params=params,
             )
             project_data = response.json()
-
-            # Try to parse as typed response
-            try:
-                project = ProjectResponse.model_validate(project_data)
-                result = project.model_dump(mode="json")
-            except ValidationError as e:
-                logger.warning(
-                    f"API response validation failed: {e}",
-                    extra={"tool_name": "get_project"},
-                )
-                # Return raw dict if validation fails (backward compatibility)
-                result = project_data
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(
@@ -142,7 +112,7 @@ async def get_project(ctx: Context, project_id: str) -> dict[str, Any]:
                     "duration_ms": duration_ms,
                 },
             )
-            return result
+            return project_data
 
     except Exception as e:
         duration_ms = int((time() - start_time) * 1000)
@@ -159,70 +129,71 @@ async def get_project(ctx: Context, project_id: str) -> dict[str, Any]:
         raise
 
 
-async def create_project(
-    ctx: Context,
-    name: str,
-    description: str | None = None,
-    portfolio_id: str | None = None,
-    start_date: str | None = None,
-    end_date: str | None = None,
-    budget: float | None = None,
-) -> dict[str, Any]:
-    """Create a new project in Planview Portfolios.
-
-    Args:
-        ctx: FastMCP context
-        name: Project name
-        description: Optional project description
-        portfolio_id: Optional portfolio ID to associate the project with
-        start_date: Optional project start date (ISO format: YYYY-MM-DD)
-        end_date: Optional project end date (ISO format: YYYY-MM-DD)
-        budget: Optional project budget
-
-    Returns:
-        Dictionary containing the created project details
-    """
+async def get_project_attributes(ctx: Context) -> dict[str, Any]:
+    """List available project attributes."""
     start_time = time()
-    logger.info(
-        "Creating project",
-        extra={"tool_name": "create_project", "project_name": name},
-    )
-
-    try:
-        # Validate inputs
-        validated = ProjectCreate(
-            name=name,
-            description=description,
-            portfolio_id=portfolio_id,
-            start_date=start_date,
-            end_date=end_date,
-            budget=budget,
-        )
-    except ValidationError as e:
-        logger.error(
-            f"Invalid project data: {str(e)}",
-            extra={"tool_name": "create_project", "error_type": "ValidationError"},
-        )
-        raise PlanviewValidationError(f"Invalid project data: {str(e)}") from e
-
-    # Convert to dict for API (with ISO date format)
-    project_data = validated.model_dump(exclude_none=True, mode="json")
+    logger.info("Getting project attributes", extra={"tool_name": "get_project_attributes"})
 
     try:
         async with get_client() as client:
             response = await make_request(
-                client, "POST", "/projects", json=project_data
+                client, "GET", "/public-api/v1/projects/attributes/available"
+            )
+            data = response.json()
+
+            duration_ms = int((time() - start_time) * 1000)
+            logger.info(
+                "Successfully retrieved project attributes",
+                extra={
+                    "tool_name": "get_project_attributes",
+                    "duration_ms": duration_ms,
+                },
+            )
+            return data
+
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.error(
+            f"Failed to get project attributes: {str(e)}",
+            extra={
+                "tool_name": "get_project_attributes",
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
+            exc_info=True,
+        )
+        raise
+
+
+async def create_project(
+    ctx: Context,
+    data: dict[str, Any],
+    attributes: list[str] | str | None = None,
+) -> dict[str, Any]:
+    """Create a new project (raw payload passthrough)."""
+    start_time = time()
+    logger.info("Creating project", extra={"tool_name": "create_project"})
+
+    if not isinstance(data, dict):
+        raise PlanviewValidationError("data must be a JSON object")
+
+    params = _format_attributes(attributes)
+
+    try:
+        async with get_client() as client:
+            response = await make_request(
+                client,
+                "POST",
+                "/public-api/v1/projects",
+                params=params,
+                json=data,
             )
             created_project = response.json()
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(
                 "Successfully created project",
-                extra={
-                    "tool_name": "create_project",
-                    "project_name": name,
-                    "duration_ms": duration_ms,
-                },
+                extra={"tool_name": "create_project", "duration_ms": duration_ms},
             )
             return created_project
 
@@ -232,7 +203,6 @@ async def create_project(
             f"Failed to create project: {str(e)}",
             extra={
                 "tool_name": "create_project",
-                "project_name": name,
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
@@ -244,58 +214,29 @@ async def create_project(
 async def update_project(
     ctx: Context,
     project_id: str,
-    name: str | None = None,
-    description: str | None = None,
-    status: str | None = None,
-    start_date: str | None = None,
-    end_date: str | None = None,
-    budget: float | None = None,
+    updates: dict[str, Any],
+    attributes: list[str] | str | None = None,
 ) -> dict[str, Any]:
-    """Update an existing project in Planview Portfolios.
-
-    Args:
-        ctx: FastMCP context
-        project_id: The unique identifier of the project to update
-        name: Optional new project name
-        description: Optional new project description
-        status: Optional new project status
-        start_date: Optional new start date (ISO format: YYYY-MM-DD)
-        end_date: Optional new end date (ISO format: YYYY-MM-DD)
-        budget: Optional new budget
-
-    Returns:
-        Dictionary containing the updated project details
-    """
+    """Update an existing project (partial payload)."""
     start_time = time()
     logger.info(
         "Updating project",
         extra={"tool_name": "update_project", "project_id": project_id},
     )
 
-    try:
-        # Validate inputs
-        validated = ProjectUpdate(
-            name=name,
-            description=description,
-            status=status,
-            start_date=start_date,
-            end_date=end_date,
-            budget=budget,
-        )
-    except ValidationError as e:
-        logger.error(
-            f"Invalid update data: {str(e)}",
-            extra={"tool_name": "update_project", "error_type": "ValidationError"},
-        )
-        raise PlanviewValidationError(f"Invalid update data: {str(e)}") from e
+    if not isinstance(updates, dict):
+        raise PlanviewValidationError("updates must be a JSON object")
 
-    # Convert to dict for API (with ISO date format)
-    update_data = validated.model_dump(exclude_none=True, mode="json")
+    params = _format_attributes(attributes)
 
     try:
         async with get_client() as client:
             response = await make_request(
-                client, "PATCH", f"/projects/{project_id}", json=update_data
+                client,
+                "PATCH",
+                f"/public-api/v1/projects/{project_id}",
+                params=params,
+                json=updates,
             )
             updated_project = response.json()
 

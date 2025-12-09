@@ -39,17 +39,13 @@ class PlanviewClient:
         """Create and return HTTP client with connection pooling."""
         if self._client is None:
             # Get authentication token
-            if settings.use_oauth:
-                try:
-                    token = await get_oauth_token()
-                    auth_header = f"Bearer {token}"
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to get OAuth token, falling back to API key: {e}"
-                    )
-                    auth_header = f"Bearer {settings.planview_api_key}"
-            else:
-                auth_header = f"Bearer {settings.planview_api_key}"
+            if not settings.planview_client_id or not settings.planview_client_secret:
+                raise PlanviewAuthError(
+                    "OAuth credentials are required (PLANVIEW_CLIENT_ID/PLANVIEW_CLIENT_SECRET)."
+                )
+
+            token = await get_oauth_token()
+            auth_header = f"Bearer {token}"
 
             self._client = httpx.AsyncClient(
                 base_url=settings.planview_api_url,
@@ -62,7 +58,6 @@ class PlanviewClient:
                 headers={
                     "Authorization": auth_header,
                     "X-Tenant-Id": settings.planview_tenant_id,
-                    "Content-Type": "application/json",
                 },
             )
         return self._client
