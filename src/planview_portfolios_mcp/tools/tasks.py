@@ -120,41 +120,23 @@ async def create_task(
             # Get the Create operation
             create_op = getattr(service, "Create")
             
-            # Try to get TaskDto2 type from zeep's type system
-            # Based on error message, zeep expects TaskDto (not TaskDto2) in some contexts
-            # Try both TaskDto2 and TaskDto namespaces
-            task_dto_factory = None
-            
-            # List of type names to try (from WSDL and error messages)
-            type_candidates = [
-                # TaskDto2 with 2012/08 namespace (from WSDL examples)
-                "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto2/2012/08}TaskDto2",
-                # TaskDto with 2010/01/01 namespace (from error message)
-                "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto/2010/01/01}TaskDto",
-            ]
-            
-            for type_name in type_candidates:
-                try:
-                    task_dto_factory = client.get_type(type_name)
-                    logger.debug(f"Found TaskDto type: {type_name}")
-                    break
-                except (KeyError, AttributeError, TypeError) as e:
-                    logger.debug(f"Type {type_name} not found: {e}")
-                    continue
-            
-            # Create TaskDto object
-            if task_dto_factory:
-                try:
-                    # Create typed object using zeep factory
-                    task_dto = task_dto_factory(**task_dict)
-                    logger.debug("Created TaskDto using zeep factory")
-                except Exception as e:
-                    logger.warning(f"Failed to create TaskDto with factory ({e}), using dict")
-                    task_dto = task_dict
-            else:
-                # Fallback: use dict and let zeep serialize
-                logger.debug("TaskDto factory not found, using dict")
-                task_dto = task_dict
+            # Use TaskDto (2010/01/01 namespace) as required by the service
+            try:
+                task_dto_factory = client.get_type(
+                    "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto/2010/01/01}TaskDto"
+                )
+            except Exception as e:
+                raise PlanviewValidationError(
+                    f"TaskDto type not found in WSDL: {e}"
+                ) from e
+
+            # Create typed TaskDto object
+            try:
+                task_dto = task_dto_factory(**task_dict)
+            except Exception as e:
+                raise PlanviewValidationError(
+                    f"Failed to create TaskDto object: {e}"
+                ) from e
 
             # Build request - pass dtos as array
             # Create operation signature: Create(dtos: TaskDto2[], options?: WorkOptionsDto)
@@ -355,26 +337,22 @@ async def update_task(
             except (AttributeError, ValueError, KeyError, TypeError):
                 service = client.service
 
-            # Try to get TaskDto/TaskDto2 type
-            task_dto_factory = None
-            type_candidates = [
-                "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto2/2012/08}TaskDto2",
-                "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto/2010/01/01}TaskDto",
-            ]
-            for type_name in type_candidates:
-                try:
-                    task_dto_factory = client.get_type(type_name)
-                    break
-                except Exception:
-                    continue
+            # Use TaskDto (2010/01/01 namespace) as required by the service
+            try:
+                task_dto_factory = client.get_type(
+                    "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto/2010/01/01}TaskDto"
+                )
+            except Exception as e:
+                raise PlanviewValidationError(
+                    f"TaskDto type not found in WSDL: {e}"
+                ) from e
 
-            if task_dto_factory:
-                try:
-                    task_dto_obj = task_dto_factory(**task_dict)
-                except Exception:
-                    task_dto_obj = task_dict
-            else:
-                task_dto_obj = task_dict
+            try:
+                task_dto_obj = task_dto_factory(**task_dict)
+            except Exception as e:
+                raise PlanviewValidationError(
+                    f"Failed to create TaskDto object: {e}"
+                ) from e
 
             dtos_param = [task_dto_obj]
             if options_dict:
