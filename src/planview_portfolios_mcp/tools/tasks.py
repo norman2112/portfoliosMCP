@@ -228,14 +228,15 @@ async def create_task(
             if "FatherInternalKey" not in task_payload and "FatherExternalKey" not in task_payload:
                 raise PlanviewValidationError("FatherKey (FatherInternalKey or FatherExternalKey) is required but missing")
             
-            # Create typed TaskDto object
+            # Try creating typed TaskDto object, but fall back to dict if it fails
+            # zeep can often serialize dicts correctly based on the operation signature
             try:
                 task_dto = task_dto_factory(**task_payload)
-                logger.debug(f"Created TaskDto object with {len(task_payload)} fields")
+                logger.debug(f"Created TaskDto typed object with {len(task_payload)} fields")
             except Exception as e:
-                raise PlanviewValidationError(
-                    f"Failed to create TaskDto object: {e}. Payload had {len(task_payload)} fields: {list(task_payload.keys())}"
-                ) from e
+                logger.warning(f"Failed to create typed TaskDto ({e}), using dict - zeep will serialize")
+                # Fallback: use dict and let zeep serialize based on operation signature
+                task_dto = task_payload
 
             # Build request - pass dtos as array
             # Create operation signature: Create(dtos: TaskDto[], options?: WorkOptionsDto)
