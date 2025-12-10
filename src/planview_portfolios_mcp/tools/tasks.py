@@ -181,23 +181,40 @@ async def create_task(
             # Convert key strings to StructureKey objects or dicts
             # zeep can often accept dicts for complex types
             def create_structure_key(key_uri: str):
-                """Create StructureKey object or dict from key URI."""
-                if structure_key_factory:
-                    # Try different ways to create StructureKey
-                    # Common patterns: Key property, Uri property, or positional
-                    for prop_name in ["Key", "Uri", "Value", "KeyUri"]:
-                        try:
-                            return structure_key_factory(**{prop_name: key_uri})
-                        except Exception:
-                            continue
-                    # Try positional
+                """Create StructureKey object from key URI."""
+                if not structure_key_factory:
+                    # No factory available, return as string (zeep might convert)
+                    return key_uri
+                
+                # Try to create StructureKey object
+                # First try common property names
+                for prop_name in ["Key", "Uri", "Value", "KeyUri", "KeyValue"]:
                     try:
-                        return structure_key_factory(key_uri)
-                    except Exception:
-                        pass
-                # Fallback: return as dict (zeep may accept this)
-                # StructureKey likely has a Key or similar property
-                return {"Key": key_uri}
+                        return structure_key_factory(**{prop_name: key_uri})
+                    except (TypeError, ValueError, KeyError):
+                        continue
+                
+                # Try positional argument
+                try:
+                    return structure_key_factory(key_uri)
+                except (TypeError, ValueError):
+                    pass
+                
+                # Try creating empty and setting attribute
+                try:
+                    sk = structure_key_factory()
+                    if hasattr(sk, 'Key'):
+                        sk.Key = key_uri
+                        return sk
+                    elif hasattr(sk, 'Uri'):
+                        sk.Uri = key_uri
+                        return sk
+                except Exception:
+                    pass
+                
+                # If all else fails, return as string
+                logger.warning(f"Could not create StructureKey for {key_uri}, using string")
+                return key_uri
             
             # Convert key fields to StructureKey objects/dicts
             if "InternalKey" in task_payload:
