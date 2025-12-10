@@ -692,29 +692,125 @@ Updating CLAUDE.md to reflect the new architecture:
 
 ---
 
-<tool-use data-tool-type="unknown" data-tool-name="search_replace">
-<details>
-<summary>Tool use: **search_replace**</summary>
+<tool-use data-tool-type="write" data-tool-name="search_replace">
 
+<details><summary>Tool use: **search_replace** • Edit file: /Users/jhigh/planview-portfolios-mcp/CLAUDE.md</summary>
 
-Parameters:
+**Chunk 1**
+Lines added: 9, lines removed: 1
 
-```json
-{
-  "relativeWorkspacePath": "/Users/jhigh/planview-portfolios-mcp/CLAUDE.md"
-}
+```diff
+@@ -69,7 +69,15 @@
+  ### Core Components
+  
+- **server.py**: FastMCP server initialization and tool registration. Creates a single FastMCP instance and registers all tool functions from the tools modules. The server's &#96;main()&#96; function runs the async event loop.
++ **server.py**: FastMCP server initialization and tool registration. Creates a single FastMCP instance and registers all tool functions from the tools modules. The server's &#96;main()&#96; function runs the async event loop. Includes cleanup handlers for graceful shutdown.
+  
+  **config.py**: Centralized configuration using Pydantic Settings. The &#96;PlanviewSettings&#96; class automatically loads from &#96;.env&#96; file and provides validated configuration values. A global &#96;settings&#96; instance is imported throughout the codebase.
++ 
++ **client.py**: Shared HTTP client with connection pooling, automatic retry logic, and comprehensive error handling. Provides &#96;get_client()&#96; context manager for tools to use. Implements exponential backoff retry for transient failures (429, 502, 503, 504).
++ 
++ **exceptions.py**: Custom exception hierarchy for Planview API errors. Provides specific exception types for different error scenarios (auth, validation, rate limiting, server errors, etc.) with clear error messages.
++ 
++ **models.py**: Pydantic models for input validation and type safety. Includes models for project creation/updates, resource allocation, and list parameters. Validates date ranges, numeric constraints, and required fields.
++ 
++ **logging_config.py**: Structured logging configuration with JSON formatter support. Configurable log levels and output formats (JSON or standard text). Supports file and console handlers.
+  
+  **tools/**: Contains tool implementations organized by domain:
 ```
-Additional data:
 
-```json
-{
-  "codeblockId": "6ed9b8ee-17f7-490e-a953-217ffbe9d31c"
-}
+**Chunk 2**
+Lines added: 5, lines removed: 4
+
+```diff
+@@ -82,8 +90,9 @@
+  All tools follow a consistent async pattern:
+  1. Accept a &#96;ctx: Context&#96; parameter from FastMCP (required first parameter)
+- 2. Use httpx AsyncClient for API calls
+- 3. Include authentication headers (Bearer token + X-Tenant-Id)
+- 4. Return typed data (dict[str, Any] or list[dict[str, Any]])
+- 5. Raise HTTP errors via &#96;response.raise_for_status()&#96;
++ 2. Use Pydantic models from &#96;models.py&#96; for input validation
++ 3. Use &#96;get_client()&#96; context manager from &#96;client.py&#96; for HTTP requests
++ 4. Use &#96;make_request()&#96; helper for automatic retry and error handling
++ 5. Return typed data (dict[str, Any] or list[dict[str, Any]])
++ 6. Raise custom exceptions from &#96;exceptions.py&#96; for clear error messages
+  
+  ### Authentication Flow
 ```
-User decision: **accepted**
 
-Status: **loading**
+</details>
 
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/jhigh/planview-portfolios-mcp/CLAUDE.md</summary>
+
+**Chunk 1**
+Lines added: 10, lines removed: 3
+
+```diff
+@@ -123,7 +123,14 @@
+  ### Current Implementation Limitations
+  1. **Authentication**: Uses static API key instead of OAuth token generation
+- 2. **Error Handling**: Basic HTTP error raising without retry logic (despite MAX_RETRIES setting)
+- 3. **Pagination**: Not implemented (relies on limit parameter only)
+- 4. **Batching**: Single-record operations only (matches API constraint)
++ 2. **Pagination**: Not implemented (relies on limit parameter only)
++ 3. **Batching**: Single-record operations only (matches API constraint)
++ 
++ ### Error Handling &amp; Retry Logic
++ 
++ The implementation includes robust error handling:
++ - Automatic retry with exponential backoff for transient failures (429, 502, 503, 504)
++ - Custom exception types for different error scenarios
++ - Connection pooling and reuse for better performance
++ - Configurable retry attempts via &#96;MAX_RETRIES&#96; setting
+  
+  ### Tool-to-API Mapping
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/jhigh/planview-portfolios-mcp/CLAUDE.md</summary>
+
+**Chunk 1**
+Lines added: 6, lines removed: 4
+
+```diff
+@@ -177,7 +177,9 @@
+  
+  ### Modifying API Calls
+- - All API calls use httpx AsyncClient with timeout from settings
+- - Headers must include both Authorization and X-Tenant-Id
+- - PATCH/POST requests need "Content-Type": "application/json"
+- - Use &#96;response.raise_for_status()&#96; for error handling
++ - Use &#96;get_client()&#96; context manager to get shared HTTP client
++ - Use &#96;make_request()&#96; helper function for automatic retry and error handling
++ - All requests automatically include authentication headers (Authorization + X-Tenant-Id)
++ - PATCH/POST requests automatically include "Content-Type": "application/json"
++ - Custom exceptions are raised automatically based on HTTP status codes
++ - Use Pydantic models from &#96;models.py&#96; for input validation before API calls
+  
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/jhigh/planview-portfolios-mcp/README.md</summary>
 
 </details>
 </tool-use>
@@ -722,6 +818,214 @@ Status: **loading**
 ---
 
 
+
+---
+
+
+Updating README.md project structure:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/jhigh/planview-portfolios-mcp/README.md</summary>
+
+**Chunk 1**
+Lines added: 4, lines removed: undefined
+
+```diff
+@@ -203,4 +203,8 @@
+  │       ├── server.py          # Main FastMCP server
+  │       ├── config.py           # Configuration management
++ │       ├── client.py           # Shared HTTP client with retry logic
++ │       ├── exceptions.py       # Custom exception types
++ │       ├── models.py           # Pydantic validation models
++ │       ├── logging_config.py   # Logging configuration
+  │       └── tools/
+  │           ├── __init__.py
+```
+
+</details>
+
+</tool-use>
+
+---
+
+
+
+---
+
+
+Staging all changes and creating the commit:
+
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: cd /Users/jhigh/planview-portfolios-mcp && git add -A</summary>
+
+```bash
+cd /Users/jhigh/planview-portfolios-mcp && git add -A
+```
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: cd /Users/jhigh/planview-portfolios-mcp && git diff --staged --stat</summary>
+
+```bash
+cd /Users/jhigh/planview-portfolios-mcp && git diff --staged --stat
+```
+
+```
+ .env.example                                       |   5 +
+ ...09_20-20Z-publish-project-to-new-github-repo.md | 655 +++++++++++++++++++++
+ CLAUDE.md                                          |  42 +-
+ README.md                                          |   4 +
+ pyproject.toml                                     |   4 +
+ src/planview_portfolios_mcp/client.py              | 182 ++++++
+ src/planview_portfolios_mcp/config.py              |   5 +
+ src/planview_portfolios_mcp/exceptions.py          |  49 ++
+ src/planview_portfolios_mcp/logging_config.py      |  69 +++
+ src/planview_portfolios_mcp/models.py              | 121 ++++
+ src/planview_portfolios_mcp/server.py              |  24 +
+ src/planview_portfolios_mcp/tools/projects.py      | 299 +++++++---
+ src/planview_portfolios_mcp/tools/resources.py     | 243 ++++++--
+ 13 files changed, 1572 insertions(+), 130 deletions(-)
+
+```
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+Creating the commit with a clear message:
+
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: cd /Users/jhigh/planview-portfolios-mcp && git commit -m "Refactor API client with retry logic and input validation
+
+Add shared HTTP client infrastructure with automatic retry, connection
+pooling, and comprehensive error handling. Implement Pydantic models
+for input validation and custom exception hierarchy for clearer error
+messages.
+
+Key improvements:
+- Add client.py with shared HTTP client and exponential backoff retry
+- Add exceptions.py with custom exception types for different error
+  scenarios
+- Add models.py with Pydantic validation for all tool inputs
+- Add logging_config.py for structured JSON logging support
+- Refactor tools to use new client infrastructure and validation
+- Update server.py with graceful shutdown and resource cleanup
+- Update documentation to reflect new architecture
+
+This refactoring improves reliability through automatic retry on
+transient failures (429, 502, 503, 504), provides better error
+messages through custom exceptions, and ensures input validation
+before API calls through Pydantic models."</summary>
+
+```bash
+cd /Users/jhigh/planview-portfolios-mcp && git commit -m "Refactor API client with retry logic and input validation
+
+Add shared HTTP client infrastructure with automatic retry, connection
+pooling, and comprehensive error handling. Implement Pydantic models
+for input validation and custom exception hierarchy for clearer error
+messages.
+
+Key improvements:
+- Add client.py with shared HTTP client and exponential backoff retry
+- Add exceptions.py with custom exception types for different error
+  scenarios
+- Add models.py with Pydantic validation for all tool inputs
+- Add logging_config.py for structured JSON logging support
+- Refactor tools to use new client infrastructure and validation
+- Update server.py with graceful shutdown and resource cleanup
+- Update documentation to reflect new architecture
+
+This refactoring improves reliability through automatic retry on
+transient failures (429, 502, 503, 504), provides better error
+messages through custom exceptions, and ensures input validation
+before API calls through Pydantic models."
+```
+
+```
+[main 075b7a8] Refactor API client with retry logic and input validation
+ 13 files changed, 1572 insertions(+), 130 deletions(-)
+ create mode 100644 src/planview_portfolios_mcp/client.py
+ create mode 100644 src/planview_portfolios_mcp/exceptions.py
+ create mode 100644 src/planview_portfolios_mcp/logging_config.py
+ create mode 100644 src/planview_portfolios_mcp/models.py
+
+```
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+Pushing the commit to the remote repository:
+
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: cd /Users/jhigh/planview-portfolios-mcp && git push</summary>
+
+```bash
+cd /Users/jhigh/planview-portfolios-mcp && git push
+```
+
+```
+To https://github.com/jhigh1594/portfolios-mcp.git
+   9860364..075b7a8  main -&gt; main
+
+```
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+**Commit created and pushed**
+
+**Commit Summary:**
+- **Subject:** Refactor API client with retry logic and input validation
+- **Files changed:** 13 files (1,572 insertions, 130 deletions)
+- **New files:**
+  - `client.py` - Shared HTTP client with retry logic
+  - `exceptions.py` - Custom exception hierarchy
+  - `models.py` - Pydantic validation models
+  - `logging_config.py` - Structured logging configuration
+
+**Changes included:**
+- Infrastructure: shared HTTP client with exponential backoff retry
+- Error handling: custom exceptions for different error scenarios
+- Input validation: Pydantic models for all tool inputs
+- Logging: structured JSON logging support
+- Refactored tools: updated to use new client and validation
+- Documentation: updated README.md and CLAUDE.md to reflect new architecture
+- Server cleanup: graceful shutdown and resource cleanup
+
+The commit follows GitHub commit message guidelines with a clear subject line and detailed body explaining the changes and improvements. Pushed to `origin/main`.
 
 ---
 
