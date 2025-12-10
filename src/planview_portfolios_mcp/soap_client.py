@@ -5,7 +5,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Any, AsyncContextManager
 
-import httpx
+import requests
 from tenacity import (
     before_sleep_log,
     retry,
@@ -59,25 +59,20 @@ class PlanviewSOAPClient:
             token = await get_oauth_token()
             auth_header = f"Bearer {token}"
 
-            # Create httpx.Client (synchronous) with auth headers
-            # Use regular Transport instead of AsyncTransport for compatibility
-            httpx_client = httpx.Client(
-                timeout=settings.soap_timeout,
-                limits=httpx.Limits(
-                    max_keepalive_connections=20,
-                    max_connections=100,
-                    keepalive_expiry=30,
-                ),
-                headers={
+            # Create requests.Session with auth headers
+            # zeep's Transport uses requests by default
+            session = requests.Session()
+            session.headers.update(
+                {
                     "Authorization": auth_header,
                     "X-Tenant-Id": settings.planview_tenant_id,
                     "Content-Type": "text/xml; charset=utf-8",
                     "SOAPAction": "",
-                },
+                }
             )
 
-            # Create transport with pre-configured httpx client
-            transport = Transport(client=httpx_client, timeout=settings.soap_timeout)
+            # Create transport with pre-configured session
+            transport = Transport(session=session, timeout=settings.soap_timeout)
 
             # Create zeep client settings
             zeep_settings = Settings(
@@ -97,16 +92,16 @@ class PlanviewSOAPClient:
 
         else:
             # Refresh token if needed (tokens expire in 60 minutes)
-            # Update headers on existing client's transport httpx client
+            # Update headers on existing client's transport session
             token = await get_oauth_token()
             auth_header = f"Bearer {token}"
             if (
                 hasattr(self._client, "transport")
-                and hasattr(self._client.transport, "client")
+                and hasattr(self._client.transport, "session")
             ):
-                httpx_client = self._client.transport.client
-                if isinstance(httpx_client, httpx.Client):
-                    httpx_client.headers.update(
+                session = self._client.transport.session
+                if isinstance(session, requests.Session):
+                    session.headers.update(
                         {
                             "Authorization": auth_header,
                             "X-Tenant-Id": settings.planview_tenant_id,
@@ -119,10 +114,10 @@ class PlanviewSOAPClient:
         """Close SOAP client (call on server shutdown)."""
         if self._client and hasattr(self._client, "transport"):
             transport = self._client.transport
-            if hasattr(transport, "client"):
-                httpx_client = transport.client
-                if isinstance(httpx_client, httpx.Client):
-                    httpx_client.close()
+            if hasattr(transport, "session"):
+                session = transport.session
+                if isinstance(session, requests.Session):
+                    session.close()
             self._client = None
 
 
