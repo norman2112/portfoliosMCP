@@ -176,61 +176,82 @@ async def create_task(
                 raise PlanviewValidationError("FatherKey is required but missing from payload")
             
             # Call the operation directly (matching test script approach that worked)
-            # The test script showed that passing a dict directly to zeep works - zeep auto-converts
+            # Create TaskDto2 typed object first - this is what zeep needs for proper serialization
             import asyncio
             from ..soap_client import _handle_soap_result
             
-            logger.info(f"Attempting call with dict (zeep auto-conversion) - matching test script approach")
-            logger.info(f"Task payload has {len(task_payload)} fields: {list(task_payload.keys())}")
+            logger.info(f"Creating TaskDto2 typed object with payload keys: {list(task_payload.keys())}")
             logger.info(f"Task payload Description: {task_payload.get('Description')}")
             logger.info(f"Task payload FatherKey: {task_payload.get('FatherKey')}")
             
-            # Try calling with dict first - zeep should auto-convert (this worked in test script)
+            # Create TaskDto2 typed object from the payload
+            # This is critical - zeep needs the typed object to serialize correctly
             try:
-                # Build kwargs - pass dict directly, zeep will convert based on operation signature
-                call_kwargs = {"dtos": [task_payload]}  # Pass dict in list, zeep auto-converts
+                task_dto_obj = task_dto_factory(**task_payload)
+                logger.info(f"Created TaskDto2 typed object: {type(task_dto_obj)}")
+                
+                # Verify the object has values by accessing them
+                desc = getattr(task_dto_obj, 'Description', None)
+                father_key = getattr(task_dto_obj, 'FatherKey', None)
+                key_val = getattr(task_dto_obj, 'Key', None)
+                
+                logger.info(f"TaskDto2.Description (getattr): {desc}")
+                logger.info(f"TaskDto2.FatherKey (getattr): {father_key}")
+                logger.info(f"TaskDto2.Key (getattr): {key_val}")
+                
+                # Also try direct attribute access
+                try:
+                    desc_direct = task_dto_obj.Description
+                    father_key_direct = task_dto_obj.FatherKey
+                    logger.info(f"TaskDto2.Description (direct): {desc_direct}")
+                    logger.info(f"TaskDto2.FatherKey (direct): {father_key_direct}")
+                except Exception as attr_e:
+                    logger.warning(f"Could not access attributes directly: {attr_e}")
+                
+                # Check zeep's internal structure
+                if hasattr(task_dto_obj, '__values__'):
+                    logger.info(f"TaskDto2.__values__: {task_dto_obj.__values__}")
+                
+                if not desc:
+                    raise PlanviewValidationError("TaskDto2 object missing Description after creation")
+                if not father_key:
+                    raise PlanviewValidationError("TaskDto2 object missing FatherKey after creation")
+                    
+            except Exception as e:
+                if isinstance(e, PlanviewValidationError):
+                    raise
+                logger.error(f"Failed to create TaskDto2 object: {e}", exc_info=True)
+                raise PlanviewValidationError(
+                    f"Failed to create TaskDto2 object: {e}"
+                ) from e
+            
+            # Build request - pass dtos as array of TaskDto2 objects
+            dtos_param = [task_dto_obj]
+            logger.info(f"Calling Create with dtos array containing {len(dtos_param)} TaskDto2 object(s)")
+            logger.info(f"dtos_param type: {type(dtos_param)}")
+            logger.info(f"dtos_param[0] type: {type(dtos_param[0])}")
+            
+            # Try to serialize the object manually to verify it has structure
+            try:
+                from zeep.helpers import serialize_object
+                serialized = serialize_object(task_dto_obj)
+                logger.info(f"Serialized TaskDto2 object: {serialized}")
+            except Exception as ser_e:
+                logger.warning(f"Could not serialize TaskDto2 object manually: {ser_e}")
+            
+            # Call the operation
+            try:
+                call_kwargs = {"dtos": dtos_param}
                 if options_dict:
                     call_kwargs["options"] = options_dict
                 
-                logger.info(f"Calling create_op with dict: dtos type={type(call_kwargs['dtos'])}, dtos[0] type={type(call_kwargs['dtos'][0])}")
+                logger.info(f"Calling create_op with TaskDto2 object: dtos type={type(call_kwargs['dtos'])}, dtos[0] type={type(call_kwargs['dtos'][0])}")
                 result_direct = await asyncio.to_thread(create_op, **call_kwargs)
-                logger.info(f"✅ Call with dict succeeded! Result type: {type(result_direct)}")
-                # Process the OpenSuiteResult using our helper
+                logger.info(f"✅ Call succeeded! Result type: {type(result_direct)}")
                 result = _handle_soap_result(result_direct)
             except Exception as e:
-                logger.warning(f"Call with dict failed: {e}")
-                logger.info("Trying with TaskDto2 typed object as fallback...")
-                try:
-                    # Fallback: Create TaskDto2 typed object
-                    logger.info(f"Creating TaskDto2 typed object with payload keys: {list(task_payload.keys())}")
-                    task_dto_obj = task_dto_factory(**task_payload)
-                    logger.info(f"Created TaskDto2 typed object: {type(task_dto_obj)}")
-                    
-                    # Verify the object has values
-                    desc = getattr(task_dto_obj, 'Description', None)
-                    father_key = getattr(task_dto_obj, 'FatherKey', None)
-                    logger.info(f"TaskDto2.Description: {desc}")
-                    logger.info(f"TaskDto2.FatherKey: {father_key}")
-                    
-                    if not desc:
-                        raise PlanviewValidationError("TaskDto2 object missing Description after creation")
-                    if not father_key:
-                        raise PlanviewValidationError("TaskDto2 object missing FatherKey after creation")
-                    
-                    # Try with TaskDto2 object
-                    call_kwargs = {"dtos": [task_dto_obj]}
-                    if options_dict:
-                        call_kwargs["options"] = options_dict
-                    
-                    logger.info(f"Calling create_op with TaskDto2 object: dtos type={type(call_kwargs['dtos'])}, dtos[0] type={type(call_kwargs['dtos'][0])}")
-                    result_direct = await asyncio.to_thread(create_op, **call_kwargs)
-                    logger.info(f"✅ Call with TaskDto2 object succeeded! Result type: {type(result_direct)}")
-                    result = _handle_soap_result(result_direct)
-                except Exception as e2:
-                    logger.error(f"Both dict and TaskDto2 object approaches failed. Dict error: {e}, Object error: {e2}", exc_info=True)
-                    raise PlanviewValidationError(
-                        f"Failed to create task: dict approach failed ({e}), object approach failed ({e2})"
-                    ) from e2
+                logger.error(f"Call failed: {e}", exc_info=True)
+                raise
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(
