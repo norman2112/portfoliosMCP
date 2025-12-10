@@ -245,20 +245,15 @@ async def create_task(
             if "FatherInternalKey" not in task_payload and "FatherExternalKey" not in task_payload:
                 raise PlanviewValidationError("FatherKey (FatherInternalKey or FatherExternalKey) is required but missing")
             
-            # Try creating typed TaskDto object, but fall back to dict if it fails
-            # zeep can often serialize dicts correctly based on the operation signature
-            try:
-                task_dto = task_dto_factory(**task_payload)
-                logger.debug(f"Created TaskDto typed object with {len(task_payload)} fields")
-            except Exception as e:
-                logger.warning(f"Failed to create typed TaskDto ({e}), using dict - zeep will serialize")
-                # Fallback: use dict and let zeep serialize based on operation signature
-                task_dto = task_payload
-
-            # Build request - pass dtos as array
-            # Create operation signature: Create(dtos: TaskDto[], options?: WorkOptionsDto)
-            dtos_param = [task_dto]
-            logger.debug(f"Calling Create with dtos array containing {len(dtos_param)} TaskDto object(s)")
+            # Pass dict directly to zeep - it will serialize based on operation signature
+            # zeep can handle dicts and convert them to the correct types
+            # This avoids issues with StructureKey object creation
+            logger.debug(f"Passing TaskDto as dict with {len(task_payload)} fields to zeep")
+            
+            # Build request - pass dtos as array of dicts
+            # zeep will serialize the dict to TaskDto based on the Create operation signature
+            dtos_param = [task_payload]
+            logger.debug(f"Calling Create with dtos array containing {len(dtos_param)} item(s)")
             
             # Pass as keyword arguments matching WSDL parameter names
             kwargs = {"dtos": dtos_param}
