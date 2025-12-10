@@ -94,9 +94,11 @@ async def create_task(
             raise PlanviewValidationError(f"Invalid task data: {str(e)}") from e
 
         # Convert to dict for zeep (use PascalCase for SOAP)
-        task_dict = task_dto.model_dump(by_alias=True, exclude_none=True)
+        # Convert datetime objects to ISO format strings for zeep
+        task_dict = task_dto.model_dump(by_alias=True, exclude_none=True, mode='json')
+        # Filter out None values explicitly (matches test script approach)
         # Sort keys alphabetically (Planview requires DTO fields in alphabetical order)
-        task_dict = dict(sorted(task_dict.items()))
+        task_dict = {k: v for k, v in sorted(task_dict.items()) if v is not None}
 
         # Use TaskDto2 directly (2012/08 namespace) - matches SOAP examples in docs
         # TaskDto2 uses the same field names as our TaskDto2 model
