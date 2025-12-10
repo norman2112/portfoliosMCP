@@ -111,9 +111,7 @@ atexit.register(cleanup)
 
 def main() -> None:
     """Run the MCP server."""
-    import asyncio
-
-    asyncio.run(mcp.run())
+    mcp.run()
 
 
 if __name__ == "__main__":

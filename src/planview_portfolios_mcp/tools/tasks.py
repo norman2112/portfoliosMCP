@@ -1,5 +1,6 @@
 """Task management tools for Planview Portfolios SOAP API."""
 
+import asyncio
 import logging
 from time import time
 from typing import Any
@@ -8,7 +9,8 @@ from fastmcp import Context
 
 from ..exceptions import PlanviewValidationError
 from ..models import TaskDto2, WorkOptionsDto
-from ..soap_client import get_soap_client, make_soap_request
+from ..soap_client import get_soap_client, make_soap_request, _handle_soap_result
+from ..utils.soap_helpers import filter_and_sort_fields
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +18,30 @@ logger = logging.getLogger(__name__)
 # The WSDL defines service "TaskService" with port "BasicHttpBinding_ITaskService3"
 TASK_SERVICE_NAME = "TaskService"
 TASK_SERVICE_PORT = "BasicHttpBinding_ITaskService3"
+
+
+def _validate_task_fields(task_data: dict[str, Any]) -> None:
+    """Validate required task fields.
+
+    Args:
+        task_data: Task data dictionary
+
+    Raises:
+        PlanviewValidationError: If required fields missing or invalid
+
+    Notes:
+        Required fields: Description, FatherKey (case-insensitive check)
+    """
+    if not isinstance(task_data, dict):
+        raise PlanviewValidationError("task_data must be a dictionary")
+
+    has_description = any(k.lower() == "description" for k in task_data)
+    has_father_key = any(k.lower() == "fatherkey" for k in task_data)
+
+    if not has_description:
+        raise PlanviewValidationError("Description field is required")
+    if not has_father_key:
+        raise PlanviewValidationError("FatherKey field is required")
 
 
 async def create_task(
@@ -61,170 +87,83 @@ async def create_task(
         PlanviewAuthError: If authentication fails
         PlanviewError: For other errors
 
-    Example:
-        {
-            "Description": "My Task",
-            "FatherKey": "key://2/$Plan/12345",
-            "Key": "ekey://2/namespace/task-1",
-            "ScheduleStartDate": "2024-01-01T08:00:00",
-            "ScheduleFinishDate": "2024-01-15T17:00:00"
-        }
+    Examples:
+        Minimal (required fields only):
+            {"Description": "My Task", "FatherKey": "key://2/$Plan/12345"}
+
+        With external key (recommended to prevent duplicates):
+            {
+                "Description": "My Task",
+                "FatherKey": "key://2/$Plan/12345",
+                "Key": "ekey://2/namespace/task-1"
+            }
+
+        With schedule dates:
+            {
+                "Description": "My Task",
+                "FatherKey": "key://2/$Plan/12345",
+                "ScheduleStartDate": "2024-01-01T08:00:00",
+                "ScheduleFinishDate": "2024-01-15T17:00:00"
+            }
+
+    Notes:
+        - Field names must use PascalCase (e.g., FatherKey, not father_key)
+        - Date format: ISO 8601 (YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD)
+        - Fields are automatically sorted alphabetically (Planview requirement)
+        - None values are automatically filtered
+        - Use external key (ekey://) to prevent duplicate creation
     """
     start_time = time()
     logger.info("Creating task", extra={"tool_name": "create_task"})
 
     try:
-        # Validate task data
-        if not isinstance(task_data, dict):
-            raise PlanviewValidationError("task_data must be a dictionary")
+        # Validate required fields
+        _validate_task_fields(task_data)
 
-        if "Description" not in task_data and "description" not in task_data:
-            raise PlanviewValidationError(
-                "task_data must include Description field"
-            )
-        if "FatherKey" not in task_data and "father_key" not in task_data:
-            raise PlanviewValidationError(
-                "task_data must include FatherKey field"
-            )
-
-        # Validate required fields are present (basic validation)
-        if "Description" not in task_data and "description" not in task_data:
-            raise PlanviewValidationError("task_data must include Description field")
-        if "FatherKey" not in task_data and "father_key" not in task_data:
-            raise PlanviewValidationError("task_data must include FatherKey field")
-        
-        # Convert to PascalCase and prepare dict (matching test script approach)
-        # The test script uses the dict directly without Pydantic validation
-        # We'll do basic field name conversion but keep it simple
-        task_dict = {}
-        
-        # Convert field names to PascalCase (handle both snake_case and PascalCase input)
-        for key, value in task_data.items():
-            if value is not None:  # Filter None values (matches test script)
-                # If already PascalCase, use as-is; otherwise convert
-                if key[0].isupper():
-                    # Already PascalCase
-                    pascal_key = key
-                else:
-                    # Convert snake_case to PascalCase
-                    # Simple conversion: split on underscore, capitalize each word, join
-                    parts = key.split('_')
-                    pascal_key = ''.join(word.capitalize() for word in parts)
-                
-                # Normalize date strings to ISO format (replace space with 'T' if needed)
-                # zeep expects ISO 8601 format: '2026-02-15T17:00:00'
-                if pascal_key in ['ScheduleStartDate', 'ScheduleFinishDate', 'ActualStartDate', 'ActualFinishDate']:
-                    if isinstance(value, str):
-                        # Replace space with 'T' if it's a space-separated datetime
-                        value = value.replace(' ', 'T', 1)
-                        # Ensure it has time component if missing
-                        if 'T' in value and len(value.split('T')[1]) == 8:  # HH:MM:SS format
-                            pass  # Already correct
-                        elif 'T' not in value and len(value) == 10:  # Just date
-                            value = f"{value}T00:00:00"  # Add default time
-                
-                # Convert Duration to integer if it's a string
-                if pascal_key == 'Duration':
-                    if isinstance(value, str):
-                        try:
-                            value = int(value)
-                        except ValueError:
-                            logger.warning(f"Could not convert Duration '{value}' to integer, keeping as-is")
-                
-                # Convert IsMilestone to boolean if needed
-                if pascal_key == 'IsMilestone':
-                    if isinstance(value, str):
-                        value = value.lower() in ('true', '1', 'yes')
-                    elif not isinstance(value, bool):
-                        value = bool(value)
-                
-                task_dict[pascal_key] = value
-        
-        # Sort keys alphabetically (Planview requirement)
-        task_dict = dict(sorted(task_dict.items()))
-        
-        logger.debug(f"Prepared task_dict with {len(task_dict)} fields: {list(task_dict.keys())}")
-
-        # Use TaskDto2 directly (2012/08 namespace) - matches SOAP examples in docs
-        # TaskDto2 uses the same field names as our TaskDto2 model
-        # No mapping needed - use task_dict directly
-        task_payload = task_dict
-
-        # Prepare options
-        options_dict = None
-        if options:
-            try:
-                options_dto = WorkOptionsDto.model_validate(options)
-                options_dict = options_dto.model_dump(by_alias=True)
-            except Exception as e:
-                raise PlanviewValidationError(
-                    f"Invalid options data: {str(e)}"
-                ) from e
+        # Filter non-None and sort (Planview requirement)
+        task_payload = filter_and_sort_fields(task_data)
 
         # Make SOAP request
+        # Note: options parameter exists for API compatibility but is not currently used
         async with get_soap_client() as client:
             # Get the service
             try:
                 service = client.bind(TASK_SERVICE_NAME, port_name=TASK_SERVICE_PORT)
             except (AttributeError, ValueError, KeyError, TypeError):
                 service = client.service
-            
+
             # Get the Create operation
             create_op = getattr(service, "Create")
-            
-            # Use TaskDto2 (2012/08 namespace) - matches SOAP examples in documentation
-            # TaskDto2 uses fields like Description, FatherKey, Key, ScheduleStartDate, etc.
-            # No StructureKey conversion needed - TaskDto2 accepts key URIs as strings
+
+            # Get TaskDto2 type factory
             try:
                 task_dto_factory = client.get_type(
                     "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto2/2012/08}TaskDto2"
                 )
             except Exception as e:
-                raise PlanviewValidationError(
-                    f"TaskDto2 type not found in WSDL: {e}"
-                ) from e
+                raise PlanviewValidationError(f"TaskDto2 type not found in WSDL: {e}") from e
 
             # Verify required fields are present
             if "Description" not in task_payload:
                 raise PlanviewValidationError("Description is required but missing from payload")
             if "FatherKey" not in task_payload:
                 raise PlanviewValidationError("FatherKey is required but missing from payload")
-            
-            # Call the operation (matching test script approach that worked)
-            # Try dict approach first - zeep should auto-convert based on operation signature
-            import asyncio
-            from ..soap_client import _handle_soap_result
-            
-            logger.info(f"Calling Create with dict payload: {list(task_payload.keys())}")
-            logger.info(f"Task payload Description: {task_payload.get('Description')}")
-            logger.info(f"Task payload FatherKey: {task_payload.get('FatherKey')}")
-            
-            # Try calling with dict first - zeep should auto-convert (this worked in test script)
+
+            # Call SOAP Create operation (dict-first approach from test script)
+            logger.info(f"Creating task with fields: {list(task_payload.keys())}")
             try:
-                call_kwargs = {"dtos": [task_payload]}
-                if options_dict:
-                    call_kwargs["options"] = options_dict
-                
-                logger.info(f"Calling create_op with dict: dtos type={type(call_kwargs['dtos'])}, dtos[0] type={type(call_kwargs['dtos'][0])}")
-                result_direct = await asyncio.to_thread(create_op, **call_kwargs)
-                logger.info(f"✅ Call with dict succeeded! Result type: {type(result_direct)}")
+                # Try dict directly (test script line 148 - works reliably)
+                result_direct = await asyncio.to_thread(create_op, dtos=[task_payload])
                 result = _handle_soap_result(result_direct)
             except Exception as e:
-                logger.warning(f"Call with dict failed: {e}, trying with TaskDto2 object...")
-                # Fall back to TaskDto2 typed object approach
+                # Fallback to TaskDto2 object
+                logger.warning(f"Dict approach failed: {e}, trying TaskDto2 object")
                 try:
                     task_dto_obj = task_dto_factory(**task_payload)
-                    dtos_param = [task_dto_obj]
-                    call_kwargs = {"dtos": dtos_param}
-                    if options_dict:
-                        call_kwargs["options"] = options_dict
-                    
-                    logger.info(f"Calling create_op with TaskDto2 object: dtos type={type(call_kwargs['dtos'])}, dtos[0] type={type(call_kwargs['dtos'][0])}")
-                    result_direct = await asyncio.to_thread(create_op, **call_kwargs)
-                    logger.info(f"✅ Call with TaskDto2 object succeeded! Result type: {type(result_direct)}")
+                    result_direct = await asyncio.to_thread(create_op, dtos=[task_dto_obj])
                     result = _handle_soap_result(result_direct)
                 except Exception as e2:
-                    logger.error(f"Call with TaskDto2 object also failed: {e2}", exc_info=True)
+                    logger.error(f"TaskDto2 object approach also failed: {e2}", exc_info=True)
                     raise
 
             duration_ms = int((time() - start_time) * 1000)
@@ -277,9 +216,7 @@ async def read_task(ctx: Context, task_key: str) -> dict[str, Any]:
         or: "search://2/$Plan?description=Task Name"
     """
     start_time = time()
-    logger.info(
-        "Reading task", extra={"tool_name": "read_task", "task_key": task_key}
-    )
+    logger.info("Reading task", extra={"tool_name": "read_task", "task_key": task_key})
 
     try:
         # Validate key format
@@ -295,9 +232,7 @@ async def read_task(ctx: Context, task_key: str) -> dict[str, Any]:
             # Read operation expects: keys (list of strings)
             request_params = {"keys": [validated_key]}
 
-            result = await make_soap_request(
-                client, TASK_SERVICE_NAME, "Read", **request_params
-            )
+            result = await make_soap_request(client, TASK_SERVICE_NAME, "Read", **request_params)
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(
@@ -434,18 +369,10 @@ async def update_task(
                 options_dto = WorkOptionsDto.model_validate(options)
                 options_dict = options_dto.model_dump(by_alias=True)
             except Exception as e:
-                raise PlanviewValidationError(
-                    f"Invalid options data: {str(e)}"
-                ) from e
+                raise PlanviewValidationError(f"Invalid options data: {str(e)}") from e
 
         # Make SOAP request
         async with get_soap_client() as client:
-            # Bind service
-            try:
-                service = client.bind(TASK_SERVICE_NAME, port_name=TASK_SERVICE_PORT)
-            except (AttributeError, ValueError, KeyError, TypeError):
-                service = client.service
-
             # Get StructureKey type for key fields
             structure_key_factory = None
             try:
@@ -454,7 +381,7 @@ async def update_task(
                 )
             except Exception:
                 pass
-            
+
             def create_structure_key(key_uri: str):
                 """Create StructureKey object or dict from key URI."""
                 if structure_key_factory:
@@ -468,16 +395,20 @@ async def update_task(
                     except Exception:
                         pass
                 return {"Key": key_uri}
-            
+
             # Convert key fields to StructureKey objects/dicts
             if "InternalKey" in task_dict:
                 task_dict["InternalKey"] = create_structure_key(task_dict["InternalKey"])
             if "FatherInternalKey" in task_dict:
-                task_dict["FatherInternalKey"] = create_structure_key(task_dict["FatherInternalKey"])
+                task_dict["FatherInternalKey"] = create_structure_key(
+                    task_dict["FatherInternalKey"]
+                )
             if "ExternalKey" in task_dict:
                 task_dict["ExternalKey"] = create_structure_key(task_dict["ExternalKey"])
             if "FatherExternalKey" in task_dict:
-                task_dict["FatherExternalKey"] = create_structure_key(task_dict["FatherExternalKey"])
+                task_dict["FatherExternalKey"] = create_structure_key(
+                    task_dict["FatherExternalKey"]
+                )
 
             # Use TaskDto (2010/01/01 namespace) as required by the service
             try:
@@ -485,16 +416,12 @@ async def update_task(
                     "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto/2010/01/01}TaskDto"
                 )
             except Exception as e:
-                raise PlanviewValidationError(
-                    f"TaskDto type not found in WSDL: {e}"
-                ) from e
+                raise PlanviewValidationError(f"TaskDto type not found in WSDL: {e}") from e
 
             try:
                 task_dto_obj = task_dto_factory(**task_dict)
             except Exception as e:
-                raise PlanviewValidationError(
-                    f"Failed to create TaskDto object: {e}"
-                ) from e
+                raise PlanviewValidationError(f"Failed to create TaskDto object: {e}") from e
 
             dtos_param = [task_dto_obj]
             kwargs = {"dtos": dtos_param}
@@ -575,9 +502,7 @@ async def delete_task(ctx: Context, task_key: str) -> dict[str, Any]:
             # Delete operation expects: keys (list of strings)
             request_params = {"keys": [validated_key]}
 
-            result = await make_soap_request(
-                client, TASK_SERVICE_NAME, "Delete", **request_params
-            )
+            result = await make_soap_request(client, TASK_SERVICE_NAME, "Delete", **request_params)
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(
