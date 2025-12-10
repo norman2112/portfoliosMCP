@@ -201,18 +201,34 @@ async def create_task(
             if hasattr(dtos_param[0], '__values__'):
                 logger.debug(f"TaskDto2 object __values__: {dtos_param[0].__values__}")
             
-            # Pass as keyword arguments matching WSDL parameter names
-            kwargs = {"dtos": dtos_param}
-            if options_dict:
-                kwargs["options"] = options_dict
-
-            result = await make_soap_request(
-                client,
-                TASK_SERVICE_NAME,
-                "Create",
-                port_name=TASK_SERVICE_PORT,
-                **kwargs,
-            )
+            # Call the operation directly (matching test script approach that worked)
+            # This bypasses make_soap_request to match the exact pattern that succeeded
+            import asyncio
+            from ..soap_client import _handle_soap_result
+            
+            # Get the Create operation from the service
+            create_op = getattr(service, "Create")
+            
+            # Call directly like the test script
+            logger.debug("Calling Create operation directly (matching test script)")
+            try:
+                result_direct = await asyncio.to_thread(create_op, dtos=dtos_param, **({"options": options_dict} if options_dict else {}))
+                logger.debug(f"Direct call succeeded, result type: {type(result_direct)}")
+                # Process the OpenSuiteResult using our helper
+                result = _handle_soap_result(result_direct)
+            except Exception as e:
+                logger.warning(f"Direct call failed: {e}, falling back to make_soap_request")
+                # Fall back to make_soap_request for error handling
+                kwargs = {"dtos": dtos_param}
+                if options_dict:
+                    kwargs["options"] = options_dict
+                result = await make_soap_request(
+                    client,
+                    TASK_SERVICE_NAME,
+                    "Create",
+                    port_name=TASK_SERVICE_PORT,
+                    **kwargs,
+                )
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(
