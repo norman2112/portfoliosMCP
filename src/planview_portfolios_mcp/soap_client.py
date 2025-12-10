@@ -339,7 +339,21 @@ async def make_soap_request(
     """
     try:
         # Get the service binding
-        service = client.bind(service_name)
+        # zeep's bind() method signature: bind(service_name, port_name=None)
+        # For TaskService, try binding with service name first
+        try:
+            service = client.bind(service_name)
+        except (AttributeError, ValueError, KeyError, TypeError) as bind_error:
+            # If explicit binding fails, try using client.service (default service)
+            logger.debug(f"Binding with {service_name} failed: {bind_error}, trying client.service")
+            if hasattr(client, 'service'):
+                service = client.service
+            else:
+                # Last resort: try to get service from WSDL
+                raise PlanviewConnectionError(
+                    f"Could not bind to service {service_name}. Available services: {list(client.wsdl.services.keys()) if hasattr(client, 'wsdl') else 'unknown'}"
+                ) from bind_error
+        
         # Get the operation
         operation = getattr(service, operation_name)
 

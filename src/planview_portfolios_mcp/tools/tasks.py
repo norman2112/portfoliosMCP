@@ -12,8 +12,10 @@ from ..soap_client import get_soap_client, make_soap_request
 
 logger = logging.getLogger(__name__)
 
-# Service name for ITaskService3
-TASK_SERVICE_NAME = "ITaskService3"
+# Service name and port for TaskService
+# The WSDL defines service "TaskService" with port "BasicHttpBinding_ITaskService3"
+TASK_SERVICE_NAME = "TaskService"
+TASK_SERVICE_PORT = "BasicHttpBinding_ITaskService3"
 
 
 async def create_task(
