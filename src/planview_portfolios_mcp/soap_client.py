@@ -314,6 +314,7 @@ async def make_soap_request(
     client: Client,
     service_name: str,
     operation_name: str,
+    port_name: str | None = None,
     *args,
     **kwargs,
 ) -> dict[str, Any]:
@@ -342,10 +343,15 @@ async def make_soap_request(
         # zeep's bind() method signature: bind(service_name, port_name=None)
         # For TaskService, try binding with service name first
         try:
-            service = client.bind(service_name)
+            if port_name:
+                service = client.bind(service_name, port_name=port_name)
+            else:
+                service = client.bind(service_name)
         except (AttributeError, ValueError, KeyError, TypeError) as bind_error:
             # If explicit binding fails, try using client.service (default service)
-            logger.debug(f"Binding with {service_name} failed: {bind_error}, trying client.service")
+            logger.debug(
+                f"Binding with {service_name} port {port_name} failed: {bind_error}, trying client.service"
+            )
             if hasattr(client, 'service'):
                 service = client.service
             else:
@@ -356,13 +362,24 @@ async def make_soap_request(
         
         # Get the operation
         operation = getattr(service, operation_name)
+        
+        # Log operation signature for debugging
+        if hasattr(operation, '_signature'):
+            logger.debug(f"Operation signature: {operation._signature}")
 
         # Call the operation
         # zeep operations are synchronous, so we run them in a thread pool to avoid blocking
         logger.debug(
             f"Calling SOAP operation {service_name}.{operation_name} with args={args}, kwargs={kwargs}"
         )
-        result = await asyncio.to_thread(operation, *args, **kwargs)
+        try:
+            result = await asyncio.to_thread(operation, *args, **kwargs)
+        except TypeError as e:
+            # If we get a TypeError, it might be a signature mismatch
+            # Log the operation signature for debugging
+            if hasattr(operation, '_signature'):
+                logger.error(f"Operation signature: {operation._signature}")
+            raise
 
         # Handle the result
         return _handle_soap_result(result)

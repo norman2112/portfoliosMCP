@@ -95,6 +95,8 @@ async def create_task(
 
         # Convert to dict for zeep (use PascalCase for SOAP)
         task_dict = task_dto.model_dump(by_alias=True, exclude_none=True)
+    # Sort keys alphabetically (Planview requires DTO fields in alphabetical order)
+    task_dict = dict(sorted(task_dict.items()))
 
         # Prepare options
         options_dict = None
@@ -109,14 +111,63 @@ async def create_task(
 
         # Make SOAP request
         async with get_soap_client() as client:
-            # Build request parameters
-            # Create operation expects: dtos (list of TaskDto2), options (WorkOptionsDto)
-            request_params = {"dtos": [task_dict]}
+            # Get the service
+            try:
+                service = client.bind(TASK_SERVICE_NAME, port_name=TASK_SERVICE_PORT)
+            except (AttributeError, ValueError, KeyError, TypeError):
+                service = client.service
+            
+            # Get the Create operation
+            create_op = getattr(service, "Create")
+            
+            # Try to get TaskDto2 type from zeep's type system
+            # Based on error message, zeep expects TaskDto (not TaskDto2) in some contexts
+            # Try both TaskDto2 and TaskDto namespaces
+            task_dto_factory = None
+            
+            # List of type names to try (from WSDL and error messages)
+            type_candidates = [
+                # TaskDto2 with 2012/08 namespace (from WSDL examples)
+                "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto2/2012/08}TaskDto2",
+                # TaskDto with 2010/01/01 namespace (from error message)
+                "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto/2010/01/01}TaskDto",
+            ]
+            
+            for type_name in type_candidates:
+                try:
+                    task_dto_factory = client.get_type(type_name)
+                    logger.debug(f"Found TaskDto type: {type_name}")
+                    break
+                except (KeyError, AttributeError, TypeError) as e:
+                    logger.debug(f"Type {type_name} not found: {e}")
+                    continue
+            
+            # Create TaskDto object
+            if task_dto_factory:
+                try:
+                    # Create typed object using zeep factory
+                    task_dto = task_dto_factory(**task_dict)
+                    logger.debug("Created TaskDto using zeep factory")
+                except Exception as e:
+                    logger.warning(f"Failed to create TaskDto with factory ({e}), using dict")
+                    task_dto = task_dict
+            else:
+                # Fallback: use dict and let zeep serialize
+                logger.debug("TaskDto factory not found, using dict")
+                task_dto = task_dict
+
+            # Build request - pass dtos as array
+            # Create operation signature: Create(dtos: TaskDto2[], options?: WorkOptionsDto)
+            request_kwargs = {"dtos": [task_dto]}
             if options_dict:
-                request_params["options"] = options_dict
+                request_kwargs["options"] = options_dict
 
             result = await make_soap_request(
-                client, TASK_SERVICE_NAME, "Create", **request_params
+                client,
+                TASK_SERVICE_NAME,
+                "Create",
+                port_name=TASK_SERVICE_PORT,
+                **request_kwargs,
             )
 
             duration_ms = int((time() - start_time) * 1000)
@@ -272,7 +323,10 @@ async def update_task(
             raise PlanviewValidationError(f"Invalid task data: {str(e)}") from e
 
         # Convert to dict for zeep (use PascalCase for SOAP)
+        # Note: DTO fields must be in alphabetical order per Planview docs
         task_dict = task_dto.model_dump(by_alias=True, exclude_none=True)
+        # Sort dict keys alphabetically to match Planview requirement
+        task_dict = dict(sorted(task_dict.items()))
 
         # Prepare options
         options_dict = None
@@ -287,13 +341,43 @@ async def update_task(
 
         # Make SOAP request
         async with get_soap_client() as client:
-            # Update operation expects: dtos (list of TaskDto2), options (WorkOptionsDto)
-            request_params = {"dtos": [task_dict]}
+            # Bind service
+            try:
+                service = client.bind(TASK_SERVICE_NAME, port_name=TASK_SERVICE_PORT)
+            except (AttributeError, ValueError, KeyError, TypeError):
+                service = client.service
+
+            # Try to get TaskDto/TaskDto2 type
+            task_dto_factory = None
+            type_candidates = [
+                "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto2/2012/08}TaskDto2",
+                "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto/2010/01/01}TaskDto",
+            ]
+            for type_name in type_candidates:
+                try:
+                    task_dto_factory = client.get_type(type_name)
+                    break
+                except Exception:
+                    continue
+
+            if task_dto_factory:
+                try:
+                    task_dto_obj = task_dto_factory(**task_dict)
+                except Exception:
+                    task_dto_obj = task_dict
+            else:
+                task_dto_obj = task_dict
+
+            request_params = {"dtos": [task_dto_obj]}
             if options_dict:
                 request_params["options"] = options_dict
 
             result = await make_soap_request(
-                client, TASK_SERVICE_NAME, "Update", **request_params
+                client,
+                TASK_SERVICE_NAME,
+                "Update",
+                port_name=TASK_SERVICE_PORT,
+                **request_params,
             )
 
             duration_ms = int((time() - start_time) * 1000)
