@@ -125,93 +125,33 @@ async def create_task(
             # Get the Create operation
             create_op = getattr(service, "Create")
             
-            # Get StructureKey type for key fields (TaskDto expects StructureKey objects, not strings)
-            # Try to create StructureKey objects, but zeep may accept dicts or strings
-            structure_key_factory = None
-            try:
-                structure_key_factory = client.get_type(
-                    "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/StructureKey/2010/01/01}StructureKey"
-                )
-                # Inspect StructureKey to see what properties it has
-                if hasattr(structure_key_factory, '_xsd_type'):
-                    logger.debug(f"StructureKey type: {structure_key_factory._xsd_type}")
-            except Exception as e:
-                logger.debug(f"StructureKey type not found: {e}")
-            
-            # Convert key strings to StructureKey objects or dicts
-            # zeep can often accept dicts for complex types
-            def create_structure_key(key_uri: str):
-                """Create StructureKey object from key URI."""
-                if not structure_key_factory:
-                    # No factory available, return as string (zeep might convert)
-                    return key_uri
-                
-                # Try to create StructureKey object
-                # First try common property names
-                for prop_name in ["Key", "Uri", "Value", "KeyUri", "KeyValue"]:
-                    try:
-                        return structure_key_factory(**{prop_name: key_uri})
-                    except (TypeError, ValueError, KeyError):
-                        continue
-                
-                # Try positional argument
-                try:
-                    return structure_key_factory(key_uri)
-                except (TypeError, ValueError):
-                    pass
-                
-                # Try creating empty and setting attribute
-                try:
-                    sk = structure_key_factory()
-                    if hasattr(sk, 'Key'):
-                        sk.Key = key_uri
-                        return sk
-                    elif hasattr(sk, 'Uri'):
-                        sk.Uri = key_uri
-                        return sk
-                except Exception:
-                    pass
-                
-                # If all else fails, return as string
-                logger.warning(f"Could not create StructureKey for {key_uri}, using string")
-                return key_uri
-            
-            # Convert key fields to StructureKey objects/dicts
-            if "InternalKey" in task_payload:
-                task_payload["InternalKey"] = create_structure_key(task_payload["InternalKey"])
-            if "FatherInternalKey" in task_payload:
-                task_payload["FatherInternalKey"] = create_structure_key(task_payload["FatherInternalKey"])
-            if "ExternalKey" in task_payload:
-                task_payload["ExternalKey"] = create_structure_key(task_payload["ExternalKey"])
-            if "FatherExternalKey" in task_payload:
-                task_payload["FatherExternalKey"] = create_structure_key(task_payload["FatherExternalKey"])
-            
-            # Use TaskDto (2010/01/01 namespace) as required by the service
+            # Use TaskDto2 (2012/08 namespace) - matches SOAP examples in documentation
+            # TaskDto2 uses fields like Description, FatherKey, Key, ScheduleStartDate, etc.
+            # No StructureKey conversion needed - TaskDto2 accepts key URIs as strings
             try:
                 task_dto_factory = client.get_type(
-                    "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto/2010/01/01}TaskDto"
+                    "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto2/2012/08}TaskDto2"
                 )
             except Exception as e:
                 raise PlanviewValidationError(
-                    f"TaskDto type not found in WSDL: {e}"
+                    f"TaskDto2 type not found in WSDL: {e}"
                 ) from e
 
-            # Log payload before creating TaskDto
-            logger.debug(f"TaskDto payload has {len(task_payload)} fields: {list(task_payload.keys())}")
+            # Log payload before creating TaskDto2
+            logger.debug(f"TaskDto2 payload has {len(task_payload)} fields: {list(task_payload.keys())}")
             
             # Verify required fields are present
             if "Description" not in task_payload:
                 raise PlanviewValidationError("Description is required but missing from payload")
-            if "FatherInternalKey" not in task_payload and "FatherExternalKey" not in task_payload:
-                raise PlanviewValidationError("FatherKey (FatherInternalKey or FatherExternalKey) is required but missing")
+            if "FatherKey" not in task_payload:
+                raise PlanviewValidationError("FatherKey is required but missing from payload")
             
             # Pass dict directly to zeep - it will serialize based on operation signature
-            # zeep can handle dicts and convert them to the correct types
-            # This avoids issues with StructureKey object creation
-            logger.debug(f"Passing TaskDto as dict with {len(task_payload)} fields to zeep")
+            # zeep can handle dicts and convert them to TaskDto2 correctly
+            logger.debug(f"Passing TaskDto2 as dict with {len(task_payload)} fields to zeep")
             
             # Build request - pass dtos as array of dicts
-            # zeep will serialize the dict to TaskDto based on the Create operation signature
+            # zeep will serialize the dict to TaskDto2 based on the Create operation signature
             dtos_param = [task_payload]
             logger.debug(f"Calling Create with dtos array containing {len(dtos_param)} item(s)")
             
