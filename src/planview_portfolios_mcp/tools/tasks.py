@@ -104,13 +104,26 @@ async def create_task(
                 # If already PascalCase, use as-is; otherwise convert
                 if key[0].isupper():
                     # Already PascalCase
-                    task_dict[key] = value
+                    pascal_key = key
                 else:
                     # Convert snake_case to PascalCase
                     # Simple conversion: split on underscore, capitalize each word, join
                     parts = key.split('_')
                     pascal_key = ''.join(word.capitalize() for word in parts)
-                    task_dict[pascal_key] = value
+                
+                # Normalize date strings to ISO format (replace space with 'T' if needed)
+                # zeep expects ISO 8601 format: '2026-02-15T17:00:00'
+                if pascal_key in ['ScheduleStartDate', 'ScheduleFinishDate', 'ActualStartDate', 'ActualFinishDate']:
+                    if isinstance(value, str):
+                        # Replace space with 'T' if it's a space-separated datetime
+                        value = value.replace(' ', 'T', 1)
+                        # Ensure it has time component if missing
+                        if 'T' in value and len(value.split('T')[1]) == 8:  # HH:MM:SS format
+                            pass  # Already correct
+                        elif 'T' not in value and len(value) == 10:  # Just date
+                            value = f"{value}T00:00:00"  # Add default time
+                
+                task_dict[pascal_key] = value
         
         # Sort keys alphabetically (Planview requirement)
         task_dict = dict(sorted(task_dict.items()))
