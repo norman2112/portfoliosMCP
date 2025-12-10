@@ -220,25 +220,29 @@ async def create_task(
                 ) from e
 
             # Log payload before creating TaskDto
-            logger.debug(f"TaskDto payload keys: {list(task_payload.keys())}, values: {task_payload}")
+            logger.debug(f"TaskDto payload has {len(task_payload)} fields: {list(task_payload.keys())}")
+            
+            # Verify required fields are present
+            if "Description" not in task_payload:
+                raise PlanviewValidationError("Description is required but missing from payload")
+            if "FatherInternalKey" not in task_payload and "FatherExternalKey" not in task_payload:
+                raise PlanviewValidationError("FatherKey (FatherInternalKey or FatherExternalKey) is required but missing")
             
             # Create typed TaskDto object
             try:
                 task_dto = task_dto_factory(**task_payload)
-                logger.debug(f"Created TaskDto object successfully")
+                logger.debug(f"Created TaskDto object with {len(task_payload)} fields")
             except Exception as e:
                 raise PlanviewValidationError(
                     f"Failed to create TaskDto object: {e}. Payload had {len(task_payload)} fields: {list(task_payload.keys())}"
                 ) from e
 
-            # Verify task_dto is not empty
-            if not task_dto:
-                raise PlanviewValidationError("Created TaskDto object is empty")
-
             # Build request - pass dtos as array
-            # Create operation signature: Create(dtos: TaskDto2[], options?: WorkOptionsDto)
+            # Create operation signature: Create(dtos: TaskDto[], options?: WorkOptionsDto)
             dtos_param = [task_dto]
-            logger.debug(f"Preparing to call Create with dtos array of length {len(dtos_param)}")
+            logger.debug(f"Calling Create with dtos array containing {len(dtos_param)} TaskDto object(s)")
+            
+            # Pass as keyword arguments matching WSDL parameter names
             kwargs = {"dtos": dtos_param}
             if options_dict:
                 kwargs["options"] = options_dict
