@@ -172,18 +172,36 @@ async def create_task(
             # Create TaskDto2 object using factory
             # This is critical - zeep needs the typed object to serialize correctly
             try:
-                logger.debug(f"Creating TaskDto2 with payload: {task_payload}")
+                logger.info(f"Creating TaskDto2 with payload keys: {list(task_payload.keys())}")
+                logger.info(f"Creating TaskDto2 with payload values: {list(task_payload.values())[:3]}...")  # First 3 values
                 task_dto_obj = task_dto_factory(**task_payload)
-                logger.debug(f"Created TaskDto2 typed object: {type(task_dto_obj)}")
-                logger.debug(f"TaskDto2 fields count: {len(task_payload)}")
-                # Verify the object has the required values
+                logger.info(f"Created TaskDto2 typed object: {type(task_dto_obj)}")
+                
+                # Verify the object has the required values by checking multiple ways
                 desc = getattr(task_dto_obj, 'Description', None)
                 father_key = getattr(task_dto_obj, 'FatherKey', None)
-                logger.debug(f"TaskDto2.Description: {desc}")
-                logger.debug(f"TaskDto2.FatherKey: {father_key}")
-                if not desc:
+                key_val = getattr(task_dto_obj, 'Key', None)
+                
+                logger.info(f"TaskDto2.Description (getattr): {desc}")
+                logger.info(f"TaskDto2.FatherKey (getattr): {father_key}")
+                logger.info(f"TaskDto2.Key (getattr): {key_val}")
+                
+                # Also try accessing as attributes directly
+                try:
+                    desc_direct = task_dto_obj.Description
+                    father_key_direct = task_dto_obj.FatherKey
+                    logger.info(f"TaskDto2.Description (direct): {desc_direct}")
+                    logger.info(f"TaskDto2.FatherKey (direct): {father_key_direct}")
+                except Exception as attr_e:
+                    logger.warning(f"Could not access attributes directly: {attr_e}")
+                
+                # Check if object has __values__ (zeep's internal structure)
+                if hasattr(task_dto_obj, '__values__'):
+                    logger.info(f"TaskDto2.__values__: {task_dto_obj.__values__}")
+                
+                if not desc and not (hasattr(task_dto_obj, 'Description') and task_dto_obj.Description):
                     raise PlanviewValidationError("TaskDto2 object missing Description after creation")
-                if not father_key:
+                if not father_key and not (hasattr(task_dto_obj, 'FatherKey') and task_dto_obj.FatherKey):
                     raise PlanviewValidationError("TaskDto2 object missing FatherKey after creation")
             except Exception as e:
                 if isinstance(e, PlanviewValidationError):
