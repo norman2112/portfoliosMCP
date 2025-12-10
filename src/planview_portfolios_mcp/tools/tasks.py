@@ -470,6 +470,39 @@ async def update_task(
             except (AttributeError, ValueError, KeyError, TypeError):
                 service = client.service
 
+            # Get StructureKey type for key fields
+            structure_key_factory = None
+            try:
+                structure_key_factory = client.get_type(
+                    "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/StructureKey/2010/01/01}StructureKey"
+                )
+            except Exception:
+                pass
+            
+            def create_structure_key(key_uri: str):
+                """Create StructureKey object or dict from key URI."""
+                if structure_key_factory:
+                    for prop_name in ["Key", "Uri", "Value", "KeyUri"]:
+                        try:
+                            return structure_key_factory(**{prop_name: key_uri})
+                        except Exception:
+                            continue
+                    try:
+                        return structure_key_factory(key_uri)
+                    except Exception:
+                        pass
+                return {"Key": key_uri}
+            
+            # Convert key fields to StructureKey objects/dicts
+            if "InternalKey" in task_dict:
+                task_dict["InternalKey"] = create_structure_key(task_dict["InternalKey"])
+            if "FatherInternalKey" in task_dict:
+                task_dict["FatherInternalKey"] = create_structure_key(task_dict["FatherInternalKey"])
+            if "ExternalKey" in task_dict:
+                task_dict["ExternalKey"] = create_structure_key(task_dict["ExternalKey"])
+            if "FatherExternalKey" in task_dict:
+                task_dict["FatherExternalKey"] = create_structure_key(task_dict["FatherExternalKey"])
+
             # Use TaskDto (2010/01/01 namespace) as required by the service
             try:
                 task_dto_factory = client.get_type(
