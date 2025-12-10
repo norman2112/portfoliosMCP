@@ -123,6 +123,21 @@ async def create_task(
                         elif 'T' not in value and len(value) == 10:  # Just date
                             value = f"{value}T00:00:00"  # Add default time
                 
+                # Convert Duration to integer if it's a string
+                if pascal_key == 'Duration':
+                    if isinstance(value, str):
+                        try:
+                            value = int(value)
+                        except ValueError:
+                            logger.warning(f"Could not convert Duration '{value}' to integer, keeping as-is")
+                
+                # Convert IsMilestone to boolean if needed
+                if pascal_key == 'IsMilestone':
+                    if isinstance(value, str):
+                        value = value.lower() in ('true', '1', 'yes')
+                    elif not isinstance(value, bool):
+                        value = bool(value)
+                
                 task_dict[pascal_key] = value
         
         # Sort keys alphabetically (Planview requirement)
