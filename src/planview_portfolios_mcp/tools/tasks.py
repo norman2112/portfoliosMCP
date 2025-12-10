@@ -150,10 +150,17 @@ async def create_task(
             # zeep can handle dicts and convert them to TaskDto2 correctly
             logger.debug(f"Passing TaskDto2 as dict with {len(task_payload)} fields to zeep")
             
-            # Build request - pass dtos as array of dicts
-            # zeep will serialize the dict to TaskDto2 based on the Create operation signature
-            dtos_param = [task_payload]
-            logger.debug(f"Calling Create with dtos array containing {len(dtos_param)} item(s)")
+            # Create TaskDto2 object using factory
+            try:
+                task_dto_obj = task_dto_factory(**task_payload)
+                logger.debug(f"Created TaskDto2 typed object with {len(task_payload)} fields")
+            except Exception as e:
+                logger.warning(f"Failed to create typed TaskDto2 ({e}), using dict")
+                task_dto_obj = task_payload
+            
+            # Build request - pass dtos as array
+            dtos_param = [task_dto_obj]
+            logger.debug(f"Calling Create with dtos array containing {len(dtos_param)} TaskDto2 object(s)")
             
             # Pass as keyword arguments matching WSDL parameter names
             kwargs = {"dtos": dtos_param}
