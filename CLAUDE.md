@@ -147,6 +147,8 @@ The implementation includes robust error handling:
 - Configurable retry attempts via `MAX_RETRIES` setting
 
 ### Tool-to-API Mapping
+
+**REST API Tools:**
 - `list_projects` → `GET /work` (uses filter parameter, projects are work items at PPL)
 - `get_project` → `GET /projects/{id}`
 - `create_project` → `POST /projects` (requires `description` and `parent.structureCode`)
@@ -157,7 +159,51 @@ The implementation includes robust error handling:
 - `get_resource` → `GET /resources/{id}`
 - `allocate_resource` → `POST /allocations`
 
+**SOAP API Tools:**
+- `create_task` → `ITaskService3.Create` (SOAP operation)
+- `read_task` → `ITaskService3.Read` (SOAP operation)
+- `update_task` → `ITaskService3.Update` (SOAP operation)
+- `delete_task` → `ITaskService3.Delete` (SOAP operation)
+
 Note: Actual Planview API endpoints use `/public-api/v1/` prefix. The `PLANVIEW_API_URL` should be the base URL including the `/polaris` path but without the `/public-api/v1/` prefix (e.g., `https://scdemo504.pvcloud.com/polaris`).
+
+### SOAP API Integration
+
+The server supports both REST and SOAP APIs. SOAP operations use the TaskService web service.
+
+**SOAP Endpoint Configuration:**
+- SOAP service URL: `{PLANVIEW_API_URL}/planview/services/TaskService.svc`
+- WSDL URL: `{PLANVIEW_API_URL}/planview/services/TaskService.svc?wsdl`
+- Service binding: `ITaskService3` (latest version)
+- Configurable via `SOAP_SERVICE_PATH` setting (default: `/planview/services/TaskService.svc`)
+
+**SOAP Authentication:**
+- Uses same OAuth 2.0 tokens as REST API
+- Token added to SOAP header: `Authorization: Bearer {token}`
+- `X-Tenant-Id` header also included
+- Token refresh handled automatically (same as REST)
+
+**SOAP Response Handling:**
+- All SOAP operations return `OpenSuiteResult` structure:
+  - `Successes`: List of successful operations (DTO contains keys only)
+  - `Failures`: List of failed operations (DTO contains full data + error messages)
+  - `Warnings`: List of warnings (DTO contains full data + warning messages)
+  - `GeneralErrorMessage`: Non-task-specific errors (database, connectivity)
+- Responses converted to consistent dict format matching REST API patterns
+- Failures raise `PlanviewValidationError` with detailed error messages
+- General errors raise `PlanviewServerError`
+
+**Key URI Formats:**
+SOAP operations support three key URI formats:
+- `key://2/$Plan/12345` - Direct key reference (most efficient)
+- `search://2/$Plan?description=Task Name` - Search-based lookup
+- `ekey://2/namespace/external_key` - External key reference (recommended for creates)
+
+**SOAP Client Pattern:**
+- Use `get_soap_client()` context manager from `soap_client.py`
+- Use `make_soap_request()` helper for automatic retry and error handling
+- zeep library handles WSDL parsing and XML serialization
+- AsyncTransport provides async support via httpx
 
 ## Type Annotations
 
@@ -191,9 +237,20 @@ When creating tests:
 4. Access via global `settings` instance
 
 ### Modifying API Calls
+
+**REST API Calls:**
 - Use `get_client()` context manager to get shared HTTP client
 - Use `make_request()` helper function for automatic retry and error handling
 - All requests automatically include authentication headers (Authorization + X-Tenant-Id)
 - PATCH/POST requests automatically include "Content-Type": "application/json"
 - Custom exceptions are raised automatically based on HTTP status codes
 - Use Pydantic models from `models.py` for input validation before API calls
+
+**SOAP API Calls:**
+- Use `get_soap_client()` context manager to get zeep Client instance
+- Use `make_soap_request()` helper function for automatic retry and error handling
+- All SOAP requests automatically include authentication headers (Authorization + X-Tenant-Id)
+- zeep handles XML serialization and SOAP envelope construction
+- Use Pydantic models from `models.py` for input validation (convert to dict with `model_dump(by_alias=True)`)
+- Service name: `ITaskService3` (defined as constant in tools)
+- Operations: Create, Read, Update, Delete (method names match SOAP operation names)

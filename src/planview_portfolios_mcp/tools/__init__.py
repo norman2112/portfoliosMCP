@@ -9,6 +9,7 @@ from .projects import (
     update_project,
 )
 from .resources import allocate_resource, get_resource, list_resources
+from .tasks import create_task, delete_task, read_task, update_task
 from .work import get_work, get_work_attributes, list_work
 
 __all__ = [
@@ -24,4 +25,8 @@ __all__ = [
     "list_resources",
     "get_resource",
     "allocate_resource",
+    "create_task",
+    "read_task",
+    "update_task",
+    "delete_task",
 ]

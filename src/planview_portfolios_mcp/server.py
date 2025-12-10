@@ -18,9 +18,12 @@ if __name__ == "__main__" or not __package__:
     # Use absolute imports when not in package context
     from planview_portfolios_mcp.client import close_client
     from planview_portfolios_mcp.config import settings
+    from planview_portfolios_mcp.soap_client import close_soap_client
     from planview_portfolios_mcp.tools import (
         allocate_resource,
         create_project,
+        create_task,
+        delete_task,
         get_project,
         get_project_attributes,
         get_resource,
@@ -30,15 +33,20 @@ if __name__ == "__main__" or not __package__:
         list_resources,
         list_work,
         oauth_ping,
+        read_task,
         update_project,
+        update_task,
     )
 else:
     # Use relative imports when in package context
     from .client import close_client
     from .config import settings
+    from .soap_client import close_soap_client
     from .tools import (
         allocate_resource,
         create_project,
+        create_task,
+        delete_task,
         get_project,
         get_project_attributes,
         get_resource,
@@ -48,7 +56,9 @@ else:
         list_resources,
         list_work,
         oauth_ping,
+        read_task,
         update_project,
+        update_task,
     )
 
 # Initialize FastMCP server
@@ -70,6 +80,11 @@ mcp.tool()(get_work)
 mcp.tool()(list_resources)
 mcp.tool()(get_resource)
 mcp.tool()(allocate_resource)
+# Task service tools (SOAP API)
+mcp.tool()(create_task)
+mcp.tool()(read_task)
+mcp.tool()(update_task)
+mcp.tool()(delete_task)
 
 
 def cleanup():
@@ -80,9 +95,11 @@ def cleanup():
         if loop.is_running():
             # Schedule cleanup for later
             loop.create_task(close_client())
+            loop.create_task(close_soap_client())
         else:
             # Run cleanup immediately
             asyncio.run(close_client())
+            asyncio.run(close_soap_client())
     except Exception:
         # Best effort cleanup
         pass

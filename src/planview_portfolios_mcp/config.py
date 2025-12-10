@@ -27,6 +27,10 @@ class PlanviewSettings(BaseSettings):
     api_timeout: int = 30
     max_retries: int = 3
 
+    # SOAP API settings
+    soap_timeout: int = 30
+    soap_service_path: str = "/planview/services/TaskService.svc"
+
     # Server settings
     server_name: str = "planview-portfolios-mcp"
     server_version: str = "0.1.0"
