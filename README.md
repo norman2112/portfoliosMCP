@@ -74,6 +74,7 @@ The Planview Portfolios MCP server is hosted on FastMCP Cloud. Add the following
     "planview-portfolios": {
       "url": "https://portfolios-mcp.fastmcp.app/mcp",
       "env": {
+        "PLANVIEW_API_URL": "https://your-instance.pvcloud.com",
         "PLANVIEW_CLIENT_ID": "your_client_id",
         "PLANVIEW_CLIENT_SECRET": "your_client_secret",
         "PLANVIEW_TENANT_ID": "your_tenant_id",
@@ -84,7 +85,13 @@ The Planview Portfolios MCP server is hosted on FastMCP Cloud. Add the following
 }
 ```
 
-**Note**: Replace the placeholder values with your actual Planview API credentials. The server will automatically handle OAuth token management (tokens are valid for 60 minutes and automatically refreshed).
+**Note**: Replace the placeholder values with your actual Planview API credentials:
+- `PLANVIEW_API_URL`: Your Planview instance base URL (e.g., `https://scdemo504.pvcloud.com` - without `/polaris` or trailing slashes)
+- `PLANVIEW_CLIENT_ID`: Your OAuth client ID
+- `PLANVIEW_CLIENT_SECRET`: Your OAuth client secret  
+- `PLANVIEW_TENANT_ID`: Your tenant ID
+
+The server will automatically handle OAuth token management (tokens are valid for 60 minutes and automatically refreshed).
 
 ### Local Development (Optional)
 

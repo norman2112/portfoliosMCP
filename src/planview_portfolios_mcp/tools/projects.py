@@ -27,8 +27,27 @@ async def list_projects(
     status: str | None = None,
     limit: int | None = None,
     attributes: list[str] | str | None = None,
-) -> list[dict[str, Any]]:
-    """List projects (API support may vary by tenant)."""
+) -> dict[str, Any]:
+    """List projects using the work endpoint with filters.
+    
+    Projects are accessed through the work endpoint. This function builds a filter
+    query to list projects based on the provided criteria.
+    
+    Args:
+        ctx: FastMCP context
+        portfolio_id: Optional portfolio ID filter (e.g., "project.PortfolioId .eq 123")
+        status: Optional status filter
+        limit: Optional limit on number of results
+        attributes: Optional list of attributes to return
+        
+    Returns:
+        Response from work endpoint containing project data
+        
+    Note:
+        The Planview API uses the work endpoint for listing projects. Projects are
+        work items at the Primary Planning Level (PPL). Use filter syntax like:
+        "project.Id .eq 1906" or "project.PortfolioId .eq 123"
+    """
     start_time = time()
     logger.info(
         "Listing projects",
@@ -40,11 +59,28 @@ async def list_projects(
         },
     )
 
-    params: dict[str, Any] = {}
+    # Build filter string for work endpoint
+    filter_parts = []
     if portfolio_id:
-        params["portfolio_id"] = portfolio_id
+        # Try to handle both structure code and filter string formats
+        if " ." in portfolio_id or ".eq" in portfolio_id.lower():
+            filter_parts.append(portfolio_id)
+        else:
+            filter_parts.append(f"project.PortfolioId .eq {portfolio_id}")
+    
     if status:
-        params["status"] = status
+        if " ." in status or ".eq" in status.lower():
+            filter_parts.append(status)
+        else:
+            filter_parts.append(f"project.Status .eq {status}")
+    
+    # Default filter to get projects (work items at PPL)
+    if not filter_parts:
+        filter_parts.append("project.Id .ne null")  # Get all projects
+    
+    filter_str = " AND ".join(filter_parts)
+    
+    params: dict[str, Any] = {"filter": filter_str}
     if limit is not None:
         params["limit"] = limit
     params.update(_format_attributes(attributes))
@@ -52,20 +88,19 @@ async def list_projects(
     try:
         async with get_client() as client:
             response = await make_request(
-                client, "GET", "/public-api/v1/projects", params=params
+                client, "GET", "/public-api/v1/work", params=params
             )
-            projects = response.json()
+            work_data = response.json()
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(
                 "Successfully listed projects",
                 extra={
                     "tool_name": "list_projects",
-                    "count": len(projects) if isinstance(projects, list) else 0,
                     "duration_ms": duration_ms,
                 },
             )
-            return projects
+            return work_data
 
     except Exception as e:
         duration_ms = int((time() - start_time) * 1000)
@@ -170,7 +205,33 @@ async def create_project(
     data: dict[str, Any],
     attributes: list[str] | str | None = None,
 ) -> dict[str, Any]:
-    """Create a new project (raw payload passthrough)."""
+    """Create a new project.
+    
+    Creates a project using the Planview Portfolios API. The payload should match
+    the CreateProjectDtoPublic schema from the Swagger documentation.
+    
+    Args:
+        ctx: FastMCP context
+        data: Project creation payload. Minimum required fields:
+            - description: Project name/description (required)
+            - parent: Object with structureCode (required)
+              Example: {"description": "My Project", "parent": {"structureCode": "14170"}}
+        attributes: Optional list of attributes to return in response
+        
+    Returns:
+        Created project data from API response
+        
+    Example:
+        {
+            "description": "Jon's MCP Project",
+            "parent": {"structureCode": "14170"}
+        }
+        
+    Note:
+        See Swagger docs at https://scdemo504.pvcloud.com/polaris/swagger/index.html
+        for full schema details and additional optional fields like scheduleStart,
+        scheduleFinish, shortName, attributes, etc.
+    """
     start_time = time()
     logger.info("Creating project", extra={"tool_name": "create_project"})
 

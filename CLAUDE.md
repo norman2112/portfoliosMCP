@@ -101,11 +101,21 @@ All tools follow a consistent async pattern:
 
 ### Authentication Flow
 
-The current implementation uses Bearer token authentication with a tenant ID header:
-- `Authorization: Bearer {settings.planview_api_key}`
+The current implementation uses OAuth 2.0 client_credentials flow with automatic token management:
+- `Authorization: Bearer {oauth_token}` (automatically obtained and refreshed)
 - `X-Tenant-Id: {settings.planview_tenant_id}`
 
-Note: The actual Planview API uses OAuth 2.0 client_credentials flow (see `portfolios-api.md`). Future implementations may need to implement token generation and refresh logic.
+OAuth tokens are automatically:
+- Fetched when the HTTP client is first created
+- Cached in memory and reused until expiration (60 minutes)
+- Automatically refreshed when expired
+- Refreshed on 401 errors with automatic retry
+
+Required environment variables:
+- `PLANVIEW_API_URL`: Base URL of Planview instance (e.g., `https://scdemo504.pvcloud.com`)
+- `PLANVIEW_CLIENT_ID`: OAuth client ID
+- `PLANVIEW_CLIENT_SECRET`: OAuth client secret
+- `PLANVIEW_TENANT_ID`: Tenant ID
 
 ### Configuration Management
 
@@ -125,9 +135,8 @@ Settings are loaded from `.env` via Pydantic Settings with these behaviors:
 - Case-sensitive: All attribute names and values
 
 ### Current Implementation Limitations
-1. **Authentication**: Uses static API key instead of OAuth token generation
-2. **Pagination**: Not implemented (relies on limit parameter only)
-3. **Batching**: Single-record operations only (matches API constraint)
+1. **Pagination**: Not implemented (relies on limit parameter only)
+2. **Batching**: Single-record operations only (matches API constraint)
 
 ### Error Handling & Retry Logic
 
@@ -138,15 +147,17 @@ The implementation includes robust error handling:
 - Configurable retry attempts via `MAX_RETRIES` setting
 
 ### Tool-to-API Mapping
-- `list_projects` → `GET /projects` (filter by portfolio_id, status)
+- `list_projects` → `GET /work` (uses filter parameter, projects are work items at PPL)
 - `get_project` → `GET /projects/{id}`
-- `create_project` → `POST /projects`
+- `create_project` → `POST /projects` (requires `description` and `parent.structureCode`)
 - `update_project` → `PATCH /projects/{id}`
+- `list_work` → `GET /work` (with filter parameter)
+- `get_work` → `GET /work/{id}`
 - `list_resources` → `GET /resources` (filter by department, role, available)
 - `get_resource` → `GET /resources/{id}`
 - `allocate_resource` → `POST /allocations`
 
-Note: Actual Planview API endpoints use `/public-api/v1/` prefix. Current code assumes this is included in `PLANVIEW_API_URL`.
+Note: Actual Planview API endpoints use `/public-api/v1/` prefix. The `PLANVIEW_API_URL` should be the base URL without this prefix (e.g., `https://scdemo504.pvcloud.com`).
 
 ## Type Annotations
 
