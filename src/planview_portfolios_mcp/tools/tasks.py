@@ -98,6 +98,51 @@ async def create_task(
         # Sort keys alphabetically (Planview requires DTO fields in alphabetical order)
         task_dict = dict(sorted(task_dict.items()))
 
+        # Map to TaskDto (2010 schema) expected by service
+        mapped: dict[str, Any] = {}
+        # Key mapping
+        key_val = task_dict.get("Key")
+        father_key_val = task_dict.get("FatherKey")
+        if key_val:
+            if str(key_val).startswith(("ekey://", "search://")):
+                mapped["ExternalKey"] = key_val
+            else:
+                mapped["InternalKey"] = key_val
+        if father_key_val:
+            if str(father_key_val).startswith(("ekey://", "search://")):
+                mapped["FatherExternalKey"] = father_key_val
+            else:
+                mapped["FatherInternalKey"] = father_key_val
+        # Dates
+        if "ScheduleStartDate" in task_dict:
+            mapped["StartDate"] = task_dict["ScheduleStartDate"]
+        if "ScheduleFinishDate" in task_dict:
+            mapped["FinishDate"] = task_dict["ScheduleFinishDate"]
+        if "ActualStartDate" in task_dict:
+            mapped["ActualStart"] = task_dict["ActualStartDate"]
+        if "ActualFinishDate" in task_dict:
+            mapped["ActualFinish"] = task_dict["ActualFinishDate"]
+        # Direct mappings
+        for src, dest in [
+            ("Description", "Description"),
+            ("Duration", "Duration"),
+            ("EnterProgress", "EnterProgress"),
+            ("IsDeliverable", "IsDeliverable"),
+            ("IsMilestone", "IsMilestone"),
+            ("IsTicketable", "IsTicketable"),
+            ("PercentComplete", "PercentComplete"),
+            ("Place", "Place"),
+            ("Notes", "Notes"),
+            ("Status", "Status"),
+            ("CalendarKey", "Calendar"),  # TaskDto expects Calendar as string
+            ("ShortName", "ShortName"),
+        ]:
+            if src in task_dict:
+                mapped[dest] = task_dict[src]
+
+        # Use mapped dict as payload
+        task_payload = dict(sorted(mapped.items()))
+
         # Prepare options
         options_dict = None
         if options:
@@ -132,7 +177,7 @@ async def create_task(
 
             # Create typed TaskDto object
             try:
-                task_dto = task_dto_factory(**task_dict)
+                task_dto = task_dto_factory(**task_payload)
             except Exception as e:
                 raise PlanviewValidationError(
                     f"Failed to create TaskDto object: {e}"
@@ -317,6 +362,47 @@ async def update_task(
         task_dict = task_dto.model_dump(by_alias=True, exclude_none=True)
         # Sort dict keys alphabetically to match Planview requirement
         task_dict = dict(sorted(task_dict.items()))
+
+        # Map to TaskDto (2010 schema)
+        mapped: dict[str, Any] = {}
+        key_val = task_dict.get("Key")
+        father_key_val = task_dict.get("FatherKey")
+        if key_val:
+            if str(key_val).startswith(("ekey://", "search://")):
+                mapped["ExternalKey"] = key_val
+            else:
+                mapped["InternalKey"] = key_val
+        if father_key_val:
+            if str(father_key_val).startswith(("ekey://", "search://")):
+                mapped["FatherExternalKey"] = father_key_val
+            else:
+                mapped["FatherInternalKey"] = father_key_val
+        if "ScheduleStartDate" in task_dict:
+            mapped["StartDate"] = task_dict["ScheduleStartDate"]
+        if "ScheduleFinishDate" in task_dict:
+            mapped["FinishDate"] = task_dict["ScheduleFinishDate"]
+        if "ActualStartDate" in task_dict:
+            mapped["ActualStart"] = task_dict["ActualStartDate"]
+        if "ActualFinishDate" in task_dict:
+            mapped["ActualFinish"] = task_dict["ActualFinishDate"]
+        for src, dest in [
+            ("Description", "Description"),
+            ("Duration", "Duration"),
+            ("EnterProgress", "EnterProgress"),
+            ("IsDeliverable", "IsDeliverable"),
+            ("IsMilestone", "IsMilestone"),
+            ("IsTicketable", "IsTicketable"),
+            ("PercentComplete", "PercentComplete"),
+            ("Place", "Place"),
+            ("Notes", "Notes"),
+            ("Status", "Status"),
+            ("CalendarKey", "Calendar"),
+            ("ShortName", "ShortName"),
+        ]:
+            if src in task_dict:
+                mapped[dest] = task_dict[src]
+
+        task_dict = dict(sorted(mapped.items()))
 
         # Prepare options
         options_dict = None
