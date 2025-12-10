@@ -82,6 +82,13 @@ class PlanviewSOAPClient:
                 strict=False,  # Allow extra fields
                 xml_huge_tree=True,  # Handle large XML responses
             )
+            
+            # Enable zeep XML logging to see what's being sent
+            import logging
+            zeep_logger = logging.getLogger('zeep.wsdl')
+            zeep_logger.setLevel(logging.DEBUG)
+            zeep_transport_logger = logging.getLogger('zeep.transports')
+            zeep_transport_logger.setLevel(logging.DEBUG)
 
             wsdl_url = self._get_wsdl_url()
             logger.debug(f"Creating SOAP client for WSDL: {wsdl_url}")

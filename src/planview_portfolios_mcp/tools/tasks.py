@@ -214,14 +214,38 @@ async def create_task(
             # Build request - pass dtos as array of TaskDto2 objects
             # zeep will serialize this correctly when the TaskDto2 object is properly created
             dtos_param = [task_dto_obj]
-            logger.debug(f"Calling Create with dtos array containing {len(dtos_param)} TaskDto2 object(s)")
-            logger.debug(f"dtos_param type: {type(dtos_param)}")
-            logger.debug(f"dtos_param[0] type: {type(dtos_param[0])}")
+            logger.info(f"Calling Create with dtos array containing {len(dtos_param)} TaskDto2 object(s)")
+            logger.info(f"dtos_param type: {type(dtos_param)}")
+            logger.info(f"dtos_param[0] type: {type(dtos_param[0])}")
+            
+            # Try to serialize the object manually to see what zeep would send
+            # This will help us understand if the object has the right structure
+            try:
+                from zeep.helpers import serialize_object
+                serialized = serialize_object(task_dto_obj)
+                logger.info(f"Serialized TaskDto2 object: {serialized}")
+            except Exception as ser_e:
+                logger.warning(f"Could not serialize TaskDto2 object manually: {ser_e}")
+            
             # Log the actual object attributes to verify it has values
             if hasattr(dtos_param[0], '__dict__'):
-                logger.debug(f"TaskDto2 object __dict__ keys: {list(dtos_param[0].__dict__.keys())[:10]}")
+                logger.info(f"TaskDto2 object __dict__: {dtos_param[0].__dict__}")
             if hasattr(dtos_param[0], '__values__'):
-                logger.debug(f"TaskDto2 object __values__: {dtos_param[0].__values__}")
+                logger.info(f"TaskDto2 object __values__: {dtos_param[0].__values__}")
+            
+            # Try accessing all attributes to see what zeep sees
+            try:
+                all_attrs = [attr for attr in dir(dtos_param[0]) if not attr.startswith('_')]
+                logger.info(f"TaskDto2 object attributes: {all_attrs[:20]}")  # First 20
+                # Try to get values for key attributes
+                for attr in ['Description', 'FatherKey', 'Key', 'ScheduleStartDate', 'ScheduleFinishDate']:
+                    try:
+                        val = getattr(dtos_param[0], attr, 'NOT_FOUND')
+                        logger.info(f"TaskDto2.{attr} = {val}")
+                    except Exception:
+                        logger.warning(f"Could not access TaskDto2.{attr}")
+            except Exception as attr_e:
+                logger.warning(f"Could not inspect TaskDto2 attributes: {attr_e}")
             
             # Call the operation directly (matching test script approach that worked)
             # This bypasses make_soap_request to match the exact pattern that succeeded
