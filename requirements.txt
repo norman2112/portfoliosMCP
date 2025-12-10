@@ -4,4 +4,4 @@ pydantic>=2.0.0
 pydantic-settings>=2.0.0
 python-dotenv>=1.0.0
 tenacity>=8.0.0
-zeep>=4.2.0
+zeep[async]>=4.2.0

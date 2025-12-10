@@ -15,7 +15,7 @@ from tenacity import (
 )
 from zeep import Client, Settings
 from zeep.exceptions import Fault, TransportError
-from zeep.transports import AsyncTransport
+from zeep.transports import Transport
 
 from .config import settings
 from .exceptions import (
@@ -59,9 +59,9 @@ class PlanviewSOAPClient:
             token = await get_oauth_token()
             auth_header = f"Bearer {token}"
 
-            # Create httpx.AsyncClient with auth headers
-            # zeep's AsyncTransport can use a pre-configured httpx client
-            httpx_client = httpx.AsyncClient(
+            # Create httpx.Client (synchronous) with auth headers
+            # Use regular Transport instead of AsyncTransport for compatibility
+            httpx_client = httpx.Client(
                 timeout=settings.soap_timeout,
                 limits=httpx.Limits(
                     max_keepalive_connections=20,
@@ -77,10 +77,7 @@ class PlanviewSOAPClient:
             )
 
             # Create transport with pre-configured httpx client
-            transport = AsyncTransport(
-                client=httpx_client,
-                operation_timeout=settings.soap_timeout,
-            )
+            transport = Transport(client=httpx_client, timeout=settings.soap_timeout)
 
             # Create zeep client settings
             zeep_settings = Settings(
@@ -108,7 +105,7 @@ class PlanviewSOAPClient:
                 and hasattr(self._client.transport, "client")
             ):
                 httpx_client = self._client.transport.client
-                if isinstance(httpx_client, httpx.AsyncClient):
+                if isinstance(httpx_client, httpx.Client):
                     httpx_client.headers.update(
                         {
                             "Authorization": auth_header,
@@ -124,8 +121,8 @@ class PlanviewSOAPClient:
             transport = self._client.transport
             if hasattr(transport, "client"):
                 httpx_client = transport.client
-                if isinstance(httpx_client, httpx.AsyncClient):
-                    await httpx_client.aclose()
+                if isinstance(httpx_client, httpx.Client):
+                    httpx_client.close()
             self._client = None
 
 
@@ -349,8 +346,7 @@ async def make_soap_request(
         operation = getattr(service, operation_name)
 
         # Call the operation
-        # zeep operations are synchronous, but AsyncTransport makes HTTP calls async
-        # We need to run the operation in a thread pool to avoid blocking
+        # zeep operations are synchronous, so we run them in a thread pool to avoid blocking
         logger.debug(
             f"Calling SOAP operation {service_name}.{operation_name} with args={args}, kwargs={kwargs}"
         )
