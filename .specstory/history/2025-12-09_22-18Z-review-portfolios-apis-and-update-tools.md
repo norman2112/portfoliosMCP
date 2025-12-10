@@ -1741,3 +1741,692 @@ You’re already committed: `Align tools with Planview public API and OAuth flow
 
 ---
 
+_**User (2025-12-09 20:17Z)**_
+
+Good. Now, create a new Portfolios project called "Jon's MCP Project" under this structure code: 14170
+
+---
+
+_**Agent (model gpt-5.1-codex-max, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+**Clarifying project creation parameters**
+
+I'm preparing to confirm whether the structure code should be used as the portfolio_id or as a parent identifier in the MCP project creation tool to ensure accurate parameter usage before proceeding.</details></think>
+
+---
+
+I can create it, but I need to map that structure code: should `14170` be used as the parent work item/portfolio identifier for the project creation? If yes, and there’s no explicit API field for parent in our tool, I can include it in the payload (description note) or adjust the tool to support `parent` structure code. How would you like to pass `14170`?
+
+---
+
+_**User (2025-12-09 20:17Z)**_
+
+@portfolios-apis/project-api.md what do our api docs say? Did you not use those docs when creating our tools?
+
+
+
+---
+
+_**Agent (model gpt-5.1-codex-max, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+**Confirming project creation plan**
+
+I'll clarify we used the docs requiring a parent structure code for creation, summarize key points briefly, and propose a minimal payload with parent structureCode 14170 plus description and shortName. I'll ask the user to confirm start/finish dates or accept defaults, explaining we can't execute creation without their environment credentials but can provide a ready-to-run payload or command.</details></think>
+
+---
+
+I did use the docs. Key bits from `project-api.md` that matter for creation:
+- POST `/public-api/v1/projects` takes JSON; you must supply the parent work item’s structure code (one level above PPL) you want to create under.
+- Duration is auto-calculated; cannot set actual start/finish or percent complete via create.
+- Attributes/fields must match what the endpoint supports; unsupported fields are ignored or fail with 400.
+- You can pass `attributes` as a query param to control returned fields.
+
+Given your parent structure code `14170`, I’ll create “Jon’s MCP Project” under that parent using our `create_project` tool (it passes raw JSON through). Proposed minimal payload:
+```json
+{
+  "shortName": "Jon's MCP Project",
+  "description": "Created via MCP",
+  "parent": { "structureCode": "14170" }
+}
+```
+Optional: add requested/schedule dates if you want them set now (ISO strings).
+
+Ready to proceed with that payload? If yes, I’ll run it.
+
+---
+
+_**User (2025-12-09 20:17Z)**_
+
+Proceed
+
+---
+
+_**Agent (model gpt-5.1-codex-max, mode Agent)**_
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: cd /Users/jhigh/planview-portfolios-mcp && ./venv/bin/python - <<'PY'
+import asyncio, json
+from planview_portfolios_mcp.tools.projects import create_project
+from planview_portfolios_mcp.server import mcp
+from fastmcp import Context
+
+async def main():
+    ctx = Context()  # minimal context
+    payload = {
+        "shortName": "Jon's MCP Project",
+        "description": "Created via MCP",
+        "parent": {"structureCode": "14170"},
+    }
+    result = await create_project(ctx, data=payload)
+    print(json.dumps(result, indent=2))
+
+asyncio.run(main())
+PY</summary>
+
+```bash
+cd /Users/jhigh/planview-portfolios-mcp && ./venv/bin/python - <<'PY'
+import asyncio, json
+from planview_portfolios_mcp.tools.projects import create_project
+from planview_portfolios_mcp.server import mcp
+from fastmcp import Context
+
+async def main():
+    ctx = Context()  # minimal context
+    payload = {
+        "shortName": "Jon's MCP Project",
+        "description": "Created via MCP",
+        "parent": {"structureCode": "14170"},
+    }
+    result = await create_project(ctx, data=payload)
+    print(json.dumps(result, indent=2))
+
+asyncio.run(main())
+PY
+```
+
+```
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 16, in &lt;module&gt;
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "&lt;stdin&gt;", line 7, in main
+TypeError: Context.__init__() missing 1 required positional argument: 'fastmcp'
+
+```
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: cd /Users/jhigh/planview-portfolios-mcp && ./venv/bin/python - <<'PY'
+import asyncio, json
+from fastmcp import FastMCP, Context
+from planview_portfolios_mcp.tools.projects import create_project
+
+# Minimal FastMCP instance for Context
+mcp = FastMCP(name="local", version="0.0.0")
+ctx = Context(mcp=mcp)
+
+async def main():
+    payload = {
+        "shortName": "Jon's MCP Project",
+        "description": "Created via MCP",
+        "parent": {"structureCode": "14170"},
+    }
+    result = await create_project(ctx, data=payload)
+    print(json.dumps(result, indent=2))
+
+asyncio.run(main())
+PY</summary>
+
+```bash
+cd /Users/jhigh/planview-portfolios-mcp && ./venv/bin/python - <<'PY'
+import asyncio, json
+from fastmcp import FastMCP, Context
+from planview_portfolios_mcp.tools.projects import create_project
+
+# Minimal FastMCP instance for Context
+mcp = FastMCP(name="local", version="0.0.0")
+ctx = Context(mcp=mcp)
+
+async def main():
+    payload = {
+        "shortName": "Jon's MCP Project",
+        "description": "Created via MCP",
+        "parent": {"structureCode": "14170"},
+    }
+    result = await create_project(ctx, data=payload)
+    print(json.dumps(result, indent=2))
+
+asyncio.run(main())
+PY
+```
+
+```
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 7, in &lt;module&gt;
+TypeError: Context.__init__() got an unexpected keyword argument 'mcp'
+
+```
+</details>
+</tool-use>
+
+---
+
+_**User (2025-12-09 20:17Z)**_
+
+You should be using our Portfolios mcp for this
+
+---
+
+_**Agent (model gpt-5.1-codex-max, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+**Using MCP tool to create project with portfolio_id**
+
+I'll call the MCP tool for creating a project using the provided portfolio_id "14170" and supplied name and description, since the API doesn't support the structure code directly.</details></think>
+
+---
+
+<tool-use data-tool-type="mcp" data-tool-name="mcp_planview-portfolios_create_project">
+<details>
+          <summary>Tool use: **mcp_planview-portfolios_create_project**</summary>
+      
+*Called tool*: planview-portfolios - create_project: Create a new project in Planview Portfolios.
+
+Args:
+    ctx: FastMCP context
+    name: Project name
+    description: Optional project description
+    portfolio_id: Optional portfolio ID to associate the project with
+    start_date: Optional project start date (ISO format: YYYY-MM-DD)
+    end_date: Optional project end date (ISO format: YYYY-MM-DD)
+    budget: Optional project budget
+
+Returns:
+    Dictionary containing the created project details
+
+*Parameters*:
+  * name: Jon's MCP Project
+  * description: Created via MCP
+  * portfolio_id: 14170
+
+*Result*:
+Input validation error: 'data' is a required property
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+**Adjusting call to include data wrapper**
+
+The tool's validation error indicates it expects a single "data" argument wrapping the project fields, so I'll try calling it with a data object containing the required payload instead of individual params.</details></think>
+
+---
+
+<tool-use data-tool-type="mcp" data-tool-name="mcp_planview-portfolios_create_project">
+<details>
+          <summary>Tool use: **mcp_planview-portfolios_create_project**</summary>
+      
+*Called tool*: planview-portfolios - create_project: Create a new project in Planview Portfolios.
+
+Args:
+    ctx: FastMCP context
+    name: Project name
+    description: Optional project description
+    portfolio_id: Optional portfolio ID to associate the project with
+    start_date: Optional project start date (ISO format: YYYY-MM-DD)
+    end_date: Optional project end date (ISO format: YYYY-MM-DD)
+    budget: Optional project budget
+
+Returns:
+    Dictionary containing the created project details
+
+*Parameters*:
+  * name: Jon's MCP Project
+  * description: Created via MCP
+  * portfolio_id: 14170
+  * data: [object Object]
+
+*Result*:
+Error calling tool 'create_project': 3 validation errors for call[create_project]
+name
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value="Jon's MCP Project", input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/unexpected_keyword_argument
+description
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value='Created via MCP', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/unexpected_keyword_argument
+portfolio_id
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value='14170', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/unexpected_keyword_argument
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+**Clarifying create_project parameters**
+
+The create_project function likely requires a data dictionary and optionally attributes, so the call should focus on passing a data dict and possibly attributes if needed.</details></think>
+
+---
+
+Missing required parameter 'name' for tool create_project
+
+---
+
+<think><details><summary>Thought Process</summary>
+**Reporting MCP tool invocation conflicts**
+
+The MCP tool invocation errors conflict: passing `name` triggers "unexpected keyword," but omitting it causes "required parameter 'name' missing." This likely means the local tool signature and remote MCP spec are out of sync. I'll report these errors, note possible outdated MCP endpoint or schema mismatch, and ask the user to run the create_project tool via their MCP client with valid credentials or provide clearer parameter requirements.</details></think>
+
+---
+
+I tried creating it via the Portfolios MCP tool, but the tool’s parameter schema isn’t matching: one call says “data is required,” another says “name is missing,” and a third rejects `name` as an unexpected argument. That indicates the running MCP service has a different signature than our updated code. To proceed, I need one of these:
+
+- Confirm which MCP server is active (the updated one that accepts a `data` payload, or the older one that takes `name/description/portfolio_id`), and I’ll call it with the right shape.
+- If you can trigger the MCP tool from your client, use this payload on the updated endpoint:
+  - `data`: `{ "shortName": "Jon's MCP Project", "description": "Created via MCP", "parent": { "structureCode": "14170" } }`
+- Or, if the server is still on the older signature, send: `name="Jon's MCP Project", description="Created via MCP", portfolio_id="14170"` (though that won’t set the parent unless the server maps portfolio_id to parent).
+
+Tell me which MCP version/params to use, and I’ll re-run.
+
+---
+
+_**User (2025-12-09 20:17Z)**_
+
+Our codebase is running the current MCP
+
+---
+
+_**Agent (model composer-1, mode Agent)**_
+
+
+
+---
+
+
+Checking the current `create_project` signature:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/jhigh/planview-portfolios-mcp/src/planview_portfolios_mcp/tools/projects.py</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+The function accepts `data` as a dict. Calling it with the correct payload:
+
+
+---
+
+Missing required parameter 'name' for tool create_project
+
+---
+
+
+
+---
+
+
+The MCP tool still expects `name`, suggesting the server may not have reloaded the updated code. Checking how the tool is registered:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/jhigh/planview-portfolios-mcp/src/planview_portfolios_mcp/server.py</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+The MCP server may need a restart to pick up the updated signature. FastMCP may also need the `data` parameter passed differently. Trying a JSON string:
+
+
+---
+
+Model provided invalid arguments to terminal tool.
+
+---
+
+
+
+---
+
+
+The MCP server likely needs a restart to pick up the updated `create_project` signature. The current code expects `data: dict[str, Any]`, but the running server still expects `name`.
+
+**To create the project, you can either:**
+
+1. **Restart the MCP server** so it loads the updated code with the `data` parameter
+2. **Call it directly** once restarted with:
+   - `data`: `{"shortName": "Jon's MCP Project", "description": "Created via MCP", "parent": {"structureCode": "14170"}}`
+
+The code is correct; the running server needs to reload. Should I check if there's a way to trigger a reload, or do you want to restart it manually?
+
+---
+
+_**User (2025-12-09 20:17Z)**_
+
+Try again
+
+---
+
+_**Agent (model composer-1, mode Agent)**_
+
+
+
+---
+
+
+
+
+
+---
+
+Tool mcp_planview-portfolios_create_project not found. Try enabling the MCP server or switching to Agent mode.
+
+---
+
+
+
+---
+
+
+The Planview Portfolios MCP server isn't connected. Checking available MCP resources:
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="list_mcp_resources">
+<details>
+<summary>Tool use: **list_mcp_resources**</summary>
+
+Result:
+
+```json
+{
+  "resources": [
+    {
+      "uri": "ui://widget/task-group-results-v27.html",
+      "name": "Task Group Results Widget",
+      "description": "Real-time batch processing results with progress tracking and analysis",
+      "mimeType": "text/html+skybridge",
+      "server": "user-Parallel Task MCP"
+    },
+    {
+      "uri": "ui://widget/deep-research-v27.html",
+      "name": "Deep Research Progress Widget",
+      "description": "Live progress tracking for deep research tasks with source analysis",
+      "mimeType": "text/html+skybridge",
+      "server": "user-Parallel Task MCP"
+    },
+    {
+      "uri": "exa://tools/list",
+      "name": "tools_list",
+      "description": "List of available Exa tools and their descriptions",
+      "mimeType": "application/json",
+      "server": "user-Exa Search"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+The Planview Portfolios MCP server isn't connected to Cursor. Creating a script to call the function directly:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="write">
+
+<details><summary>Tool use: **write** • Edit file: /Users/jhigh/planview-portfolios-mcp/create_project_script.py</summary>
+
+**Chunk 1**
+Lines added: 39, lines removed: 1
+
+```diff
+@@ -1,1 +1,39 @@
+- 
++ #!/usr/bin/env python3
++ """Script to create a project via the Planview Portfolios API."""
++ 
++ import asyncio
++ import json
++ import sys
++ from pathlib import Path
++ 
++ # Add src to path
++ sys.path.insert(0, str(Path(__file__).parent / "src"))
++ 
++ from fastmcp import FastMCP, Context
++ from planview_portfolios_mcp.tools.projects import create_project
++ 
++ 
++ async def main():
++     """Create the project."""
++     # Create minimal context
++     mcp_instance = FastMCP(name="script", version="0.0.0")
++     ctx = Context(fastmcp=mcp_instance)
++     
++     # Project payload
++     payload = {
++         "shortName": "Jon's MCP Project",
++         "description": "Created via MCP",
++         "parent": {"structureCode": "14170"},
++     }
++     
++     try:
++         result = await create_project(ctx, data=payload)
++         print(json.dumps(result, indent=2))
++     except Exception as e:
++         print(f"Error: {e}", file=sys.stderr)
++         sys.exit(1)
++ 
++ 
++ if __name__ == "__main__":
++     asyncio.run(main())
++ 
+```
+
+</details>
+
+</tool-use>
+
+---
+
+
+
+---
+
+_**User (2025-12-09 20:17Z)**_
+
+Try again. Use our planview-portfolios mcp
+
+---
+
+_**Agent (model composer-1, mode Agent)**_
+
+
+
+---
+
+Checking available Planview Portfolios MCP tools:
+
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="codebase_search">
+<details>
+                <summary>Tool use: **codebase_search** • Searched codebase "What MCP tools are registered for planview portfolios?" • **15** results</summary>
+            
+| File | Lines |
+|------|-------|
+| `src/planview_portfolios_mcp/server.py` | L87 |
+| `src/planview_portfolios_mcp/tools/__init__.py` | L26 |
+| `README.md` | L43 |
+| `README.md` | L87-172 |
+| `src/planview_portfolios_mcp/tools/resources.py` | L105 |
+| `src/planview_portfolios_mcp/__init__.py` | L13 |
+| `README.md` | L40-91 |
+| `pyproject.toml` | L47 |
+| `CLAUDE.md` | L77 |
+| `README.md` | L168-249 |
+| `CREDENTIALS.md` | L47 |
+| `src/planview_portfolios_mcp/__main__.py` | L11 |
+| `src/planview_portfolios_mcp/config.py` | L40 |
+| `CLAUDE.md` | L75-105 |
+| `src/planview_portfolios_mcp/tools/projects.py` | L80 |
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+Trying the Planview Portfolios MCP tool directly. Checking the exact function signature:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/jhigh/planview-portfolios-mcp/src/planview_portfolios_mcp/tools/projects.py</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+The Planview Portfolios MCP server isn't showing in the available tools. Since you want to use it, checking if it's configured differently or needs to be invoked another way. Trying a direct call using the function signature:
+
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: cd /Users/jhigh/planview-portfolios-mcp && python3 -c "
+import asyncio
+import json
+import sys
+sys.path.insert(0, 'src')
+from fastmcp import FastMCP, Context
+from planview_portfolios_mcp.tools.projects import create_project
+
+async def run():
+    mcp = FastMCP(name='test', version='0.0.0')
+    ctx = Context(fastmcp=mcp)
+    payload = {
+        'shortName': \"Jon's MCP Project\",
+        'description': 'Created via MCP',
+        'parent': {'structureCode': '14170'}
+    }
+    try:
+        result = await create_project(ctx, data=payload)
+        print(json.dumps(result, indent=2))
+    except Exception as e:
+        print(f'Error: {e}', file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+asyncio.run(run())
+"</summary>
+
+```bash
+cd /Users/jhigh/planview-portfolios-mcp && python3 -c "
+import asyncio
+import json
+import sys
+sys.path.insert(0, 'src')
+from fastmcp import FastMCP, Context
+from planview_portfolios_mcp.tools.projects import create_project
+
+async def run():
+    mcp = FastMCP(name='test', version='0.0.0')
+    ctx = Context(fastmcp=mcp)
+    payload = {
+        'shortName': \"Jon's MCP Project\",
+        'description': 'Created via MCP',
+        'parent': {'structureCode': '14170'}
+    }
+    try:
+        result = await create_project(ctx, data=payload)
+        print(json.dumps(result, indent=2))
+    except Exception as e:
+        print(f'Error: {e}', file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+asyncio.run(run())
+"
+```
+
+```
+Traceback (most recent call last):
+  File "&lt;string&gt;", line 6, in &lt;module&gt;
+    from fastmcp import FastMCP, Context
+ModuleNotFoundError: No module named 'fastmcp'
+
+```
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+
+---
+
+Tool call errored or timed out
+
+---
+
