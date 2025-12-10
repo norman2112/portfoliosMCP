@@ -155,16 +155,23 @@ async def create_task(
             # Create TaskDto2 object using factory
             # This is critical - zeep needs the typed object to serialize correctly
             try:
+                logger.debug(f"Creating TaskDto2 with payload: {task_payload}")
                 task_dto_obj = task_dto_factory(**task_payload)
-                logger.debug(f"Created TaskDto2 typed object with {len(task_payload)} fields")
+                logger.debug(f"Created TaskDto2 typed object: {type(task_dto_obj)}")
+                logger.debug(f"TaskDto2 fields count: {len(task_payload)}")
                 # Verify the object has the required values
-                if not hasattr(task_dto_obj, 'Description') or not task_dto_obj.Description:
+                desc = getattr(task_dto_obj, 'Description', None)
+                father_key = getattr(task_dto_obj, 'FatherKey', None)
+                logger.debug(f"TaskDto2.Description: {desc}")
+                logger.debug(f"TaskDto2.FatherKey: {father_key}")
+                if not desc:
                     raise PlanviewValidationError("TaskDto2 object missing Description after creation")
-                if not hasattr(task_dto_obj, 'FatherKey') or not task_dto_obj.FatherKey:
+                if not father_key:
                     raise PlanviewValidationError("TaskDto2 object missing FatherKey after creation")
             except Exception as e:
                 if isinstance(e, PlanviewValidationError):
                     raise
+                logger.error(f"Failed to create TaskDto2 object: {e}", exc_info=True)
                 raise PlanviewValidationError(
                     f"Failed to create TaskDto2 object: {e}"
                 ) from e
@@ -173,6 +180,13 @@ async def create_task(
             # zeep will serialize this correctly when the TaskDto2 object is properly created
             dtos_param = [task_dto_obj]
             logger.debug(f"Calling Create with dtos array containing {len(dtos_param)} TaskDto2 object(s)")
+            logger.debug(f"dtos_param type: {type(dtos_param)}")
+            logger.debug(f"dtos_param[0] type: {type(dtos_param[0])}")
+            # Log the actual object attributes to verify it has values
+            if hasattr(dtos_param[0], '__dict__'):
+                logger.debug(f"TaskDto2 object __dict__ keys: {list(dtos_param[0].__dict__.keys())[:10]}")
+            if hasattr(dtos_param[0], '__values__'):
+                logger.debug(f"TaskDto2 object __values__: {dtos_param[0].__values__}")
             
             # Pass as keyword arguments matching WSDL parameter names
             kwargs = {"dtos": dtos_param}
