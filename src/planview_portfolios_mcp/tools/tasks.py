@@ -165,6 +165,50 @@ async def create_task(
             # Get the Create operation
             create_op = getattr(service, "Create")
             
+            # Get StructureKey type for key fields (TaskDto expects StructureKey objects, not strings)
+            # Try to create StructureKey objects, but zeep may accept dicts or strings
+            structure_key_factory = None
+            try:
+                structure_key_factory = client.get_type(
+                    "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/StructureKey/2010/01/01}StructureKey"
+                )
+                # Inspect StructureKey to see what properties it has
+                if hasattr(structure_key_factory, '_xsd_type'):
+                    logger.debug(f"StructureKey type: {structure_key_factory._xsd_type}")
+            except Exception as e:
+                logger.debug(f"StructureKey type not found: {e}")
+            
+            # Convert key strings to StructureKey objects or dicts
+            # zeep can often accept dicts for complex types
+            def create_structure_key(key_uri: str):
+                """Create StructureKey object or dict from key URI."""
+                if structure_key_factory:
+                    # Try different ways to create StructureKey
+                    # Common patterns: Key property, Uri property, or positional
+                    for prop_name in ["Key", "Uri", "Value", "KeyUri"]:
+                        try:
+                            return structure_key_factory(**{prop_name: key_uri})
+                        except Exception:
+                            continue
+                    # Try positional
+                    try:
+                        return structure_key_factory(key_uri)
+                    except Exception:
+                        pass
+                # Fallback: return as dict (zeep may accept this)
+                # StructureKey likely has a Key or similar property
+                return {"Key": key_uri}
+            
+            # Convert key fields to StructureKey objects/dicts
+            if "InternalKey" in task_payload:
+                task_payload["InternalKey"] = create_structure_key(task_payload["InternalKey"])
+            if "FatherInternalKey" in task_payload:
+                task_payload["FatherInternalKey"] = create_structure_key(task_payload["FatherInternalKey"])
+            if "ExternalKey" in task_payload:
+                task_payload["ExternalKey"] = create_structure_key(task_payload["ExternalKey"])
+            if "FatherExternalKey" in task_payload:
+                task_payload["FatherExternalKey"] = create_structure_key(task_payload["FatherExternalKey"])
+            
             # Use TaskDto (2010/01/01 namespace) as required by the service
             try:
                 task_dto_factory = client.get_type(
@@ -175,17 +219,26 @@ async def create_task(
                     f"TaskDto type not found in WSDL: {e}"
                 ) from e
 
+            # Log payload before creating TaskDto
+            logger.debug(f"TaskDto payload keys: {list(task_payload.keys())}, values: {task_payload}")
+            
             # Create typed TaskDto object
             try:
                 task_dto = task_dto_factory(**task_payload)
+                logger.debug(f"Created TaskDto object successfully")
             except Exception as e:
                 raise PlanviewValidationError(
-                    f"Failed to create TaskDto object: {e}"
+                    f"Failed to create TaskDto object: {e}. Payload had {len(task_payload)} fields: {list(task_payload.keys())}"
                 ) from e
+
+            # Verify task_dto is not empty
+            if not task_dto:
+                raise PlanviewValidationError("Created TaskDto object is empty")
 
             # Build request - pass dtos as array
             # Create operation signature: Create(dtos: TaskDto2[], options?: WorkOptionsDto)
             dtos_param = [task_dto]
+            logger.debug(f"Preparing to call Create with dtos array of length {len(dtos_param)}")
             kwargs = {"dtos": dtos_param}
             if options_dict:
                 kwargs["options"] = options_dict
