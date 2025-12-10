@@ -113,7 +113,7 @@ async def create_task(
                 mapped["FatherExternalKey"] = father_key_val
             else:
                 mapped["FatherInternalKey"] = father_key_val
-        # Dates
+        # Dates (TaskDto expects StartDate/FinishDate, ActualStart/ActualFinish)
         if "ScheduleStartDate" in task_dict:
             mapped["StartDate"] = task_dict["ScheduleStartDate"]
         if "ScheduleFinishDate" in task_dict:
@@ -140,7 +140,7 @@ async def create_task(
             if src in task_dict:
                 mapped[dest] = task_dict[src]
 
-        # Use mapped dict as payload
+        # Use mapped dict as payload (only allowed fields)
         task_payload = dict(sorted(mapped.items()))
 
         # Prepare options
@@ -402,6 +402,7 @@ async def update_task(
             if src in task_dict:
                 mapped[dest] = task_dict[src]
 
+        # Use mapped dict going forward (drop original keys not supported by TaskDto)
         task_dict = dict(sorted(mapped.items()))
 
         # Prepare options
