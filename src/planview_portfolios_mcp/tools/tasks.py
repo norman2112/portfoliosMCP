@@ -95,8 +95,8 @@ async def create_task(
 
         # Convert to dict for zeep (use PascalCase for SOAP)
         task_dict = task_dto.model_dump(by_alias=True, exclude_none=True)
-    # Sort keys alphabetically (Planview requires DTO fields in alphabetical order)
-    task_dict = dict(sorted(task_dict.items()))
+        # Sort keys alphabetically (Planview requires DTO fields in alphabetical order)
+        task_dict = dict(sorted(task_dict.items()))
 
         # Prepare options
         options_dict = None
