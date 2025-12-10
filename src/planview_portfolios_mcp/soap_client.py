@@ -362,6 +362,9 @@ async def make_soap_request(
         
         # Get the operation
         operation = getattr(service, operation_name)
+
+        # Remove binding-only kwargs so they aren’t passed to the operation
+        kwargs.pop("port_name", None)
         
         # Log operation signature for debugging
         if hasattr(operation, '_signature'):
