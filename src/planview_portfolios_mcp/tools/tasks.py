@@ -186,24 +186,17 @@ async def create_task(
             # Build request - pass dtos as array
             # Create operation signature: Create(dtos: TaskDto2[], options?: WorkOptionsDto)
             dtos_param = [task_dto]
+            kwargs = {"dtos": dtos_param}
             if options_dict:
-                # Pass positional args: dtos array, options object
-                result = await make_soap_request(
-                    client,
-                    TASK_SERVICE_NAME,
-                    "Create",
-                    port_name=TASK_SERVICE_PORT,
-                    *[dtos_param, options_dict],
-                )
-            else:
-                # Only dtos positional
-                result = await make_soap_request(
-                    client,
-                    TASK_SERVICE_NAME,
-                    "Create",
-                    port_name=TASK_SERVICE_PORT,
-                    *[dtos_param],
-                )
+                kwargs["options"] = options_dict
+
+            result = await make_soap_request(
+                client,
+                TASK_SERVICE_NAME,
+                "Create",
+                port_name=TASK_SERVICE_PORT,
+                **kwargs,
+            )
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(
@@ -442,22 +435,17 @@ async def update_task(
                 ) from e
 
             dtos_param = [task_dto_obj]
+            kwargs = {"dtos": dtos_param}
             if options_dict:
-                result = await make_soap_request(
-                    client,
-                    TASK_SERVICE_NAME,
-                    "Update",
-                    port_name=TASK_SERVICE_PORT,
-                    *[dtos_param, options_dict],
-                )
-            else:
-                result = await make_soap_request(
-                    client,
-                    TASK_SERVICE_NAME,
-                    "Update",
-                    port_name=TASK_SERVICE_PORT,
-                    *[dtos_param],
-                )
+                kwargs["options"] = options_dict
+
+            result = await make_soap_request(
+                client,
+                TASK_SERVICE_NAME,
+                "Update",
+                port_name=TASK_SERVICE_PORT,
+                **kwargs,
+            )
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(
