@@ -157,7 +157,7 @@ The implementation includes robust error handling:
 - `get_resource` → `GET /resources/{id}`
 - `allocate_resource` → `POST /allocations`
 
-Note: Actual Planview API endpoints use `/public-api/v1/` prefix. The `PLANVIEW_API_URL` should be the base URL without this prefix (e.g., `https://scdemo504.pvcloud.com`).
+Note: Actual Planview API endpoints use `/public-api/v1/` prefix. The `PLANVIEW_API_URL` should be the base URL including the `/polaris` path but without the `/public-api/v1/` prefix (e.g., `https://scdemo504.pvcloud.com/polaris`).
 
 ## Type Annotations
 

@@ -74,7 +74,7 @@ The Planview Portfolios MCP server is hosted on FastMCP Cloud. Add the following
     "planview-portfolios": {
       "url": "https://portfolios-mcp.fastmcp.app/mcp",
       "env": {
-        "PLANVIEW_API_URL": "https://your-instance.pvcloud.com",
+        "PLANVIEW_API_URL": "https://your-instance.pvcloud.com/polaris",
         "PLANVIEW_CLIENT_ID": "your_client_id",
         "PLANVIEW_CLIENT_SECRET": "your_client_secret",
         "PLANVIEW_TENANT_ID": "your_tenant_id",
@@ -86,7 +86,7 @@ The Planview Portfolios MCP server is hosted on FastMCP Cloud. Add the following
 ```
 
 **Note**: Replace the placeholder values with your actual Planview API credentials:
-- `PLANVIEW_API_URL`: Your Planview instance base URL (e.g., `https://scdemo504.pvcloud.com` - without `/polaris` or trailing slashes)
+- `PLANVIEW_API_URL`: Your Planview instance API base URL including `/polaris` path (e.g., `https://scdemo504.pvcloud.com/polaris` - include `/polaris` but no trailing slashes)
 - `PLANVIEW_CLIENT_ID`: Your OAuth client ID
 - `PLANVIEW_CLIENT_SECRET`: Your OAuth client secret  
 - `PLANVIEW_TENANT_ID`: Your tenant ID
@@ -262,7 +262,7 @@ When connecting to the FastMCP Cloud instance, configure these environment varia
 - `PLANVIEW_TENANT_ID`: Your tenant identifier (required)
 
 **Optional Configuration:**
-- `PLANVIEW_API_URL`: Base URL for Planview API (default: https://api.planview.com)
+- `PLANVIEW_API_URL`: Base URL for Planview API including `/polaris` path (e.g., `https://scdemo504.pvcloud.com/polaris`, default: https://api.planview.com)
 - `USE_OAUTH`: Enable OAuth authentication (default: true)
 - `PLANVIEW_API_KEY`: Legacy API key (deprecated, use OAuth instead)
 
