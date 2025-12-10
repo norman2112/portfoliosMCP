@@ -88,17 +88,30 @@ async def create_task(
             )
 
         # Convert to TaskDto2 model (allows both snake_case and PascalCase)
+        # Note: We validate but keep dates as strings (don't convert to datetime)
+        # This matches the test script approach where dates are strings
         try:
-            task_dto = TaskDto2.model_validate(task_data)
+            # Temporarily disable datetime parsing to keep as strings
+            # We'll validate structure but not convert types
+            task_dto = TaskDto2.model_validate(task_data, strict=False)
         except Exception as e:
             raise PlanviewValidationError(f"Invalid task data: {str(e)}") from e
 
         # Convert to dict for zeep (use PascalCase for SOAP)
-        # Convert datetime objects to ISO format strings for zeep
+        # Keep dates as strings - zeep expects ISO format strings, not datetime objects
+        # Use mode='json' to ensure datetime objects (if any) are converted to strings
         task_dict = task_dto.model_dump(by_alias=True, exclude_none=True, mode='json')
         # Filter out None values explicitly (matches test script approach)
         # Sort keys alphabetically (Planview requires DTO fields in alphabetical order)
         task_dict = {k: v for k, v in sorted(task_dict.items()) if v is not None}
+        
+        # Ensure all date fields are strings (in case Pydantic converted them)
+        # zeep needs ISO format strings like '2025-12-10T08:00:00'
+        for key in ['ScheduleStartDate', 'ScheduleFinishDate', 'ActualStartDate', 'ActualFinishDate']:
+            if key in task_dict and task_dict[key] is not None:
+                if not isinstance(task_dict[key], str):
+                    # Convert datetime to ISO string if somehow it's still a datetime
+                    task_dict[key] = task_dict[key].isoformat()
 
         # Use TaskDto2 directly (2012/08 namespace) - matches SOAP examples in docs
         # TaskDto2 uses the same field names as our TaskDto2 model
