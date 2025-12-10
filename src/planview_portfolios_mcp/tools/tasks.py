@@ -87,31 +87,35 @@ async def create_task(
                 "task_data must include FatherKey field"
             )
 
-        # Convert to TaskDto2 model (allows both snake_case and PascalCase)
-        # Note: We validate but keep dates as strings (don't convert to datetime)
-        # This matches the test script approach where dates are strings
-        try:
-            # Temporarily disable datetime parsing to keep as strings
-            # We'll validate structure but not convert types
-            task_dto = TaskDto2.model_validate(task_data, strict=False)
-        except Exception as e:
-            raise PlanviewValidationError(f"Invalid task data: {str(e)}") from e
-
-        # Convert to dict for zeep (use PascalCase for SOAP)
-        # Keep dates as strings - zeep expects ISO format strings, not datetime objects
-        # Use mode='json' to ensure datetime objects (if any) are converted to strings
-        task_dict = task_dto.model_dump(by_alias=True, exclude_none=True, mode='json')
-        # Filter out None values explicitly (matches test script approach)
-        # Sort keys alphabetically (Planview requires DTO fields in alphabetical order)
-        task_dict = {k: v for k, v in sorted(task_dict.items()) if v is not None}
+        # Validate required fields are present (basic validation)
+        if "Description" not in task_data and "description" not in task_data:
+            raise PlanviewValidationError("task_data must include Description field")
+        if "FatherKey" not in task_data and "father_key" not in task_data:
+            raise PlanviewValidationError("task_data must include FatherKey field")
         
-        # Ensure all date fields are strings (in case Pydantic converted them)
-        # zeep needs ISO format strings like '2025-12-10T08:00:00'
-        for key in ['ScheduleStartDate', 'ScheduleFinishDate', 'ActualStartDate', 'ActualFinishDate']:
-            if key in task_dict and task_dict[key] is not None:
-                if not isinstance(task_dict[key], str):
-                    # Convert datetime to ISO string if somehow it's still a datetime
-                    task_dict[key] = task_dict[key].isoformat()
+        # Convert to PascalCase and prepare dict (matching test script approach)
+        # The test script uses the dict directly without Pydantic validation
+        # We'll do basic field name conversion but keep it simple
+        task_dict = {}
+        
+        # Convert field names to PascalCase (handle both snake_case and PascalCase input)
+        for key, value in task_data.items():
+            if value is not None:  # Filter None values (matches test script)
+                # If already PascalCase, use as-is; otherwise convert
+                if key[0].isupper():
+                    # Already PascalCase
+                    task_dict[key] = value
+                else:
+                    # Convert snake_case to PascalCase
+                    # Simple conversion: split on underscore, capitalize each word, join
+                    parts = key.split('_')
+                    pascal_key = ''.join(word.capitalize() for word in parts)
+                    task_dict[pascal_key] = value
+        
+        # Sort keys alphabetically (Planview requirement)
+        task_dict = dict(sorted(task_dict.items()))
+        
+        logger.debug(f"Prepared task_dict with {len(task_dict)} fields: {list(task_dict.keys())}")
 
         # Use TaskDto2 directly (2012/08 namespace) - matches SOAP examples in docs
         # TaskDto2 uses the same field names as our TaskDto2 model
@@ -206,29 +210,29 @@ async def create_task(
             import asyncio
             from ..soap_client import _handle_soap_result
             
-            # Get the Create operation from the service
-            create_op = getattr(service, "Create")
+            # Verify TaskDto2 object one more time before calling
+            logger.info(f"About to call Create with TaskDto2 object")
+            logger.info(f"TaskDto2.Description: {getattr(task_dto_obj, 'Description', 'MISSING')}")
+            logger.info(f"TaskDto2.FatherKey: {getattr(task_dto_obj, 'FatherKey', 'MISSING')}")
+            logger.info(f"TaskDto2.Key: {getattr(task_dto_obj, 'Key', 'MISSING')}")
             
-            # Call directly like the test script
+            # Call directly like the test script - use the create_op we already have
             logger.debug("Calling Create operation directly (matching test script)")
             try:
-                result_direct = await asyncio.to_thread(create_op, dtos=dtos_param, **({"options": options_dict} if options_dict else {}))
-                logger.debug(f"Direct call succeeded, result type: {type(result_direct)}")
+                # Build kwargs exactly like test script
+                call_kwargs = {"dtos": dtos_param}
+                if options_dict:
+                    call_kwargs["options"] = options_dict
+                
+                logger.debug(f"Calling create_op with kwargs: dtos type={type(call_kwargs['dtos'])}, dtos[0] type={type(call_kwargs['dtos'][0])}")
+                result_direct = await asyncio.to_thread(create_op, **call_kwargs)
+                logger.info(f"Direct call succeeded, result type: {type(result_direct)}")
                 # Process the OpenSuiteResult using our helper
                 result = _handle_soap_result(result_direct)
             except Exception as e:
-                logger.warning(f"Direct call failed: {e}, falling back to make_soap_request")
-                # Fall back to make_soap_request for error handling
-                kwargs = {"dtos": dtos_param}
-                if options_dict:
-                    kwargs["options"] = options_dict
-                result = await make_soap_request(
-                    client,
-                    TASK_SERVICE_NAME,
-                    "Create",
-                    port_name=TASK_SERVICE_PORT,
-                    **kwargs,
-                )
+                logger.error(f"Direct call failed: {e}", exc_info=True)
+                # Don't fall back - if direct call fails, we want to see the error
+                raise
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(
