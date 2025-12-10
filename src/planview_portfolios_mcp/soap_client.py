@@ -42,7 +42,10 @@ class PlanviewSOAPClient:
     def _get_wsdl_url(self) -> str:
         """Get WSDL URL for TaskService."""
         if self._wsdl_url is None:
+            # Remove /polaris from base URL if present (SOAP services are at /planview, not /polaris)
             base_url = settings.planview_api_url.rstrip("/")
+            if base_url.endswith("/polaris"):
+                base_url = base_url[:-7]  # Remove "/polaris"
             service_path = settings.soap_service_path.lstrip("/")
             self._wsdl_url = f"{base_url}/{service_path}?wsdl"
         return self._wsdl_url
