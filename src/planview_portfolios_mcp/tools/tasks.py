@@ -151,14 +151,24 @@ async def create_task(
             logger.debug(f"Passing TaskDto2 as dict with {len(task_payload)} fields to zeep")
             
             # Create TaskDto2 object using factory
+            # This is critical - zeep needs the typed object to serialize correctly
             try:
                 task_dto_obj = task_dto_factory(**task_payload)
                 logger.debug(f"Created TaskDto2 typed object with {len(task_payload)} fields")
+                # Verify the object has the required values
+                if not hasattr(task_dto_obj, 'Description') or not task_dto_obj.Description:
+                    raise PlanviewValidationError("TaskDto2 object missing Description after creation")
+                if not hasattr(task_dto_obj, 'FatherKey') or not task_dto_obj.FatherKey:
+                    raise PlanviewValidationError("TaskDto2 object missing FatherKey after creation")
             except Exception as e:
-                logger.warning(f"Failed to create typed TaskDto2 ({e}), using dict")
-                task_dto_obj = task_payload
+                if isinstance(e, PlanviewValidationError):
+                    raise
+                raise PlanviewValidationError(
+                    f"Failed to create TaskDto2 object: {e}"
+                ) from e
             
-            # Build request - pass dtos as array
+            # Build request - pass dtos as array of TaskDto2 objects
+            # zeep will serialize this correctly when the TaskDto2 object is properly created
             dtos_param = [task_dto_obj]
             logger.debug(f"Calling Create with dtos array containing {len(dtos_param)} TaskDto2 object(s)")
             
