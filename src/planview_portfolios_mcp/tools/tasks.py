@@ -114,14 +114,44 @@ async def create_task(
         - Use external key (ekey://) to prevent duplicate creation
     """
     start_time = time()
+
+    # CRITICAL DEBUG: Log at ERROR level so it definitely shows up
+    logger.error(f"🔍 DEBUG - Received task_data: {task_data}")
+    logger.error(f"🔍 DEBUG - task_data type: {type(task_data)}")
+    logger.error(f"🔍 DEBUG - task_data keys: {list(task_data.keys()) if isinstance(task_data, dict) else 'not a dict'}")
+
     logger.info("Creating task", extra={"tool_name": "create_task"})
 
     try:
+        # Log incoming data for debugging
+        logger.info(f"Received task_data: {task_data}")
+        logger.info(f"task_data type: {type(task_data)}")
+        logger.info(f"task_data keys: {list(task_data.keys()) if isinstance(task_data, dict) else 'not a dict'}")
+
         # Validate required fields
         _validate_task_fields(task_data)
 
         # Filter non-None and sort (Planview requirement)
         task_payload = filter_and_sort_fields(task_data)
+        logger.info(f"After filter_and_sort_fields: {task_payload}")
+        logger.info(f"Payload keys: {list(task_payload.keys())}")
+
+        # Set Duration to 0 for milestones (Planview requirement)
+        if task_payload.get("IsMilestone") is True:
+            task_payload["Duration"] = 0
+            logger.info("Set Duration to 0 for milestone task")
+
+        # Convert datetime objects to ISO 8601 strings for zeep compatibility
+        from datetime import datetime
+        for key, value in task_payload.items():
+            if isinstance(value, datetime):
+                task_payload[key] = value.isoformat()
+                logger.info(f"Converted {key} from datetime to string: {task_payload[key]}")
+        logger.info(f"After datetime conversion: {task_payload}")
+
+        # CRITICAL DEBUG: Log final payload at ERROR level
+        logger.error(f"🔍 DEBUG - Final task_payload: {task_payload}")
+        logger.error(f"🔍 DEBUG - Payload keys: {list(task_payload.keys())}")
 
         # Make SOAP request
         # Note: options parameter exists for API compatibility but is not currently used
@@ -140,6 +170,16 @@ async def create_task(
                 task_dto_factory = client.get_type(
                     "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto2/2012/08}TaskDto2"
                 )
+                # Log what fields the type expects
+                if hasattr(task_dto_factory, '__annotations__'):
+                    logger.info(f"TaskDto2 type annotations: {task_dto_factory.__annotations__}")
+                if hasattr(task_dto_factory, '_xsd_type'):
+                    logger.info(f"TaskDto2 XSD type: {task_dto_factory._xsd_type}")
+                    if hasattr(task_dto_factory._xsd_type, 'elements'):
+                        element_names = [elem[0].name if hasattr(elem[0], 'name') else str(elem[0]) for elem in task_dto_factory._xsd_type.elements]
+                        logger.info(f"TaskDto2 element names from WSDL: {element_names}")
+                        # CRITICAL DEBUG: Show WSDL element names at ERROR level
+                        logger.error(f"🔍 DEBUG - WSDL element names: {element_names}")
             except Exception as e:
                 raise PlanviewValidationError(f"TaskDto2 type not found in WSDL: {e}") from e
 
@@ -158,9 +198,65 @@ async def create_task(
             except Exception as e:
                 # Fallback to TaskDto2 object
                 logger.warning(f"Dict approach failed: {e}, trying TaskDto2 object")
+
+                # CRITICAL DEBUG: Log what we're about to pass to factory
+                logger.error(f"🔍 DEBUG - About to create TaskDto2 with payload: {task_payload}")
+                logger.error(f"🔍 DEBUG - Payload type: {type(task_payload)}")
+
                 try:
+                    # Create TaskDto2 object and verify attributes are set (test script line 120-125)
                     task_dto_obj = task_dto_factory(**task_payload)
-                    result_direct = await asyncio.to_thread(create_op, dtos=[task_dto_obj])
+
+                    # CRITICAL DEBUG: Verify object creation
+                    logger.error(f"🔍 DEBUG - Created TaskDto2 object: {type(task_dto_obj)}")
+                    logger.error(f"🔍 DEBUG - Description: {getattr(task_dto_obj, 'Description', 'NOT SET')}")
+                    logger.error(f"🔍 DEBUG - FatherKey: {getattr(task_dto_obj, 'FatherKey', 'NOT SET')}")
+                    logger.error(f"🔍 DEBUG - Key: {getattr(task_dto_obj, 'Key', 'NOT SET')}")
+
+                    logger.info(f"Created TaskDto2 object: {type(task_dto_obj)}")
+                    logger.info(f"Description: {getattr(task_dto_obj, 'Description', 'NOT SET')}")
+                    logger.info(f"FatherKey: {getattr(task_dto_obj, 'FatherKey', 'NOT SET')}")
+                    logger.info(f"Key: {getattr(task_dto_obj, 'Key', 'NOT SET')}")
+
+                    # Log all attributes to see what's actually set
+                    all_attrs = {k: getattr(task_dto_obj, k, None) for k in task_payload.keys()}
+                    logger.info(f"All TaskDto2 attributes: {all_attrs}")
+
+                    # If object appears empty, try setting attributes explicitly
+                    if getattr(task_dto_obj, 'Description', None) is None:
+                        logger.warning("TaskDto2 object created but Description not set, trying explicit attribute assignment")
+                        # Create empty object and set attributes explicitly
+                        task_dto_obj = task_dto_factory()
+                        for key, value in task_payload.items():
+                            try:
+                                setattr(task_dto_obj, key, value)
+                                logger.info(f"Set {key} = {value}")
+                            except Exception as attr_error:
+                                logger.warning(f"Failed to set attribute {key}: {attr_error}")
+
+                        # Verify again
+                        logger.info(f"After explicit assignment - Description: {getattr(task_dto_obj, 'Description', 'NOT SET')}")
+                        logger.info(f"After explicit assignment - FatherKey: {getattr(task_dto_obj, 'FatherKey', 'NOT SET')}")
+
+                    # CRITICAL DEBUG: Log right before SOAP call
+                    logger.error(f"🔍 DEBUG - About to call create_op with TaskDto2 object")
+                    logger.error(f"🔍 DEBUG - task_dto_obj type: {type(task_dto_obj)}")
+
+                    # Try to inspect the object's internal structure
+                    if hasattr(task_dto_obj, '__dict__'):
+                        logger.error(f"🔍 DEBUG - task_dto_obj.__dict__: {task_dto_obj.__dict__}")
+                    if hasattr(task_dto_obj, '__values__'):
+                        logger.error(f"🔍 DEBUG - task_dto_obj.__values__: {task_dto_obj.__values__}")
+
+                    # Use list directly (zeep will handle ArrayOfTaskDto2 conversion)
+                    # Don't wrap in ArrayOfTaskDto2 - it causes errors when fields like IsMilestone are present
+                    dtos_param = [task_dto_obj]
+                    logger.error(f"🔍 DEBUG - Calling create_op with dtos_param type: {type(dtos_param)}")
+
+                    result_direct = await asyncio.to_thread(create_op, dtos=dtos_param)
+
+                    logger.error(f"🔍 DEBUG - SOAP call with TaskDto2 object succeeded!")
+
                     result = _handle_soap_result(result_direct)
                 except Exception as e2:
                     logger.error(f"TaskDto2 object approach also failed: {e2}", exc_info=True)
