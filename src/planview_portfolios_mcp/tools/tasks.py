@@ -7,7 +7,7 @@ from typing import Any
 
 from fastmcp import Context
 
-from ..exceptions import PlanviewValidationError
+from ..exceptions import PlanviewConnectionError, PlanviewValidationError
 from ..models import TaskDto2, WorkOptionsDto
 from ..soap_client import get_soap_client, make_soap_request, _handle_soap_result
 from ..utils.soap_helpers import filter_and_sort_fields
@@ -189,78 +189,67 @@ async def create_task(
             if "FatherKey" not in task_payload:
                 raise PlanviewValidationError("FatherKey is required but missing from payload")
 
-            # Call SOAP Create operation (dict-first approach from test script)
+            # Call SOAP Create operation
+            # Try multiple approaches based on test script patterns
             logger.info(f"Creating task with fields: {list(task_payload.keys())}")
+            
+            result = None
+            last_error = None
+            
+            # Approach 1: Try dict directly (test script line 148 - works reliably)
             try:
-                # Try dict directly (test script line 148 - works reliably)
+                logger.info("Attempting call with dict (zeep auto-conversion)...")
                 result_direct = await asyncio.to_thread(create_op, dtos=[task_payload])
                 result = _handle_soap_result(result_direct)
-            except Exception as e:
-                # Fallback to TaskDto2 object
-                logger.warning(f"Dict approach failed: {e}, trying TaskDto2 object")
-
-                # CRITICAL DEBUG: Log what we're about to pass to factory
-                logger.error(f"🔍 DEBUG - About to create TaskDto2 with payload: {task_payload}")
-                logger.error(f"🔍 DEBUG - Payload type: {type(task_payload)}")
-
+                logger.info("✅ Call with dict succeeded!")
+            except Exception as e1:
+                last_error = e1
+                logger.warning(f"Dict approach failed: {e1}, trying TaskDto2 object")
+                
+                # Approach 2: Create TaskDto2 object and pass as list
                 try:
-                    # Create TaskDto2 object and verify attributes are set (test script line 120-125)
+                    logger.info("Creating TaskDto2 object...")
                     task_dto_obj = task_dto_factory(**task_payload)
-
-                    # CRITICAL DEBUG: Verify object creation
-                    logger.error(f"🔍 DEBUG - Created TaskDto2 object: {type(task_dto_obj)}")
-                    logger.error(f"🔍 DEBUG - Description: {getattr(task_dto_obj, 'Description', 'NOT SET')}")
-                    logger.error(f"🔍 DEBUG - FatherKey: {getattr(task_dto_obj, 'FatherKey', 'NOT SET')}")
-                    logger.error(f"🔍 DEBUG - Key: {getattr(task_dto_obj, 'Key', 'NOT SET')}")
-
+                    
                     logger.info(f"Created TaskDto2 object: {type(task_dto_obj)}")
                     logger.info(f"Description: {getattr(task_dto_obj, 'Description', 'NOT SET')}")
                     logger.info(f"FatherKey: {getattr(task_dto_obj, 'FatherKey', 'NOT SET')}")
-                    logger.info(f"Key: {getattr(task_dto_obj, 'Key', 'NOT SET')}")
-
-                    # Log all attributes to see what's actually set
-                    all_attrs = {k: getattr(task_dto_obj, k, None) for k in task_payload.keys()}
-                    logger.info(f"All TaskDto2 attributes: {all_attrs}")
-
-                    # If object appears empty, try setting attributes explicitly
-                    if getattr(task_dto_obj, 'Description', None) is None:
-                        logger.warning("TaskDto2 object created but Description not set, trying explicit attribute assignment")
-                        # Create empty object and set attributes explicitly
-                        task_dto_obj = task_dto_factory()
-                        for key, value in task_payload.items():
-                            try:
-                                setattr(task_dto_obj, key, value)
-                                logger.info(f"Set {key} = {value}")
-                            except Exception as attr_error:
-                                logger.warning(f"Failed to set attribute {key}: {attr_error}")
-
-                        # Verify again
-                        logger.info(f"After explicit assignment - Description: {getattr(task_dto_obj, 'Description', 'NOT SET')}")
-                        logger.info(f"After explicit assignment - FatherKey: {getattr(task_dto_obj, 'FatherKey', 'NOT SET')}")
-
-                    # CRITICAL DEBUG: Log right before SOAP call
-                    logger.error(f"🔍 DEBUG - About to call create_op with TaskDto2 object")
-                    logger.error(f"🔍 DEBUG - task_dto_obj type: {type(task_dto_obj)}")
-
-                    # Try to inspect the object's internal structure
-                    if hasattr(task_dto_obj, '__dict__'):
-                        logger.error(f"🔍 DEBUG - task_dto_obj.__dict__: {task_dto_obj.__dict__}")
-                    if hasattr(task_dto_obj, '__values__'):
-                        logger.error(f"🔍 DEBUG - task_dto_obj.__values__: {task_dto_obj.__values__}")
-
-                    # Use list directly (zeep will handle ArrayOfTaskDto2 conversion)
-                    # Don't wrap in ArrayOfTaskDto2 - it causes errors when fields like IsMilestone are present
-                    dtos_param = [task_dto_obj]
-                    logger.error(f"🔍 DEBUG - Calling create_op with dtos_param type: {type(dtos_param)}")
-
-                    result_direct = await asyncio.to_thread(create_op, dtos=dtos_param)
-
-                    logger.error(f"🔍 DEBUG - SOAP call with TaskDto2 object succeeded!")
-
+                    
+                    # Try with list of TaskDto2 object (zeep should handle conversion)
+                    logger.info("Attempting call with TaskDto2 object in list...")
+                    result_direct = await asyncio.to_thread(create_op, dtos=[task_dto_obj])
                     result = _handle_soap_result(result_direct)
+                    logger.info("✅ Call with TaskDto2 object succeeded!")
                 except Exception as e2:
-                    logger.error(f"TaskDto2 object approach also failed: {e2}", exc_info=True)
-                    raise
+                    last_error = e2
+                    logger.warning(f"TaskDto2 object approach failed: {e2}, trying ArrayOfTaskDto2 wrapper")
+                    
+                    # Approach 3: Try wrapping in ArrayOfTaskDto2 explicitly (test script line 134)
+                    try:
+                        array_type = client.get_type(
+                            "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto2/2012/08}ArrayOfTaskDto2"
+                        )
+                        logger.info("Creating ArrayOfTaskDto2 wrapper...")
+                        # Create array type with list of TaskDto2 objects
+                        dtos_param = array_type([task_dto_obj])
+                        logger.info(f"Created ArrayOfTaskDto2: {type(dtos_param)}")
+                        
+                        logger.info("Attempting call with ArrayOfTaskDto2 wrapper...")
+                        result_direct = await asyncio.to_thread(create_op, dtos=dtos_param)
+                        result = _handle_soap_result(result_direct)
+                        logger.info("✅ Call with ArrayOfTaskDto2 wrapper succeeded!")
+                    except Exception as e3:
+                        last_error = e3
+                        logger.error(f"All approaches failed. Last error: {e3}", exc_info=True)
+                        raise PlanviewConnectionError(
+                            f"Failed to create task: All serialization approaches failed. "
+                            f"Dict error: {e1}. TaskDto2 error: {e2}. ArrayOfTaskDto2 error: {e3}"
+                        ) from e3
+            
+            if result is None:
+                raise PlanviewConnectionError(
+                    f"Failed to create task: All approaches failed. Last error: {last_error}"
+                ) from last_error
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(
