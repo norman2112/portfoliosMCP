@@ -191,22 +191,28 @@ async def create_task(
 
             # Call SOAP Create operation
             # Try multiple approaches based on test script patterns
-            logger.info(f"Creating task with fields: {list(task_payload.keys())}")
+            # Note: Skip dict approach for milestones (zeep has issues with IsMilestone/Duration fields)
+            is_milestone = task_payload.get("IsMilestone") is True
+            logger.info(f"Creating task with fields: {list(task_payload.keys())} (milestone: {is_milestone})")
             
             result = None
             last_error = None
             
-            # Approach 1: Try dict directly (test script line 148 - works reliably)
-            try:
-                logger.info("Attempting call with dict (zeep auto-conversion)...")
-                result_direct = await asyncio.to_thread(create_op, dtos=[task_payload])
-                result = _handle_soap_result(result_direct)
-                logger.info("✅ Call with dict succeeded!")
-            except Exception as e1:
-                last_error = e1
-                logger.warning(f"Dict approach failed: {e1}, trying TaskDto2 object")
-                
-                # Approach 2: Create TaskDto2 object and pass as list
+            # For milestones, skip dict approach and go straight to TaskDto2 object
+            # (zeep incorrectly tries to pass dict keys to ArrayOfTaskDto2 constructor)
+            if not is_milestone:
+                # Approach 1: Try dict directly (test script line 148 - works reliably for regular tasks)
+                try:
+                    logger.info("Attempting call with dict (zeep auto-conversion)...")
+                    result_direct = await asyncio.to_thread(create_op, dtos=[task_payload])
+                    result = _handle_soap_result(result_direct)
+                    logger.info("✅ Call with dict succeeded!")
+                except Exception as e1:
+                    last_error = e1
+                    logger.warning(f"Dict approach failed: {e1}, trying TaskDto2 object")
+            
+            # Approach 2: Create TaskDto2 object and pass as list (works for both regular tasks and milestones)
+            if result is None:
                 try:
                     logger.info("Creating TaskDto2 object...")
                     task_dto_obj = task_dto_factory(**task_payload)
@@ -241,9 +247,10 @@ async def create_task(
                     except Exception as e3:
                         last_error = e3
                         logger.error(f"All approaches failed. Last error: {e3}", exc_info=True)
+                        dict_error_msg = f"Dict error: {last_error}" if not is_milestone else "Dict skipped for milestone"
                         raise PlanviewConnectionError(
                             f"Failed to create task: All serialization approaches failed. "
-                            f"Dict error: {e1}. TaskDto2 error: {e2}. ArrayOfTaskDto2 error: {e3}"
+                            f"{dict_error_msg}. TaskDto2 error: {e2}. ArrayOfTaskDto2 error: {e3}"
                         ) from e3
             
             if result is None:
