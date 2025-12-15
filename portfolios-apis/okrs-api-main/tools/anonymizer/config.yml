@@ -1,0 +1,32 @@
+tables:
+  - settings:
+      primary_key: id
+      fields:
+        - ih_global_tenant_id:
+            provider:
+              name: clear
+  - work_item_containers:
+      primary_key: id
+      fields:
+        - external_title:
+            provider:
+              name: fake.bs
+  - objectives:
+      primary_key: id
+      fields:
+        - name:
+            provider:
+              name: fake.bs
+        - description:
+            provider:
+              name: clear
+  - key_results:
+      primary_key: id
+      fields:
+        - name:
+            provider:
+              name: fake.bs
+        - description:
+            provider:
+              name: clear
+

@@ -1,0 +1,126 @@
+table:
+  name: objective_progress_points_view
+  schema: public
+object_relationships:
+  - name: key_result
+    using:
+      manual_configuration:
+        column_mapping:
+          key_result_id: id
+        insertion_order: null
+        remote_table:
+          name: key_results
+          schema: public
+select_permissions:
+  - role: edit
+    permission:
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - comment
+        - created_at
+        - id
+        - key_result_id
+        - key_result_progress_percentage
+        - measured_at
+        - objective_id
+        - objective_progress_percentage
+        - updated_at
+        - value
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+  - role: manage
+    permission:
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - comment
+        - created_at
+        - id
+        - key_result_id
+        - key_result_progress_percentage
+        - measured_at
+        - objective_id
+        - objective_progress_percentage
+        - updated_at
+        - value
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+  - role: read
+    permission:
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - comment
+        - created_at
+        - id
+        - key_result_id
+        - key_result_progress_percentage
+        - measured_at
+        - objective_id
+        - objective_progress_percentage
+        - updated_at
+        - value
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+  - role: user
+    permission:
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - comment
+        - created_at
+        - id
+        - key_result_id
+        - key_result_progress_percentage
+        - measured_at
+        - objective_id
+        - objective_progress_percentage
+        - updated_at
+        - value
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""

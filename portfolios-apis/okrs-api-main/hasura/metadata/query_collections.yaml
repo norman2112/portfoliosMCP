@@ -1,0 +1,230 @@
+- name: allowed-queries
+  definition:
+    queries:
+      - name: ProgressPointsByKRId
+        query: |
+          query ProgressPointsByKRId ($key_result_id: bigint!) {
+            progress_points(where: {key_result_id:{_eq:$key_result_id}}, order_by: {measured_at:desc}) {
+              id
+              comment
+              measured_at
+              value
+            }
+          }
+      - name: ObjectivesByWICId
+        query: |
+          query ObjectivesByWICId ($work_item_container_id: bigint!) {
+            objectives(where: {work_item_container_id:{_eq:$work_item_container_id}}) {
+              id
+              name
+              description
+              starts_at
+              ends_at
+              level_depth
+              progress_percentage
+              rolled_up_progress_percentage
+              owned_by
+              created_at
+              parent_objective_id
+              work_item_container_id
+            }
+          }
+      - name: KeyResultsByObjectiveId
+        query: |
+          query KeyResultsByObjectiveId ($objective_id: bigint!) {
+            key_results(where: {objective_id:{_eq:$objective_id}}) {
+              id
+              name
+              description
+              objective_id
+              overall_starts_at: starts_at
+              overall_ends_at: ends_at
+              starting_value
+              final_target_value: target_value
+              created_at
+              owned_by
+              progress_percentage
+              targets(order_by: {starts_at:asc}) {
+                id
+                starts_at
+                ends_at
+                value
+              }
+              progress_points(order_by: {measured_at:desc}) {
+                id
+                measured_at
+                value
+                comment
+              }
+            }
+          }
+      - name: ObjectiveByPK
+        query: |
+          query ObjectiveByPK ($id: bigint!) {
+            objectives_by_pk(id: $id) {
+              id
+              name
+              description
+              starts_at
+              ends_at
+              level_depth
+              progress_percentage
+              rolled_up_progress_percentage
+              owned_by
+              created_at
+              parent_objective_id
+              work_item_container_id
+            }
+          }
+      - name: KeyResultByPK
+        query: |
+          query KeyResultByPK ($id: bigint!) {
+            key_results_by_pk(id: $id) {
+              id
+              name
+              description
+              objective_id
+              overall_starts_at: starts_at
+              overall_ends_at: ends_at
+              starting_value
+              final_target_value: target_value
+              created_at
+              owned_by
+              progress_percentage
+              targets(order_by: {starts_at:asc}) {
+                id
+                starts_at
+                ends_at
+                value
+              }
+              progress_points(order_by: {measured_at:desc}) {
+                id
+                measured_at
+                value
+                comment
+              }
+            }
+          }
+      - name: FetchAllKeyResults
+        query: |
+          query FetchAllKeyResults ($offset: Int, $limit: Int, $ids: String) {
+            fetch_key_results(offset: $offset, limit: $limit, ids: $ids) {
+              total_records
+              key_results {
+                id
+                name
+                description
+                objective_id
+                overall_starts_at
+                overall_ends_at
+                starting_value
+                final_target_value
+                created_at
+                owned_by
+                progress_percentage
+                targets {
+                  id
+                  starts_at
+                  ends_at
+                  value
+                }
+                progress_points {
+                  id
+                  measured_at
+                  value
+                  comment
+                }
+              }
+            }
+          }
+      - name: FetchKeyResultActivityLogs
+        query: |
+          query FetchKeyResultActivityLogs ($key_result_id: bigint) {
+            fetch_activity_logs(key_result_id: $key_result_id) {
+              action
+              model
+              objective_id
+              key_result_id
+              progress_point_id
+              info
+              created_at
+              created_by
+            }
+          }
+      - name: FetchObjectiveActivityLogs
+        query: |
+          query FetchObjectiveActivityLogs ($objective_id: bigint) {
+            fetch_activity_logs(objective_id: $objective_id) {
+              action
+              model
+              objective_id
+              key_result_id
+              progress_point_id
+              info
+              created_at
+              created_by
+            }
+          }
+      - name: FetchAllObjectives
+        query: |
+          query FetchAllObjectives ($offset: Int, $limit: Int, $ids: String) {
+            fetch_objectives(offset: $offset, limit: $limit, ids: $ids) {
+              total_records
+              objectives {
+                id
+                name
+                description
+                starts_at
+                ends_at
+                level_depth
+                progress_percentage
+                rolled_up_progress_percentage
+                owned_by
+                created_at
+                parent_objective_id
+                work_item_container_id
+                scope_id
+                scope_type
+              }
+            }
+          }
+      - name: FetchObjectiveById
+        query: |
+          query FetchObjectiveById ($id: bigint!) {
+            objective_by_id(id: $id) {
+              id
+              name
+              description
+              starts_at
+              ends_at
+              level_depth
+              progress_percentage
+              rolled_up_progress_percentage
+              owned_by
+              created_at
+              parent_objective_id
+              work_item_container_id
+              scope_id
+              scope_type
+            }
+          }
+      - name: FetchObjectivesByWicId
+        query: |
+          query FetchObjectivesByWicId ($work_item_container_id: bigint!) {
+            objectives_by_wic_id(work_item_container_id: $work_item_container_id) {
+              id
+              name
+              description
+              starts_at
+              ends_at
+              level_depth
+              progress_percentage
+              rolled_up_progress_percentage
+              owned_by
+              created_at
+              parent_objective_id
+              work_item_container_id
+              scope_id
+              scope_type
+            }
+          }

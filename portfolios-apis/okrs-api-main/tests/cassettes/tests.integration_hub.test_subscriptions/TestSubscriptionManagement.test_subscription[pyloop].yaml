@@ -1,0 +1,122 @@
+interactions:
+- request:
+    body:
+      client_id: REDACTED
+      client_secret: REDACTED
+      grant_type: client_credentials
+    headers:
+      Accept:
+      - application/json
+      Content-Type:
+      - application/x-www-form-urlencoded
+    method: POST
+    uri: https://us-west-2.pvintegrations-staging.net/inthub/api/v1/oauth2/token
+  response:
+    body:
+      string: '{"access_token":"REDACTED","expires_in":3600,"token_type":"Bearer"}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '927'
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 22 Feb 2021 20:26:51 GMT
+      Via:
+      - 1.1 2a6ad3d1a0683e7c86e06f217adad5fb.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - LdWNIxjMBCAyzBrndkGrPD_ZavKZcUPim08LNaxZERR9YC6M0g44aA==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-6034138b-327d73b66b36ae0c4b29f3b2
+      X-Cache:
+      - Miss from cloudfront
+      x-amz-apigw-id:
+      - bKf9xEHIvHcF2Tg=
+      x-amzn-RequestId:
+      - 85f6d52f-0851-46dd-b383-33dfd8011d56
+    status:
+      code: 200
+      message: OK
+    url: https://us-west-2.pvintegrations-staging.net/inthub/api/v1/oauth2/token
+- request:
+    body: null
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - REDACTED
+    method: POST
+    uri: https://us-west-2.pvintegrations-staging.net/inthub/api/v1/register
+  response:
+    body:
+      string: '{"queues":["staging_okrs_okrs-env-us-west-2_adapter-okrs-d08_queue_1.fifo"],"tenantMapping":{"okrs-d08-10100000101":{"globalTenantIds":["c52c3f98-3cc6-45f3-9cd5-cc0a9768f928"],"queue":"staging_okrs_okrs-env-us-west-2_adapter-okrs-d08_queue_1.fifo"}}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '250'
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 22 Feb 2021 20:26:51 GMT
+      Via:
+      - 1.1 2a6ad3d1a0683e7c86e06f217adad5fb.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - dEVeuTuRks4_GMg1GWp1HdtHu28VPJYp3xV6bF78DXI0VdQNQNjzxA==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-6034138b-5773d0c34070baad7ef49d75
+      X-Cache:
+      - Miss from cloudfront
+      x-amz-apigw-id:
+      - bKf9zF5SvHcFfwg=
+      x-amzn-RequestId:
+      - f97cdd95-1d00-47be-a7bf-71becf4f5ae2
+    status:
+      code: 200
+      message: OK
+    url: https://us-west-2.pvintegrations-staging.net/inthub/api/v1/register
+- request:
+    body: null
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - REDACTED
+    method: POST
+    uri: https://us-west-2.pvintegrations-staging.net/inthub/api/v1/publish
+  response:
+    body:
+      string: '{"successfulDelivery":["staging_lk_d08_d08-hub-regId_queue_1.fifo"]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '68'
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 22 Feb 2021 20:26:51 GMT
+      Via:
+      - 1.1 2a6ad3d1a0683e7c86e06f217adad5fb.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - NeH0ljdBotExOLWZxl91et_Zi1MfdK03FpCPcLkFrhpugiBNlFWcLQ==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-6034138b-68de953c729ba6f871003df1
+      X-Cache:
+      - Miss from cloudfront
+      x-amz-apigw-id:
+      - bKf91GAqPHcFd0g=
+      x-amzn-RequestId:
+      - 022412da-e779-4599-9eb3-65a5fcf61018
+    status:
+      code: 200
+      message: OK
+    url: https://us-west-2.pvintegrations-staging.net/inthub/api/v1/publish
+version: 1

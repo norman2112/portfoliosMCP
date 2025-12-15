@@ -1,0 +1,214 @@
+table:
+  name: targets
+  schema: public
+object_relationships:
+  - name: key_result
+    using:
+      foreign_key_constraint_on: key_result_id
+array_relationships:
+  - name: progress_points
+    using:
+      manual_configuration:
+        column_mapping:
+          id: target_id
+        insertion_order: null
+        remote_table:
+          name: progress_points
+          schema: public
+select_permissions:
+  - role: edit
+    permission:
+      columns:
+        - created_at
+        - ends_at
+        - id
+        - key_result_id
+        - starts_at
+        - updated_at
+        - value
+      filter:
+        _and:
+          - is_deleted:
+              _eq: false
+          - key_result:
+              objective:
+                work_item_container:
+                  work_item_container_roles:
+                    _and:
+                      - _or:
+                          - created_by:
+                              _eq: X-Hasura-User-Id
+                          - _and:
+                              - app_created_by:
+                                  _eq: X-Hasura-Platforma-App-User-Id
+                              - _not:
+                                  app_created_by:
+                                    _eq: ""
+                      - _not:
+                          okr_role:
+                            _eq: none
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      allow_aggregations: true
+  - role: manage
+    permission:
+      columns:
+        - created_at
+        - ends_at
+        - id
+        - key_result_id
+        - starts_at
+        - updated_at
+        - value
+      filter:
+        _and:
+          - is_deleted:
+              _eq: false
+          - key_result:
+              objective:
+                work_item_container:
+                  work_item_container_roles:
+                    _and:
+                      - _or:
+                          - created_by:
+                              _eq: X-Hasura-User-Id
+                          - _and:
+                              - app_created_by:
+                                  _eq: X-Hasura-Platforma-App-User-Id
+                              - _not:
+                                  app_created_by:
+                                    _eq: ""
+                      - _not:
+                          okr_role:
+                            _eq: none
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      allow_aggregations: true
+  - role: okrs-integration
+    permission:
+      columns:
+        - ends_at
+        - id
+        - key_result_id
+        - starts_at
+        - value
+      filter:
+        _and:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - is_deleted:
+              _eq: false
+    comment: ""
+  - role: read
+    permission:
+      columns:
+        - created_at
+        - ends_at
+        - id
+        - key_result_id
+        - starts_at
+        - updated_at
+        - value
+      filter:
+        _and:
+          - is_deleted:
+              _eq: false
+          - key_result:
+              objective:
+                work_item_container:
+                  work_item_container_roles:
+                    _and:
+                      - _or:
+                          - created_by:
+                              _eq: X-Hasura-User-Id
+                          - _and:
+                              - app_created_by:
+                                  _eq: X-Hasura-Platforma-App-User-Id
+                              - _not:
+                                  app_created_by:
+                                    _eq: ""
+                      - _not:
+                          okr_role:
+                            _eq: none
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      allow_aggregations: true
+  - role: user
+    permission:
+      columns:
+        - created_at
+        - ends_at
+        - id
+        - key_result_id
+        - starts_at
+        - updated_at
+        - value
+      filter:
+        _and:
+          - is_deleted:
+              _eq: false
+          - key_result:
+              objective:
+                work_item_container:
+                  work_item_container_roles:
+                    _and:
+                      - _or:
+                          - created_by:
+                              _eq: X-Hasura-User-Id
+                          - _and:
+                              - app_created_by:
+                                  _eq: X-Hasura-Platforma-App-User-Id
+                              - _not:
+                                  app_created_by:
+                                    _eq: ""
+                      - _not:
+                          okr_role:
+                            _eq: none
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      allow_aggregations: true
+event_triggers:
+  - name: targets
+    definition:
+      enable_manual: true
+      insert:
+        columns: '*'
+      update:
+        columns:
+          - ends_at
+          - value
+          - is_deleted
+          - starts_at
+    retry_conf:
+      interval_sec: 10
+      num_retries: 0
+      timeout_sec: 60
+    webhook: '{{HASURA_EVENTS_WEBHOOK_URL}}'

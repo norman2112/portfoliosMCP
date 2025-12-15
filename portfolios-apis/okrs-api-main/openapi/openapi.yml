@@ -1,0 +1,3328 @@
+openapi: "3.0.2"
+info:
+  title: "Objective Key Results API"
+  version: "5.0.0"
+servers:
+  - url: https://api.pv-platforma.xyz/api
+paths:
+  /actions/hello-world:
+    post:
+      summary: >
+        Hello World Example.
+      operationId: okrs_api.api.controller.actions.hello_world
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        200:
+          description: Success
+          content: {}
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Bad or malformed request for search
+          content: {}
+  /actions/connect-activities:
+    post:
+      summary: >
+        Connects a set of Work Items to a Key Result and it corresponding Work Item Container.
+      operationId: okrs_api.api.controller.actions.connect_activities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - key_result_id
+                    - work_item_container
+                    - work_items
+                  properties:
+                    key_result_id:
+                      type: integer
+                    work_item_container:
+                      type: object
+                      required:
+                        - external_id
+                        - external_type
+                      properties:
+                        external_id:
+                          type: string
+                        external_type:
+                          type: string
+                    work_items:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/WorkItem"
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeyResultWorkItemMappings"
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Bad or malformed request for search
+          content: {}
+  /actions/create-activity:
+    post:
+      summary: >
+        Create Activity based on input values.
+      operationId: okrs_api.api.controller.actions.create_activity
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - key_result_id
+                    - context_id
+                    - context_title
+                    - title
+                    - external_activity_type_id
+                    - product_type
+                  properties:
+                    key_result_id:
+                      type: integer
+                      format: int64
+                    domain:
+                      $ref: "#/components/schemas/Domain"
+                    context_id:
+                      type: string
+                    context_title:
+                      type: string
+                    product_type:
+                      $ref: "#/components/schemas/PlanviewProductType"
+                    title:
+                      type: string
+                    planned_start:
+                      type: string
+                    planned_finish:
+                      type: string
+                    external_activity_type_id:
+                      type: string
+      responses:
+        200:
+          description: Success
+          content: {}
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Bad or malformed request for search
+          content: {}
+  /actions/current-user:
+    post:
+      summary: >
+        Get information about the Current User.
+      description: >
+        Pull information about the current [application] user from the
+        appropriate Planview Product.
+      operationId: okrs_api.api.controller.actions.current_user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  properties:
+                    domain:
+                      $ref: "#/components/schemas/Domain"
+                    context_ids:
+                      type: array
+                      items:
+                        type: string
+                    product_types:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/PlanviewProductType"
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/basic-current-user:
+    post:
+      summary: >
+        Get information about the Current User.
+      description: >
+        Pull information about the current [application] user from the
+        appropriate Planview Product.
+      operationId: okrs_api.api.controller.actions.basic_current_user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  properties:
+                    domain:
+                      $ref: "#/components/schemas/Domain"
+                    context_ids:
+                      type: array
+                      items:
+                        type: string
+                    product_types:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/PlanviewProductType"
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/get-level-config:
+    post:
+      summary: >
+        Get level config for the User.
+      description: >
+        Pull information about the settings Table
+      operationId: okrs_api.api.controller.actions.get_level_config
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/delete-objective-and-log:
+    post:
+      summary: >
+        Delete an objective.
+      description: >
+        Delete an objective, and then record the user information in an
+        Activity Log.
+      operationId: okrs_api.api.controller.actions.delete_objective_and_log
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - id
+                  properties:
+                    id:
+                      type: integer
+                      format: int64
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/delete-key-result-and-log:
+    post:
+      summary: >
+        Delete a key result.
+      description: >
+        Delete a key result, and then record the user information in an
+        Activity Log.
+      operationId: okrs_api.api.controller.actions.delete_key_result_and_log
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - id
+                  properties:
+                    id:
+                      type: integer
+                      format: int64
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/delete-progress-point-and-log:
+    post:
+      summary: >
+        Delete a progress point.
+      description: >
+        Delete a progress point, and then record the user information in an
+        Activity Log.
+      operationId: okrs_api.api.controller.actions.delete_progress_point_and_log
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - id
+                  properties:
+                    id:
+                      type: integer
+                      format: int64
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/delete-key-result-work-item-mapping-and-log:
+    post:
+      summary: >
+        Delete a KeyResultWorkItemMapping.
+      description: >
+        Delete a KeyResultWorkItemMapping, and then record the user
+        information in an Activity Log.
+      operationId: okrs_api.api.controller.actions.delete_key_result_work_item_mapping_and_log
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - id
+                  properties:
+                    id:
+                      type: integer
+                      format: int64
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/list-activity-types:
+    post:
+      summary: >
+        List the activity types that are available for an activity container.
+      description: >
+        Activities, like Cards, have user-defined labels that are associated
+        with them. This endpoint will pull those type labels from the
+        appropriate external API.
+      operationId: okrs_api.api.controller.actions.list_activity_types
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - context_id
+                    - product_type
+                  properties:
+                    domain:
+                      $ref: "#/components/schemas/Domain"
+                    context_id:
+                      type: string
+                    product_type:
+                      $ref: "#/components/schemas/PlanviewProductType"
+      responses:
+        200:
+          description: Success
+          content: {}
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Bad or malformed request for search
+          content: {}
+  /actions/search-users:
+    post:
+      summary: >
+        Search Users based on a context_id and search_string
+      description: >
+        Objectives and key results can be associated with owners/users
+        so this endpoint gets a list of them based on the product
+        that is passed in.
+      operationId: okrs_api.api.controller.actions.search_users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - context_id
+                    - product_type
+                  properties:
+                    search_string:
+                      type: string
+                    domain:
+                      $ref: "#/components/schemas/Domain"
+                    context_id:
+                      type: string
+                    product_type:
+                      $ref: "#/components/schemas/PlanviewProductType"
+                    limit:
+                      type: integer
+                      format: int64
+      responses:
+        200:
+          description: Success
+          content: {}
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Bad or malformed request for search
+          content: {}
+  /actions/search-activities:
+    post:
+      summary: >
+        Search Activities based on a search string.
+      operationId: okrs_api.api.controller.actions.search_activities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - context_id
+                    - product_type
+                  properties:
+                    search_string:
+                      type: string
+                    domain:
+                      $ref: "#/components/schemas/Domain"
+                    context_id:
+                      type: string
+                    product_type:
+                      $ref: "#/components/schemas/PlanviewProductType"
+                    limit:
+                      type: integer
+                      format: int64
+      responses:
+        200:
+          description: Success
+          content: {}
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Bad or malformed request for search
+          content: {}
+  /actions/list-activities:
+    post:
+      summary: >
+        List Activity Containers based on an array of IDs.
+      operationId: okrs_api.api.controller.actions.list_activities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - product_type
+                  properties:
+                    activity_ids:
+                      type: array
+                      items:
+                        type: string
+                    key_result_id:
+                      type: integer
+                      format: int64
+                    work_item_container_id:
+                      type: integer
+                      format: int64
+                    search_string:
+                      type: string
+                    states:
+                      type: array
+                      items:
+                        type: string
+                    domain:
+                      $ref: "#/components/schemas/Domain"
+                    limit:
+                      type: integer
+                      format: int64
+                    exclude_no_access:
+                      type: boolean
+                      default: false
+                    product_type:
+                      $ref: "#/components/schemas/PlanviewProductType"
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/list-objectives:
+    post:
+      summary: >
+        List all objectives from a container.
+      operationId: okrs_api.api.controller.actions.list_objectives
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - container_id
+                    - product_type
+                  properties:
+                    container_id:
+                      type: string
+                    domain:
+                      $ref: "#/components/schemas/Domain"
+                    objective_ids:
+                      type: array
+                    include_activities:
+                      type: boolean
+                      default: false
+                    include_progress_points:
+                      type: boolean
+                      default: false
+                    product_type:
+                      $ref: "#/components/schemas/PlanviewProductType"
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/search-activity-containers:
+    post:
+      summary: >
+        Search Activity Containers based on a search string.
+      operationId: okrs_api.api.controller.actions.search_activity_containers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - product_type
+                  properties:
+                    search_string:
+                      type: string
+                    domain:
+                      $ref: "#/components/schemas/Domain"
+                    product_type:
+                      $ref: "#/components/schemas/PlanviewProductType"
+                    limit:
+                      type: integer
+                      format: int64
+      responses:
+        200:
+          description: Success
+          content: {}
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Bad or malformed request for search
+          content: {}
+  /actions/list-activity-containers:
+    post:
+      summary: >
+        List Activity Containers based on an array of IDs.
+      operationId: okrs_api.api.controller.actions.list_activity_containers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  properties:
+                    container_ids:
+                      type: array
+                      items:
+                        type: string
+                    domain:
+                      $ref: "#/components/schemas/Domain"
+                    search_string:
+                      type: string
+                    limit:
+                      type: integer
+                      format: int64
+                    product_types:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/PlanviewProductType"
+                    exclude_no_access:
+                      type: boolean
+                      default: false
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/update-level-config:
+    post:
+      summary: >
+        Update the levels config in the settings for the organization.
+      operationId: okrs_api.api.controller.actions.update_level_config
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - level_config
+                  properties:
+                    action_type:
+                      $ref: "#/components/schemas/ActionType"
+                    level_config:
+                      type: array
+                      minItems: 1
+                      uniqueItems: true
+                      items:
+                        $ref: "#/components/schemas/Level"
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Bad or malformed request
+          content: {}
+  /actions/delete-level-from-level-config:
+    post:
+      summary: >
+        Delete a level from the levels config in the settings for the organization.
+      operationId: okrs_api.api.controller.actions.delete_level_from_level_config
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - level_depth
+                  properties:
+                    level_depth:
+                      type: integer
+                      format: int64
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Bad or malformed request
+          content: {}
+  /actions/insert-level-config:
+    post:
+      summary: >
+        Insert a level between two other levels.
+      operationId: okrs_api.api.controller.actions.insert_level_config
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - new_level
+                  properties:
+                    action_type:
+                      $ref: "#/components/schemas/ActionType"
+                    new_level:
+                      $ref: "#/components/schemas/Level"
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request
+          content: { }
+  /actions/get-channel:
+    post:
+      summary: >
+        Send a channel info for pubnub which can be subscribed to by the front end.
+      operationId: okrs_api.api.controller.actions.get_channel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - container_id
+                  properties:
+                    container_id:
+                      type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request
+          content: { }
+  /actions/users-info:
+    post:
+      summary: >
+        Retrieve user info from PVAdmin.
+      operationId: okrs_api.api.controller.actions.users_info
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - user_ids
+                  properties:
+                    user_ids:
+                      type: array
+                      items:
+                        type: string
+                    product_type:
+                      $ref: "#/components/schemas/PlanviewProductType"
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request
+          content: { }
+  /actions/connected-apps:
+    post:
+      summary: >
+        Retrieve details of the connected apps.
+      operationId: okrs_api.api.controller.actions.connected_apps
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: true
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request
+          content: { }
+  /actions/custom-attributes-configurations:
+    post:
+      summary: >
+        List the custom attributes configurations for this tenant group.
+      description: >
+        Custom attributes configurations for this tenant group will contain the
+        user created ones and the default ones.
+      operationId: okrs_api.api.controller.actions.custom_attributes_configurations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/insert-custom-attributes-configuration:
+    post:
+      summary: >
+        Create a new custom attributes configuration.
+      description: >
+        Create a new record in DB with custom attributes configuration data.
+      operationId: okrs_api.api.controller.actions.insert_custom_attributes_configuration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/update-custom-attributes-configuration:
+    post:
+      summary: >
+        Update a custom attributes configuration.
+      description: >
+        Update an existing record in DB with custom attributes configuration data.
+      operationId: okrs_api.api.controller.actions.update_custom_attributes_configuration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/delete-custom-attributes-configuration:
+    post:
+      summary: >
+        Delete a custom attributes configuration.
+      description: >
+        Soft delete an existing record in DB with custom attributes configuration data.
+      operationId: okrs_api.api.controller.actions.delete_custom_attributes_configuration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/get-user-setting:
+    post:
+      summary: >
+        get user settings.
+      description: >
+        Get user setting for the given type and user id and app user id.
+      operationId: okrs_api.api.controller.actions.get_user_setting
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/insert-user-setting:
+    post:
+      summary: >
+        Create a new user settings.
+      description: >
+        Create a new record in DB with user settings for given user.
+      operationId: okrs_api.api.controller.actions.insert_user_setting
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/update-user-setting:
+    post:
+      summary: >
+        update a new user settings.
+      description: >
+        update existing record in DB with user settings for given user.
+      operationId: okrs_api.api.controller.actions.update_user_setting
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/insert-objective:
+    post:
+      summary: >
+        Create a new objective.
+      description: >
+        Create a new record in DB for Objective.
+      operationId: okrs_api.api.controller.actions.insert_objective
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/update-objective:
+    post:
+      summary: >
+        Update existing objective.
+      description: >
+        Update existing record in DB for Objective.
+      operationId: okrs_api.api.controller.actions.update_objective
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+
+  /actions/update-objective-inline:
+    post:
+      summary: >
+        Update existing objective.
+      description: >
+        Update existing record in DB for Objective.
+      operationId: okrs_api.api.controller.actions.update_objective_inline
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+
+  /actions/insert-keyresult:
+    post:
+      summary: >
+        Create a new Key Result.
+      description: >
+        Create a new record in DB for Key Result.
+      operationId: okrs_api.api.controller.actions.insert_keyresult
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+
+  /actions/update-keyresult:
+    post:
+      summary: >
+        Update existing key result.
+      description: >
+        Update existing record in DB for Key Result.
+      operationId: okrs_api.api.controller.actions.update_keyresult
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+
+  /actions/custom-attributes:
+    post:
+      summary: >
+        Get all custom attributes for an object.
+      description: >
+        Get all custom attributes which correspond to non deleted configuration.
+      operationId: okrs_api.api.controller.actions.custom_attributes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/insert-progress-point:
+    post:
+      summary: >
+        Create a new progress point
+      description: >
+        Create a new progress point
+      operationId: okrs_api.api.controller.actions.insert_progress_point
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/update-progress-point:
+    post:
+      summary: >
+        Updates a progress point
+      description: >
+        Updates a progress point
+      operationId: okrs_api.api.controller.actions.update_progress_point
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/delete-progress-point:
+    post:
+      summary: >
+        Deletes a progress point
+      description: >
+        Deletes a progress point
+      operationId: okrs_api.api.controller.actions.delete_progress_point
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/current-user-v2:
+    post:
+      summary: >
+        Get work item container role information about the Current User.
+      description: >
+        Pull work item container role information about the current [application] user based on the
+        appropriate Planview Product.
+      operationId: okrs_api.api.controller.actions.current_user_v2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  properties:
+                    domain:
+                      $ref: "#/components/schemas/Domain"
+                    context_ids:
+                      type: array
+                      items:
+                        type: string
+                    product_types:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/PlanviewProductType"
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/multi-level-okr:
+    post:
+      summary: >
+        Fetches the okr data to be shown on the landing page of a work item container
+      description: >
+        Fetches objectives, key results, and progress points along with their relationships for a specified work item container
+      operationId: okrs_api.api.controller.actions.multi_level_okr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/multi-level-okr-filter-lists:
+    post:
+      summary: >
+        Fetches filter lists for multi level okr
+      description: >
+        Fetches filter lists for multi level okr
+      operationId: okrs_api.api.controller.actions.multi_level_okr_filter_lists
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/fetch-objectives-by-wic-id:
+    post:
+      summary: >
+        Fetches objectives
+      description: >
+        Fetches objectives
+      operationId: okrs_api.api.controller.actions.fetch_objectives_by_wic_id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/fetch-objectives:
+    post:
+      summary: >
+        Fetches paginated objectives
+      description: >
+        Fetches paginated objectives
+      operationId: okrs_api.api.controller.actions.fetch_objectives
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+
+  /actions/fetch-objective-by-id:
+    post:
+      summary: >
+        Fetches one objective
+      description: >
+        Fetches on objective
+      operationId: okrs_api.api.controller.actions.fetch_objective_by_id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+
+  /actions/fetch-key-results:
+    post:
+      summary: >
+        Fetches paginated key_results
+      description: >
+        Fetches paginated key_results
+      operationId: okrs_api.api.controller.actions.fetch_key_results
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/activity-logs:
+    post:
+      summary: >
+        Get the activity logs of Objectives and KeyResults
+      description: >
+        Get the activity logs of Objectives and KeyResults
+      operationId: okrs_api.api.controller.actions.get_activity_logs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /events:
+    post:
+      summary: >
+        Calculate progress percentages for Objective and KeyResult.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - event
+              properties:
+                event:
+                  type: object
+                  required:
+                    - data
+                  properties:
+                    data:
+                      type: object
+      responses:
+        200:
+          description: Success
+          content: {}
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Data invalid from Hasura
+          content: {}
+  /cron/reregister-tenants:
+    post:
+      summary: >
+        Re-provision tenants with global tenant ids, if they do not exist,
+        and re-register all work items with integration hub.
+      operationId: okrs_api.api.controller.cron.reregister_tenants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payload:
+                  type: string
+      responses:
+        200:
+          description: Success
+          content: {}
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Data invalid from Hasura
+          content: {}
+  /cron/delete-work-item-container-orphans:
+    post:
+      summary: >
+        Delete ophaned WorkItemContainers
+      operationId: okrs_api.api.controller.cron.delete_work_item_container_orphans
+      responses:
+        200:
+          description: Success
+          content: {}
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Data invalid from Hasura
+          content: {}
+  /data_migration/delete-organization:
+    post:
+      summary: >
+        Delete an organization permanently. This is an irreversible operation
+        and should be utilized with EXTREME caution. Pass in a `tenant_id_str`
+        in the payload. All records in the database with that `tenant_id_str`
+        will be deleted.
+        The `payload` is a json string that MUST include the following:
+        - `tenant_id_str`: the tenant_id_str of the tenant to delete
+      operationId: okrs_api.api.controller.data_migration.delete_organization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payload:
+                  type: string
+      responses:
+        200:
+          description: Success
+          content: {}
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Data invalid from Hasura
+          content: {}
+  /data_migration/adapt-product-manifest:
+    post:
+      summary: >
+        Adapt/convert a manifest from an external Planview Product and upload it to
+        a pre-determined S3 bucket.
+        The `payload` is a json string that MUST include the following:
+        - `product_type`: the planview product
+        - `manifest_filename`: the filename of the incoming manifest
+        - `tenant_id_str`: the tenant_id_str of the tenant to move
+      operationId: okrs_api.api.controller.data_migration.adapt_product_manifest
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payload:
+                  type: string
+      responses:
+        200:
+          description: Success
+          content: {}
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Data invalid from Hasura
+          content: {}
+  /data_migration/import-adapted-manifest:
+    post:
+      summary: >
+        Import an Adapted manifest. This will create all the data necessary
+        from the sqlalchemy objects in the new database and make record of it
+        in the log.
+        The `payload` is a json string that MUST include the following:
+        - `product_type`: the planview product
+        - `original_tenant_id_str`: the original tenant_id_str of the tenant
+        - `new_tenant_id_str`: the new tenant_id_str of the tenant
+      operationId: okrs_api.api.controller.data_migration.import_adapted_manifest
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payload:
+                  type: string
+      responses:
+        200:
+          description: Success
+          content: {}
+        400:
+          description: Bad request
+          content: {}
+        404:
+          description: Not found
+          content: {}
+        422:
+          description: Data invalid from Hasura
+          content: {}
+  /actions/get-history:
+    post:
+      summary: >
+        Get the History of Objectives and KeyResults
+      description: >
+        Returns full history along with custom attributes
+      operationId: okrs_api.api.controller.actions.get_history
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/insert-custom-attributes-settings:
+    post:
+      summary: >
+        Inserts new setting for Custom Attributes settings
+      description: >
+        Inserts a settings row for custom attributes from the OKRs settings page
+      operationId: okrs_api.api.controller.actions.insert_custom_attributes_settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/update-custom-attributes-settings:
+    post:
+      summary: >
+        Updates a setting for Custom Attributes settings
+      description: >
+        Updates a settings row for custom attributes from the OKRs settings page
+      operationId: okrs_api.api.controller.actions.update_custom_attributes_settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        403:
+          description: Not authenticated
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/list-activity-containers-v2:
+    post:
+      summary: >
+        List Activity Containers based on an array of IDs.
+      operationId: okrs_api.api.controller.actions.list_activity_containers_v2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  properties:
+                    container_ids:
+                      type: array
+                      items:
+                        type: string
+                    domain:
+                      $ref: "#/components/schemas/Domain"
+                    search_string:
+                      type: string
+                    limit:
+                      type: integer
+                      format: int64
+                    product_types:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/PlanviewProductType"
+                    exclude_no_access:
+                      type: boolean
+                      default: false
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/toggle-rollup-setting:
+    post:
+      summary: >
+        Update the roll up progress setting for a tenant group.
+      operationId: okrs_api.api.controller.actions.update_roll_up_progress_configuration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/toggle-is-color-threshold-enabled-setting:
+    post:
+      summary: >
+        Update the use color threshold setting for a tenant group.
+      operationId: okrs_api.api.controller.actions.update_is_color_threshold_enabled_flag
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/update-color-threshold-config:
+    post:
+      summary: >
+        Update  threshold configuration for a tenant group.
+      operationId: okrs_api.api.controller.actions.update_color_threshold_config
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/delete-work-item-containers:
+    post:
+      summary: >
+        Delete the work item containers and all its entities.
+      operationId: okrs_api.api.controller.actions.delete_work_item_containers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+  /actions/activity-associated-okrs:
+    post:
+      summary: >
+        Retrieves a list of Objectives and Key Results associated with a given activity
+      description: >
+        Retrieves a list of Objectives and Key Results associated with a given activity,
+        including ancestral objectives and their key results, where applicable.
+      operationId: okrs_api.api.controller.actions.activity_associated_okrs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+      responses:
+        200:
+          description: Success
+          content: { }
+        400:
+          description: Bad request
+          content: { }
+        404:
+          description: Not found
+          content: { }
+        422:
+          description: Bad or malformed request for search
+          content: { }
+components:
+  schemas:
+    ActionType:
+      type: string
+      enum:
+        - add_or_edit
+        - delete
+    OkrRole:
+      type: string
+      enum:
+        - none
+        - read
+        - edit
+        - manage
+    ValueType:
+      type: string
+      enum:
+        - dollars
+        - percent
+        - units
+        - count
+      default: count
+    PlanviewProductType:
+      type: string
+      enum:
+        - leankit
+        - e1
+        - e1_prm
+        - e1_work
+        # will add 'e1' and 'ppl' later
+    ContainerType:
+      type: string
+      enum:
+        - e1_strategy
+        - e1_work
+        - lk_board
+    CustomeAttributesType:
+      type: string
+      enum:
+        - text
+        - date
+        - singleselct
+        - multiselect
+        - numeric
+    Domain:
+      type: string
+    State:
+      type: string
+      enum:
+        - not_started
+        - in_progress
+        - finished
+    ExternalId:
+      type: string
+      pattern: '^[a-zA-Z0-9]+'
+      description: >
+        Defines any unknown identifier that comes from outside this application.
+        The identifier must start with an alphanumric character and must have a
+        length of at least 1.
+    ActivityLogAction:
+      type: string
+      enum:
+        - created
+        - updated
+        - deleted
+        - connected
+        - disconnected
+    CommonTableProperties:
+        type: object
+        properties:
+          id:
+            type: integer
+            format: int64
+            x-primary-key: true
+            x-autoincrement: true
+            description: >
+              Internal ID
+          tenant_id_str:
+            type: string
+            x-index: true
+            description: >
+              Application-specific tenant code that is unique to the platforma app.
+          tenant_group_id_str:
+            type: string
+            x-index: true
+            description: >
+              Platform general GUID that is unique to the organization.
+          app_created_by:
+            type: string
+            x-index: true
+            description: >
+              Application-specific user id to indicate creator of this record.
+          app_last_updated_by:
+            type: string
+            x-index: true
+            description: >
+              Application-specific user id to indicate last updater of this record.
+          created_by:
+            type: string
+            x-index: true
+            description: >
+              Platform general user id to indicate creator of this record.
+          last_updated_by:
+            type: string
+            x-index: true
+            description: >
+              Platform general user id to indicate last updater of this record.
+          created_at:
+            type: string
+            format: date-time
+            x-server-default: "FetchedValue()"
+            nullable: true
+          updated_at:
+            type: string
+            format: date-time
+            x-server-default: "FetchedValue()"
+            nullable: true
+          pv_tenant_id:
+            type: string
+            x-index: true
+            description: >
+              Calculated field to Org tenant Id
+            x-server-default: Unknown
+          pv_created_by:
+            type: string
+            x-index: true
+            description: >
+              Platform general user id to indicate last updater of this record.
+            x-server-default: Unknown
+          pv_last_updated_by:
+            type: string
+            x-index: true
+            description: >
+              Platform general user id to indicate last updater of this record.
+            x-server-default: Unknown
+    SoftDeletable:
+      type: object
+      properties:
+        deleted_at_epoch:
+          type: integer
+          format: int64
+          default: 0
+          nullable: false
+          x-server-default: '0'
+    TimeframeDates:
+      type: object
+      properties:
+        starts_at:
+          type: string
+          format: date
+          x-index: true
+        ends_at:
+          type: string
+          format: date
+          x-index: true
+        achieved_at:
+          type: string
+          format: date
+          x-index: true
+    Level:
+      type: object
+      required:
+        - name
+        - depth
+        - color
+        - is_default
+      properties:
+        name:
+          type: string
+        depth:
+          type: integer
+          default: 0
+        color:
+          type: string
+        is_default:
+          type: boolean
+          default: false
+    Setting:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - type: object
+          x-tablename: settings
+          required:
+            - level_config
+          properties:
+            level_config:
+              type: object
+              x-json: true
+            tenant_id_str:
+              type: string
+              x-index: true
+              x-unique: true
+              description: >
+                Application-specific tenant code that is unique to the organization.
+            ih_setup_verified_at:
+              type: string
+              format: date-time
+              description: >
+                The timestamp for when Integration Hub global tenant ID was
+                set up for this account.
+            ih_global_tenant_id:
+              type: string
+              description: >
+                The Global Tenant ID returned from Integration Hub.
+            roll_up_progress:
+              type: boolean
+              default: false
+            is_color_threshold_enabled:
+              type: boolean
+              default: false
+            color_threshold_config:
+              type: object
+              x-json: true
+              description: >
+                json value of color thresholds for OKRs progress.
+              nullable: false
+    Space:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - type: object
+          x-tablename: spaces
+          required:
+            - name
+          properties:
+            name:
+              type: string
+    Objective:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - $ref: "#/components/schemas/SoftDeletable"
+        - $ref: "#/components/schemas/TimeframeDates"
+        - type: object
+          x-tablename: objectives
+          x-mixins:
+            - okrs_api.model_mixins.soft_deletable_mixin.SoftDeletable
+          required:
+            - name
+            - level_depth
+            - work_item_container_id
+            - starts_at
+            - ends_at
+          properties:
+            name:
+              type: string
+              description: >
+                The title of this Objective.
+            description:
+              type: string
+            progress_percentage:
+              type: integer
+              default: 0
+            level_depth:
+              type: integer
+              nullable: false
+            app_owned_by:
+              type: string
+              x-index: true
+              description: >
+                Application-specific user id to indicate owner of this objective.
+            owned_by:
+              type: string
+              x-index: true
+              description: >
+                Platform general user id to indicate owner of this objective.
+            parent_objective_id:
+              type: integer
+              format: int64
+              x-foreign-key: objectives.id
+              x-foreign-key-kwargs:
+                name: objectives_parent_id_fkey
+                ondelete: SET NULL
+              x-index: true
+            parent_objective:
+              allOf:
+                - "$ref": "#/components/schemas/Objective"
+                - x-backref: objectives
+                - x-kwargs:
+                   remote_side: Objective.id
+            work_item_container_id:
+              type: integer
+              format: int64
+              x-foreign-key: work_item_containers.id
+              x-foreign-key-kwargs:
+                name: objectives_work_item_container_id_fkey
+                ondelete: CASCADE
+              x-index: true
+            work_item_container:
+              allOf:
+                - "$ref": "#/components/schemas/WorkItemContainer"
+                - x-backref: objectives
+                - x-kwargs:
+                    passive_deletes: 'all'
+            rolled_up_progress_percentage:
+              type: integer
+              default: 0
+    Objectives:
+      type: array
+      items:
+        $ref: "#/components/schemas/Objective"
+    KeyResult:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - $ref: "#/components/schemas/SoftDeletable"
+        - $ref: "#/components/schemas/TimeframeDates"
+        - type: object
+          x-tablename: key_results
+          x-mixins:
+            - okrs_api.model_mixins.soft_deletable_mixin.SoftDeletable
+          required:
+            - name
+            - objective_id
+            - starts_at
+            - ends_at
+          properties:
+            name:
+              type: string
+              description: >
+                The name of this Key Result.
+            description:
+              type: string
+            starting_value:
+              type: number
+              format: float
+              default: 0
+              nullable: false
+            target_value:
+              type: number
+              format: float
+              default: 0
+              nullable: false
+            value_type:
+              $ref: "#/components/schemas/ValueType"
+            data_source:
+              type: string
+              description: >
+                The resource we should check in order to measure progress for this key result
+            progress_percentage:
+              type: integer
+              default: 0
+            app_owned_by:
+              type: string
+              x-index: true
+              description: >
+                Application-specific user id to indicate owner of this key result.
+            owned_by:
+              type: string
+              x-index: true
+              description: >
+                Platform general user id to indicate owner of this key result.
+            objective_id:
+              type: integer
+              format: int64
+              x-index: true
+              x-foreign-key: objectives.id
+              x-foreign-key-kwargs:
+                name: key_results_objective_id_fkey
+                ondelete: CASCADE
+              description: >
+                The Objective for this Key Result.
+            objective:
+              allOf:
+                - "$ref": "#/components/schemas/Objective"
+                - x-kwargs:
+                    passive_deletes: 'all'
+                - x-backref: key_results
+    KeyResults:
+      type: array
+      items:
+        $ref: "#/components/schemas/KeyResult"
+    ProgressPoint:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - $ref: "#/components/schemas/SoftDeletable"
+        - type: object
+          x-tablename: progress_points
+          x-mixins:
+            - okrs_api.model_mixins.soft_deletable_mixin.SoftDeletable
+          required:
+            - value
+            - measured_at
+            - key_result_id
+          properties:
+            value:
+              type: number
+              format: float
+            measured_at:
+              type: string
+              format: date
+              x-index: true
+            comment:
+              type: string
+            target_id:
+              type: integer
+              format: int64
+              x-index: true
+            key_result_id:
+              type: integer
+              format: int64
+              x-index: true
+              x-foreign-key: key_results.id
+              x-foreign-key-kwargs:
+                name: progress_points_key_result_id_fkey
+                ondelete: CASCADE
+              description: >
+                The Key Result for this Progress Point.
+            key_result:
+              allOf:
+                - $ref: "#/components/schemas/KeyResult"
+                - x-backref: progress_points
+                - x-kwargs:
+                    passive_deletes: 'all'
+            objective_progress_percentage:
+              type: integer
+              default: 0
+            key_result_progress_percentage:
+              type: integer
+              default: 0
+          x-composite-unique:
+            - key_result_id
+            - measured_at
+    ProgressPoints:
+      type: array
+      items:
+        $ref: "#/components/schemas/ProgressPoint"
+    WorkItem:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - type: object
+          x-tablename: work_items
+          description: >
+            A work_item is an abstract item of work, that may span across
+            multiple Planview products.
+          required:
+            - external_type
+            - external_id
+          properties:
+            title:
+              type: string
+            item_type:
+              type: string
+            planned_start:
+              type: string
+              format: date
+              nullable: true
+            planned_finish:
+              type: string
+              format: date
+              nullable: true
+            external_type:
+              $ref: "#/components/schemas/PlanviewProductType"
+            container_type:
+              $ref: "#/components/schemas/ContainerType"
+            external_id:
+              allOf:
+              - $ref: "#/components/schemas/ExternalId"
+              - description: >
+                  The ID of the Work Unit in context of the the `external_type`.
+            state:
+              $ref: "#/components/schemas/State"
+            work_item_container_id:
+              type: integer
+              format: int64
+              x-index: true
+              nullable: false
+              x-foreign-key: work_item_containers.id
+              x-foreign-key-kwargs:
+                name: work_items_work_item_container_id_fkey
+                ondelete: CASCADE
+              description: >
+                The Work Item Container for this Work Item
+            work_item_container:
+                allOf:
+                  - "$ref": "#/components/schemas/WorkItemContainer"
+                  - x-kwargs:
+                      passive_deletes: 'all'
+                  - x-backref: work_items
+            ih_subscription_response:
+              type: object
+              x-json: true
+              description: >
+                The response of a successful subscription with Integration Hub.
+            latest_ih_message:
+              type: object
+              x-json: true
+              description: >
+                Reserved for the okrs-consumer app. This is the latest
+                subscribed message from Integration Hub.
+            app_name:
+              type: string
+              nullable: true
+              x-index: true
+          x-composite-unique:
+            name: "ux_work_item_external"
+            columns:
+            - external_type
+            - external_id
+            - tenant_id_str
+    WorkItems:
+      type: array
+      items:
+        $ref: "#/components/schemas/WorkItem"
+    WorkItemContainer:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - $ref: "#/components/schemas/SoftDeletable"
+        - type: object
+          x-tablename: work_item_containers
+          x-mixins:
+            - okrs_api.model_mixins.soft_deletable_mixin.SoftDeletable
+          required:
+            - external_id
+            - external_type
+          properties:
+            external_type:
+              $ref: "#/components/schemas/PlanviewProductType"
+            container_type:
+              $ref: "#/components/schemas/ContainerType"
+            external_id:
+              $ref: "#/components/schemas/ExternalId"
+            external_title:
+              type: string
+            level_depth_default:
+              type: integer
+            objective_editing_levels:
+              type: object
+              x-json: true
+            app_name:
+              type: string
+              nullable: true
+              x-index: true
+          x-composite-index:
+            - name: "x_work_item_container_external_id_type"
+              expressions:
+                - external_type
+                - external_id
+            - name: "x_work_item_container_external_id_type_tenant"
+              expressions:
+                - external_type
+                - external_id
+                - tenant_id_str
+          x-composite-unique:
+            name: "ux_work_item_container_external"
+            columns:
+              - external_type
+              - external_id
+              - deleted_at_epoch
+              - tenant_id_str
+    WorkItemContainers:
+      type: array
+      items:
+        $ref: "#/components/schemas/WorkItemContainer"
+    WorkItemContainerRole:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - type: object
+          x-tablename: work_item_container_roles
+          description: >
+            A WorkItemContainerRole is used to determine the permissions the
+            current user has to entity the WorkItemContainer is referencing.
+          required:
+            - okr_role
+            - app_created_by
+            - work_item_container_id
+          x-composite-unique:
+            - app_created_by
+            - work_item_container_id
+            - tenant_id_str
+          properties:
+            work_item_container_id:
+              type: integer
+              format: int64
+              x-index: true
+              x-foreign-key: work_item_containers.id
+              x-foreign-key-kwargs:
+                name: work_item_container_roles_work_item_container_id_fkey
+                ondelete: CASCADE
+              description: >
+                The Work Item Container for this Role
+            okr_role:
+              $ref: "#/components/schemas/OkrRole"
+            app_role:
+              type: string
+            work_item_container:
+              allOf:
+                - "$ref": "#/components/schemas/WorkItemContainer"
+                - x-kwargs:
+                    passive_deletes: 'all'
+                - x-backref: work_item_container_roles
+    SpaceWorkItemContainerMapping:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - type: object
+          x-tablename: space_work_item_container_mappings
+          required:
+            - space_id
+            - work_item_container_id
+          x-composite-unique:
+            - space_id
+            - work_item_container_id
+          properties:
+            space_id:
+              type: integer
+              format: int64
+              x-foreign-key: spaces.id
+              x-foreign-key-kwargs:
+                name: space_work_item_container_mapping_space_id_fkey
+                ondelete: CASCADE
+              x-index: true
+            work_item_container_id:
+              type: integer
+              format: int64
+              x-foreign-key: work_item_containers.id
+              x-foreign-key-kwargs:
+                name: space_work_item_container_mapping_work_item_container_id_fkey
+                ondelete: CASCADE
+              x-index: true
+            space:
+              allOf:
+                - "$ref": "#/components/schemas/Space"
+                - x-backref: space_work_item_container_mapping
+            work_item_container:
+              allOf:
+                - "$ref": "#/components/schemas/WorkItemContainer"
+                - x-backref: space_work_item_container_mapping
+    KeyResultWorkItemMapping:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - type: object
+          x-tablename: key_result_work_item_mappings
+          required:
+            - key_result_id
+            - work_item_id
+          x-composite-unique:
+            - key_result_id
+            - work_item_id
+          properties:
+            key_result_id:
+              type: integer
+              format: int64
+              x-foreign-key: key_results.id
+              x-foreign-key-kwargs:
+                name: key_result_work_item_mapping_key_result_id_fkey
+                ondelete: CASCADE
+              x-index: true
+            work_item_id:
+              type: integer
+              format: int64
+              x-foreign-key: work_items.id
+              x-foreign-key-kwargs:
+                name: key_result_work_item_mapping_work_item_id_fkey
+                ondelete: CASCADE
+              x-index: true
+            work_item:
+              allOf:
+                - "$ref": "#/components/schemas/WorkItem"
+                - x-backref: key_result_work_item_mappings
+            key_result:
+              allOf:
+                - "$ref": "#/components/schemas/KeyResult"
+                - x-backref: key_result_work_item_mappings
+    KeyResultWorkItemMappings:
+      type: array
+      items:
+        $ref: "#/components/schemas/KeyResultWorkItemMapping"
+    ActivityLog:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - type: object
+          x-tablename: activity_logs
+          required:
+            - objective_id
+          properties:
+            objective_id:
+              type: integer
+              format: int64
+              x-index: true
+              description: >
+                The Objective for this Activity Log.
+            key_result_id:
+              type: integer
+              format: int64
+              x-index: true
+              description: >
+                The Key Result for this Activity Log.
+            progress_point_id:
+              type: integer
+              format: int64
+              x-index: true
+              description: >
+                The Progress Point for this Activity Log.
+            work_item_id:
+              type: integer
+              format: int64
+              x-index: true
+              description: >
+                The Work Item for this Activity Log.
+            action:
+              $ref: "#/components/schemas/ActivityLogAction"
+              description: >
+                The past tense action of this Activity Log (created, updated, deleted, connected, disconnected)
+            info:
+              type: object
+              x-json: true
+    TenantMigrationLog:
+      type: object
+      x-tablename: tenant_migration_logs
+      properties:
+        id:
+          type: integer
+          format: int64
+          x-primary-key: true
+          x-autoincrement: true
+          description: >
+            Internal ID
+        original_tenant_id_str:
+          type: string
+          description: >
+            The original application-specific tenant code that is unique to the organization.
+        new_tenant_id_str:
+          type: string
+          description: >
+            The new application-specific tenant code that is unique to the organization.
+        message:
+          type: string
+          description: >
+            A log message about the import.
+        success:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          x-server-default: "FetchedValue()"
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          x-server-default: "FetchedValue()"
+          nullable: true
+    PlanviewIdMigrationLog:
+      type: object
+      x-tablename: planview_id_migration_logs
+      properties:
+        id:
+          type: integer
+          format: int64
+          x-primary-key: true
+          x-autoincrement: true
+          description: >
+            Internal ID
+        tenant_id_str:
+          type: string
+          description: >
+            The application-specific tenant code that is unique to the application.
+        tenant_group_id_str:
+          type: string
+          description: >
+            The global tenant group code that is unique to the organization.
+        status:
+          type: string
+          default: "in progress"
+        message:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+    PlanviewIdUnmappedUserIdsLog:
+      type: object
+      x-tablename: unmapped_user_ids_logs
+      properties:
+        id:
+          type: integer
+          format: int64
+          x-primary-key: true
+          x-autoincrement: true
+          description: >
+            Internal ID
+        audit_id:
+          type: integer
+          format: int64
+          x-foreign-key: planview_id_migration_logs.id
+          x-foreign-key-kwargs:
+            name: unmapped_user_ids_logs_planview_id_migration_logs_fkey
+            ondelete: RESTRICT
+          description: >
+            The audit entry tied to this specific run of the OKRs migration.
+        user_id:
+          type: string
+          description: >
+            The unmapped app user id found during OKRs migration.
+        table_name:
+          type: string
+          description: >
+            The table the unmapped app user id was found in during OKRs migration.
+        column_name:
+          type: string
+          description: >
+            The column the unmapped app user id was found in during OKRs migration.
+    CustomAttributesConfig:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - $ref: "#/components/schemas/SoftDeletable"
+        - type: object
+          x-tablename: custom_attributes_configs
+          x-mixins:
+            - okrs_api.model_mixins.soft_deletable_mixin.SoftDeletable
+          properties:
+            id:
+              type: integer
+              format: int64
+              x-primary-key: true
+              x-autoincrement: true
+              description: >
+                Internal ID
+            label:
+              type: string
+              description: >
+                The label of the custom attribute config item.
+            ca_config_type:
+              $ref: "#/components/schemas/CustomeAttributesType"
+              description: >
+                The type of the custom atribute.
+            tooltip:
+              type: string
+              description: >
+                This is tooltip that explains about the custom attribtue.
+            is_default:
+              type: boolean
+              default: true
+            is_archived:
+              type: boolean
+              default: false
+            is_mandatory_objective:
+              type: boolean
+              default: false
+            is_mandatory_keyresult:
+              type: boolean
+              default: false
+            is_deleted:
+              type: boolean
+              default: false
+            is_objective:
+              type: boolean
+              default: false
+            is_keyresult:
+              type: boolean
+              default: false
+            value:
+              type: object
+              x-json: true
+              description: >
+                json value of singleselct or multiselect. this will be null if type is not singleselct or multiselect.
+              nullable: true
+    CustomAttributesValue:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - $ref: "#/components/schemas/SoftDeletable"
+        - type: object
+          x-tablename: custom_attributes_values
+          x-mixins:
+            - okrs_api.model_mixins.soft_deletable_mixin.SoftDeletable
+          properties:
+            id:
+              type: integer
+              format: int64
+              x-primary-key: true
+              x-autoincrement: true
+              description: >
+                Internal ID
+            object_id:
+              type: integer
+              description: >
+                Id of objective or key result.
+            ca_config_id:
+              type: integer
+              x-foreign-key: custom_attributes_configs.id
+              description: >
+                Id of custom attribtue configiration id.
+            object_type:
+              type: string
+              enum:
+                - objective
+                - keyresult
+              description: >
+                The type of object on which the custom attribute is being used for setting values.
+            tooltip:
+              type: string
+              description: >
+                This is tooltip that explains about the custom attribtue.
+            value:
+              type: object
+              x-json: true
+              description: >
+                it can be string for date/text type of custom fields orelse it can be json string for multiselect and singleselct.
+              nullable: true
+    CustomAttributesSettings:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - $ref: "#/components/schemas/SoftDeletable"
+        - type: object
+          x-tablename: custom_attributes_settings
+          x-mixins:
+            - okrs_api.model_mixins.soft_deletable_mixin.SoftDeletable
+          properties:
+            id:
+              type: integer
+              format: int64
+              x-primary-key: true
+              x-autoincrement: true
+              description: >
+                Internal ID
+            enabled:
+              type: boolean
+              default: false
+              description: >
+                Determine if Custom Attributes is enabled for this account.
+            label:
+              type: string
+              description: >
+                Label for Custom attributes in OKRs settings
+            tooltip:
+              type: string
+              description: >
+                Tooltip for Custom attributes label in OKRs settings
+            label_hidden:
+              type: boolean
+              default: false
+              description: >
+                Determine if Custom Attributes Label is enabled for this account.
+    Target:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - type: object
+          x-mixins:
+            - okrs_api.model_mixins.soft_deletable_mixin.SoftDeletableBoolean
+          x-tablename: targets
+          required:
+            - key_result_id
+            - starts_at
+            - ends_at
+            - value
+          properties:
+            starts_at:
+              type: string
+              format: date-time
+              nullable: false
+            ends_at:
+              type: string
+              format: date-time
+              nullable: false
+            value:
+              type: number
+              format: float
+              nullable: false
+            is_deleted:
+              type: boolean
+              x-server-default: 'false'
+            created_at:
+              type: string
+              format: date-time
+              x-server-default: "now()"
+            updated_at:
+              type: string
+              format: date-time
+              x-server-default: "now()"
+            pv_tenant_id:
+              type: string
+              x-index: true
+              nullable: false
+            app_created_by:
+              type: string
+              description: >
+                Application-specific user id to indicate creator of this record.
+            app_last_updated_by:
+              type: string
+              description: >
+                Application-specific user id to indicate last updater of this record.
+            created_by:
+              type: string
+              description: >
+                Platform general user id to indicate creator of this record.
+            last_updated_by:
+              type: string
+              description: >
+                Platform general user id to indicate last updater of this record.
+            pv_created_by:
+              type: string
+              nullable: false
+              description: >
+                Platform general user id to indicate last updater of this record.
+            pv_last_updated_by:
+              type: string
+              description: >
+                Platform general user id to indicate last updater of this record.
+            key_result_id:
+              type: integer
+              format: int64
+              x-index: true
+              x-foreign-key: key_results.id
+              x-foreign-key-kwargs:
+                name: targets_key_result_id_fkey
+                ondelete: CASCADE
+              description: >
+                The Key Result for this Target.
+            key_result:
+              allOf:
+                - "$ref": "#/components/schemas/KeyResult"
+                - x-kwargs:
+                    passive_deletes: 'all'
+                - x-backref: targets
+    Targets:
+      type: array
+      items:
+        $ref: "#/components/schemas/Target"
+    UserSettings:
+      allOf:
+        - $ref: "#/components/schemas/CommonTableProperties"
+        - type: object
+          x-mixins:
+            - okrs_api.model_mixins.soft_deletable_mixin.SoftDeletableBoolean
+          x-tablename: user_settings
+          required:
+            - type
+          properties:
+            app_user_id:
+              type: string
+              nullable: false
+              x-index: true
+              description: >
+                Application-specific user id to indicate setting is applied to this user.
+            user_id:
+              type: string
+              nullable: false
+              description: >
+                PV admin user id to indicate setting is applied to this user.
+            type:
+              type: string
+              nullable: false
+              enum:
+                - listviewcolumnconfig
+              description: >
+                this fields shows the type of user settings.
+            value:
+              type: object
+              x-json: true
+              description: >
+                this can be json string of any configuration for user settings.
+              nullable: true
+            is_deleted:
+              type: boolean
+              x-server-default: 'false'
+            created_at:
+              type: string
+              format: date-time
+              x-server-default: "now()"
+            updated_at:
+              type: string
+              format: date-time
+              x-server-default: "now()"
+            pv_tenant_id:
+              type: string
+              x-index: true
+              nullable: false
+            app_created_by:
+              type: string
+              description: >
+                Application-specific user id to indicate creator of this record.
+            app_last_updated_by:
+              type: string
+              description: >
+                Application-specific user id to indicate last updater of this record.
+            created_by:
+              type: string
+              description: >
+                Platform general user id to indicate creator of this record.
+            last_updated_by:
+              type: string
+              description: >
+                Platform general user id to indicate last updater of this record.
+            pv_created_by:
+              type: string
+              nullable: false
+              description: >
+                Platform general user id to indicate last updater of this record.
+            pv_last_updated_by:
+              type: string
+              description: >
+                Platform general user id to indicate last updater of this record.

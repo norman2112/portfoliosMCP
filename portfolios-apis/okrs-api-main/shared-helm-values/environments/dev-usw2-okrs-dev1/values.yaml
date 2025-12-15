@@ -1,0 +1,282 @@
+# Default values for roadmaps.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  region: "us-west-2"
+  domain: "platforma-dev.io"
+  registry: "486329218230.dkr.ecr.us-west-2.amazonaws.com"
+  env: dev
+
+
+### Okrs api service
+foundation-api-chart:
+  fullnameOverride: "okrs-api"
+
+  image:
+    repository: "dev1-okrs-api" #move to base chart
+    tag: "dev1" #move to base chart
+
+  configmap:
+    SENTRY_DSN: https://e821c0f7a5df45b6aae68d9e23202795@o497265.ingest.sentry.io/5965148
+    CONNEXION_ENVIRONMENT: development
+    ADMIN_IH_DOMAIN: us-west-2.pvintegrations-staging.net
+    IH_DOMAIN: us-west-2.pvintegrations-staging.net
+    LK_ENV: d09
+    HASURA_GRAPHQL_ENDPOINT: http://hasura.okrs-dev1.svc.cluster.local
+    PGPOOL2_HOST: "pgpool2.okrs-dev1.svc.cluster.local"
+    PGPOOL2_PORT: "9999"
+    HASURA_DATASERVICE_ENDPOINT: http://odata-hasura.okrs-dev1.svc.cluster.local
+    JOB_QUEUE: okrs-batch-job-queue
+    JOB_DEFINITION: okrs-batch-job-definition
+    
+  env:
+    DATABASE_URL: postgresql://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)    
+
+  aws:
+    secrets:
+      - secretKey: LK_JWT_SECRET
+        remoteRef:
+          key: development/okr/api
+          property: LK_JWT_SECRET
+      - secretKey: IH_CLIENT_ID
+        remoteRef:
+          key: development/okr/api
+          property: IH_CLIENT_ID
+      - secretKey: IH_CLIENT_SECRET
+        remoteRef:
+          key: development/okr/api
+          property: IH_CLIENT_SECRET
+      - secretKey: IH_ADMIN_CLIENT_ID
+        remoteRef:
+          key: development/okr/api
+          property: IH_ADMIN_CLIENT_ID
+      - secretKey: IH_ADMIN_CLIENT_SECRET
+        remoteRef:
+          key: development/okr/api
+          property: IH_ADMIN_CLIENT_SECRET
+      - secretKey: PUBNUB_PUBLISH_KEY
+        remoteRef:
+          key: development/okr/api
+          property: PUBNUB_PUBLISH_KEY
+      - secretKey: PUBNUB_SUBSCRIBER_KEY
+        remoteRef:
+          key: development/okr/api
+          property: PUBNUB_SUBSCRIBER_KEY
+      - secretKey: PUBNUB_SECRET_KEY
+        remoteRef:
+          key: development/okr/api
+          property: PUBNUB_SECRET_KEY
+      - secretKey: PUBNUB_UUID
+        remoteRef:
+          key: development/okr/api
+          property: PUBNUB_UUID
+      - secretKey: HASURA_DATASERVICE_ADMIN_SECRET
+        remoteRef:
+          key: development/okr/hasura
+          property: HASURA_GRAPHQL_ADMIN_SECRET
+      - secretKey: PLANVIEW_TOKEN_SERVICE_CLIENT_ID
+        remoteRef:
+          key: development/okr/api
+          property: PLANVIEW_TOKEN_SERVICE_CLIENT_ID
+      - secretKey: PLANVIEW_TOKEN_SERVICE_CLIENT_SECRET
+        remoteRef:
+          key: development/okr/api
+          property: PLANVIEW_TOKEN_SERVICE_CLIENT_SECRET
+      - secretKey: PLANVIEW_TOKEN_SERVICE_REGION
+        remoteRef:
+          key: development/okr/api
+          property: PLANVIEW_TOKEN_SERVICE_REGION
+
+  securityContext:
+    allowPrivilegeEscalation: false
+
+####
+
+odata-chart:
+  fullnameOverride: "okrs-odata"
+  image:
+    repository: "dev-okrs-odata" 
+    tag: "dev"
+  env:
+    HASURA_OKR_URL: https://okr-odata-hasura-us-west-2.platforma-dev.io/v1/graphql
+    COGNITO_URL: https://cognito-idp.us-west-2.amazonaws.com/us-west-2_EgR4jyqiX
+    OKR_ODATA_PAGESIZE: 10000 
+
+  ingress:
+    enabled: true
+    hosts:
+      - host: okr-odata-us-west-2.platforma-dev.io
+        secretName: okr-odata.platforma-dev-tls
+    altURL: "okr-odata-us-west-2.planview-dev.io"
+
+  securityContext:
+    allowPrivilegeEscalation: false
+
+####
+hasura-chart:
+  image:
+  # Overrides the image tag whose default is the chart appVersion.
+    tag: "v2.37.0"
+
+  env:
+    # Reader instance by default.
+    HASURA_GRAPHQL_DATABASE_URL: postgresql://$(PGUSER):$(PGPASSWORD)@$(PGPOOL2_HOST):$(PGPOOL2_PORT)/$(PGDATABASE)
+    HASURA_GRAPHQL_EE_LICENSE_KEY: "$(HASURA_GRAPHQL_EE_KEY)"
+
+  configmap:
+    HASURA_BASE_API_URL: "http://okrs-api.okrs-dev1.svc.cluster.local/api"
+    HASURA_EVENTS_WEBHOOK_URL: "http://okrs-api.okrs-dev1.svc.cluster.local/api/events"
+    HASURA_GRAPHQL_DEV_MODE: "false"
+    HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+    PGPOOL2_HOST: "pgpool2.okrs-dev1.svc.cluster.local"
+    PGPOOL2_PORT: "9999"
+    HASURA_GRAPHQL_LIVE_QUERIES_MULTIPLEXED_REFETCH_INTERVAL: "2000"     
+
+  aws:
+    secrets:
+      - secretKey: HASURA_GRAPHQL_JWT_SECRET
+        remoteRef:
+          key: development/cdk/platforma/platforma-auth
+          property: hasuraJwtSecret
+      - secretKey: HASURA_GRAPHQL_ADMIN_SECRET
+        remoteRef:
+          key: development/okr/hasura
+          property: HASURA_GRAPHQL_ADMIN_SECRET
+      - secretKey: HASURA_GRAPHQL_EE_KEY
+        remoteRef:
+          key: common/hasura
+          property: EE_LICENSE_KEY          
+
+  nlb:
+    enabled: true
+
+  securityContext:
+    allowPrivilegeEscalation: false
+
+####
+odata-hasura-chart:
+  fullnameOverride: "odata-hasura"
+  image:
+  # Overrides the image tag whose default is the chart appVersion.
+    tag: "v2.20.0"
+
+  env:
+    HASURA_GRAPHQL_DATABASE_URL: postgresql://$(PGUSER):$(PGPASSWORD)@$(PGREADER):$(PGPORT)/$(PGDATABASE)
+    HASURA_GRAPHQL_METADATA_DATABASE_URL: "postgresql://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/metadata"
+    HASURA_GRAPHQL_EE_LICENSE_KEY: "$(HASURA_GRAPHQL_EE_KEY)"
+
+  configmap:
+    HASURA_BASE_API_URL: "http://okrs-api.okrs-dev1.svc.cluster.local/api"
+    HASURA_EVENTS_WEBHOOK_URL: "http://okrs-api.okrs-dev1.svc.cluster.local/api/events"
+    HASURA_GRAPHQL_DEV_MODE: "false"
+    HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+    PGPOOL2_HOST: "pgpool2.okrs-dev1.svc.cluster.local"
+    PGPOOL2_PORT: "9999"
+    HASURA_GRAPHQL_LIVE_QUERIES_MULTIPLEXED_REFETCH_INTERVAL: "2000"
+
+  aws:
+    secrets:
+      - secretKey: HASURA_GRAPHQL_JWT_SECRET
+        remoteRef:
+          key: development/cdk/platforma/platforma-auth
+          property: hasuraJwtSecret
+      - secretKey: HASURA_GRAPHQL_ADMIN_SECRET
+        remoteRef:
+          key: development/okr/hasura
+          property: HASURA_GRAPHQL_ADMIN_SECRET
+      - secretKey: HASURA_GRAPHQL_EE_KEY
+        remoteRef:
+          key: common/hasura
+          property: EE_LICENSE_KEY
+
+  nlb:
+    enabled: true
+
+  service:
+    type: LoadBalancer
+
+  securityContext:
+    allowPrivilegeEscalation: false
+
+####
+
+pgpool2-chart:
+  fullnameOverride: "pgpool2"
+    
+  aws:
+    secrets:
+      - secretKey: PGPOOL_PARAMS_BACKEND_HOSTNAME0
+        remoteRef:
+          key: aurora/okrsdev1
+          property: PGHOST
+      - secretKey: PGPOOL_PARAMS_BACKEND_HOSTNAME1
+        remoteRef:
+          key: aurora/okrsdev1
+          property: PGREADER
+
+  resources:
+    requests:
+      memory: "350Mi"
+      cpu: "50m"
+    limits:
+      memory: "450Mi"
+      cpu: "100m"        
+
+  securityContext:
+    allowPrivilegeEscalation: false
+
+dovetail-standalone-chart:
+  fullnameOverride: "dovetail-standalone"
+
+  replicaCount: 3
+
+  image:
+    repository: "dev-dovetail-standalone"
+    tag: "dev"
+
+  configmap:
+    NODE_ENV: "development"
+    PROJECT: "OKRs"
+    BACKEND_API_URL: okrs-dev1-hasura-us-west-2.platforma-dev.io/v1/graphql
+    DOVETAIL_ENVIRONMENT: "dev"
+    DOVETAIL_PACKAGE: https://dovetail.platforma-dev.io/dist/OKR.min.js
+    DOVETAIL_PRODUCT_NAME: leankit
+    PLATFORMA_APP_NAME: OKR
+    LOG_LEVEL: "http"
+    PLANVIEW_ADMIN_URL: https://us.id.planviewlogindev.net
+    PLANVIEW_ADMIN_APP_NAME: okrs
+    COGNITO_URL: https://cognito-idp.us-west-2.amazonaws.com/us-west-2_EgR4jyqiX
+    CALLBACK_URL: https://okrs.platforma-dev.io/callback
+    PENDO_API_KEY: c880b643-ca56-4203-6b72-3c2c1792a5c3
+
+  aws:
+    secrets:
+      - secretKey: PLANVIEW_TOKEN_SERVICE_CLIENT_ID
+        remoteRef:
+          key: development/okr/api
+          property: PLANVIEW_TOKEN_SERVICE_CLIENT_ID
+      - secretKey: PLANVIEW_TOKEN_SERVICE_CLIENT_SECRET
+        remoteRef:
+          key: development/okr/api
+          property: PLANVIEW_TOKEN_SERVICE_CLIENT_SECRET
+      - secretKey: COOKIE_SECRET
+        remoteRef:
+          key: development/okr/api
+          property: COOKIE_SECRET
+  ingress:
+    enabled: true
+    hosts:
+      - host: okrs.platforma-dev.io
+        secretName: okrs.platforma-dev-tls
+
+  resources:
+    requests:
+      memory: "50Mi"
+      cpu: "50m"
+    limits:
+      memory: "70Mi"
+      cpu: "100m"
+
+  securityContext:
+    allowPrivilegeEscalation: false

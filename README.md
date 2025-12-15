@@ -66,7 +66,47 @@ This MCP server is hosted on FastMCP Cloud, so no local installation is required
 
 ### Configuring with Claude Desktop
 
-The Planview Portfolios MCP server is hosted on FastMCP Cloud. Add the following to your Claude Desktop configuration (`claude_desktop_config.json`):
+You can run the MCP server locally or use the FastMCP Cloud instance.
+
+#### Option 1: Local Installation (Recommended)
+
+For local execution, add the following to your Claude Desktop configuration (`claude_desktop_config.json`):
+
+**macOS/Linux**: `~/Library/Application Support/Claude/claude_desktop_config.json`  
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "planview-portfolios": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "planview_portfolios_mcp.server"
+      ],
+      "env": {
+        "PLANVIEW_API_URL": "https://your-instance.pvcloud.com/polaris",
+        "PLANVIEW_CLIENT_ID": "your_client_id",
+        "PLANVIEW_CLIENT_SECRET": "your_client_secret",
+        "PLANVIEW_TENANT_ID": "your_tenant_id",
+        "USE_OAUTH": "true"
+      }
+    }
+  }
+}
+```
+
+**Important Notes**:
+- Make sure the package is installed: `pip install -e .`
+- If using a virtual environment, use the full path to the venv's Python:
+  ```json
+  "command": "/path/to/venv/bin/python3"
+  ```
+- See `CLAUDE_DESKTOP_SETUP.md` for detailed setup instructions
+
+#### Option 2: FastMCP Cloud (Alternative)
+
+For cloud-hosted execution, use this configuration:
 
 ```json
 {

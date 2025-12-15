@@ -1,0 +1,35 @@
+domain: platforma.planview.com
+
+hasura:
+  adminSecret: ref+awssecrets://production/okr/hasura#HASURA_GRAPHQL_ADMIN_SECRET
+  jwtSecret: ref+awssecrets://production/cdk/platforma/platforma-auth#hasuraJwtSecret
+
+postgresql:
+  password: ref+awssecrets://production/okr/aurora#PGPASSWORD
+  user: ref+awssecrets://production/okr/aurora#PGUSER
+  host: ref+awssecrets://production/okr/aurora#PGHOST
+  port: ref+awssecrets://production/okr/aurora#PGPORT
+  database: ref+awssecrets://production/okr/aurora#PGDATABASE
+  database_url: ref+awssecrets://production/okr/aurora#DATABASE_URL
+
+aws:
+  region: us-west-2
+
+configmap:
+  SENTRY_DSN: https://e821c0f7a5df45b6aae68d9e23202795@o497265.ingest.sentry.io/5965148
+  SENTRY_TRACES_SAMPLE_RATE: 0.2
+  CONNEXION_ENVIRONMENT: production
+  ADMIN_IH_DOMAIN: prod.pvintegrations.net
+  IH_DOMAIN: prod.pvintegrations.net
+  LK_ENV: pd
+
+apiSecrets:
+  LK_JWT_SECRET: ref+awssecrets://production/okr/api#LK_JWT_SECRET
+  IH_CLIENT_ID: ref+awssecrets://production/okr/api#IH_CLIENT_ID
+  IH_CLIENT_SECRET: ref+awssecrets://production/okr/api#IH_CLIENT_SECRET
+  IH_ADMIN_CLIENT_ID: ref+awssecrets://production/okr/api#IH_ADMIN_CLIENT_ID
+  IH_ADMIN_CLIENT_SECRET: ref+awssecrets://production/okr/api#IH_ADMIN_CLIENT_SECRET
+
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::323341875315:role/usw2-pf-production-okrs-api

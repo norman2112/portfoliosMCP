@@ -21,7 +21,15 @@ async def oauth_ping(ctx: Context) -> Any:
             response = await make_request(
                 client, "GET", "/public-api/v1/oauth/ping"
             )
-            data = response.json()
+            
+            # Handle different response types (text/plain or application/json)
+            content_type = response.headers.get("content-type", "").lower()
+            if "application/json" in content_type:
+                data = response.json()
+            else:
+                # Handle text/plain response (should be "pong")
+                text = response.text.strip()
+                data = {"message": text} if text else {"status": "success"}
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(

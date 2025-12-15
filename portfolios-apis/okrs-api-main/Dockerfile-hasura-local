@@ -1,0 +1,12 @@
+# ####################
+# Development Hasura
+# ####################
+FROM hasura/graphql-engine:v2.37.0
+
+
+# Copy Wait and Entrypoint scripts
+COPY docker/wait /wait
+RUN chmod +x /wait
+
+# Set entrypoint.
+CMD sh -c "/wait && graphql-engine serve"

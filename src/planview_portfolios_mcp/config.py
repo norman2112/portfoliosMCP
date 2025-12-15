@@ -17,6 +17,15 @@ class PlanviewSettings(BaseSettings):
     planview_api_url: str = "https://api.planview.com"
     planview_api_key: str = ""  # Deprecated: Use OAuth instead
     planview_tenant_id: str = ""
+    
+    # OKRs API Configuration
+    # OKRs API URL (optional, defaults to https://api-us.okrs.planview.com/api/rest)
+    planview_okr_api_url: str | None = None
+    # OKRs API Bearer Token (optional - if not provided, will use OAuth credentials to auto-refresh)
+    planview_okr_bearer_token: str = ""
+    # OKRs OAuth credentials (for automatic token refresh - preferred over static bearer token)
+    planview_okr_client_id: str = ""
+    planview_okr_client_secret: str = ""
 
     # OAuth Configuration
     planview_client_id: str = ""

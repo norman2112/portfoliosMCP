@@ -1,0 +1,76 @@
+interactions:
+- request:
+    body: null
+    headers:
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://d09.leankit.io/io/okr/board?search=Test
+  response:
+    body:
+      string: '{"pageMeta":{"totalRecords":29,"offset":0,"limit":200,"startRow":1,"endRow":29},"boards":[{"id":"10137801794","title":"!
+        BoardRole Triggers test","description":null,"boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10145618741","title":"14
+        May 2020-d09 - Copy of Testing Analytics","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10136408886","title":"API
+        Testing - Libby1","description":null,"boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10145333362","title":"Board
+        for card health api test","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10144959865","title":"Board
+        for quick test","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10145603924","title":"Doug''s
+        Test Board","description":"Thanks","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10145470456","title":"Dupe
+        new board for testing","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10145693906","title":"dupe
+        test","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10145332206","title":"Dupe
+        testing","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10138742223","title":"Efficiency
+        Test","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10145533633","title":"New
+        board for new test ","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10145470151","title":"New
+        board for testing","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10145831176","title":"OKR
+        Test","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10145472877","title":"PC
+        testing","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10145831231","title":"Regression
+        Test","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10113367453","title":"Reporting
+        API - All Tests","description":null,"boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10116254008","title":"Reporting
+        API - All Tests from d09","description":null,"boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10140105586","title":"Roadmap
+        Board Testing","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10145860064","title":"Ryan
+        automation test","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10140055521","title":"Task
+        Board and Testing","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10113283925","title":"Testing
+        Analytics - PLEASE DO NOT CHANGE!","description":null,"boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10145774917","title":"Testing
+        Board48","description":"","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10119969900","title":"Testing
+        Speed","description":null,"boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10142978187","title":"testing
+        testing, this is a test","description":"new description for a test","boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10133008344","title":"traige
+        test","description":null,"boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10133007438","title":"Triage
+        test board ","description":null,"boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10131228016","title":"What
+        a Character test ","description":null,"boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10114901731","title":"When
+        Automation UI Tests Fail","description":null,"boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"},{"id":"10135446485","title":"WM
+        Test","description":null,"boardRoleId":4,"isWelcome":false,"boardRole":"boardAdministrator"}]}'
+    headers:
+      Cache-Control:
+      - no-store, no-cache, must-revalidate, proxy-revalidate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '4112'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 01 Nov 2021 15:33:17 GMT
+      Expires:
+      - '0'
+      Pragma:
+      - no-cache
+      Surrogate-Control:
+      - no-store
+      X-RateLimit-Limit:
+      - '160'
+      X-RateLimit-Remaining:
+      - '156'
+      X-RateLimit-Reset:
+      - '1635780813'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload;
+      x-lk-app-name:
+      - core-board-service
+      x-lk-app-version:
+      - 9.53.0
+      x-request-correlation-id:
+      - 090f2c50-3b29-11ec-8191-fec842fbf5cc
+    status:
+      code: 200
+      message: OK
+    url: https://d09.leankit.io/io/okr/board?search=Test
+version: 1

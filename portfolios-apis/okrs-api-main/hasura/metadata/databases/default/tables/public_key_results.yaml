@@ -1,0 +1,284 @@
+table:
+  name: key_results
+  schema: public
+object_relationships:
+  - name: objective
+    using:
+      foreign_key_constraint_on: objective_id
+array_relationships:
+  - name: key_result_work_item_mappings
+    using:
+      foreign_key_constraint_on:
+        column: key_result_id
+        table:
+          name: key_result_work_item_mappings
+          schema: public
+  - name: progress_points
+    using:
+      foreign_key_constraint_on:
+        column: key_result_id
+        table:
+          name: progress_points
+          schema: public
+  - name: targets
+    using:
+      foreign_key_constraint_on:
+        column: key_result_id
+        table:
+          name: targets
+          schema: public
+select_permissions:
+  - role: edit
+    permission:
+      columns:
+        - achieved_at
+        - app_owned_by
+        - created_at
+        - data_source
+        - description
+        - ends_at
+        - id
+        - name
+        - objective_id
+        - owned_by
+        - progress_percentage
+        - starting_value
+        - starts_at
+        - target_value
+        - updated_at
+        - value_type
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - objective:
+              work_item_container:
+                work_item_container_roles:
+                  _and:
+                    - _or:
+                        - created_by:
+                            _eq: X-Hasura-User-Id
+                        - _and:
+                            - app_created_by:
+                                _eq: X-Hasura-Platforma-App-User-Id
+                            - _not:
+                                app_created_by:
+                                  _eq: ""
+                    - _not:
+                        okr_role:
+                          _eq: none
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      allow_aggregations: true
+  - role: manage
+    permission:
+      columns:
+        - achieved_at
+        - app_owned_by
+        - created_at
+        - data_source
+        - description
+        - ends_at
+        - id
+        - name
+        - objective_id
+        - owned_by
+        - progress_percentage
+        - starting_value
+        - starts_at
+        - target_value
+        - updated_at
+        - value_type
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - objective:
+              work_item_container:
+                work_item_container_roles:
+                  _and:
+                    - _or:
+                        - created_by:
+                            _eq: X-Hasura-User-Id
+                        - _and:
+                            - app_created_by:
+                                _eq: X-Hasura-Platforma-App-User-Id
+                            - _not:
+                                app_created_by:
+                                  _eq: ""
+                    - _not:
+                        okr_role:
+                          _eq: none
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      allow_aggregations: true
+  - role: okrs-integration
+    permission:
+      columns:
+        - app_owned_by
+        - created_at
+        - description
+        - ends_at
+        - id
+        - name
+        - objective_id
+        - owned_by
+        - progress_percentage
+        - starting_value
+        - starts_at
+        - target_value
+      filter:
+        _and:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - deleted_at_epoch:
+              _eq: "0"
+    comment: ""
+  - role: read
+    permission:
+      columns:
+        - achieved_at
+        - app_owned_by
+        - created_at
+        - data_source
+        - description
+        - ends_at
+        - id
+        - name
+        - objective_id
+        - owned_by
+        - progress_percentage
+        - starting_value
+        - starts_at
+        - target_value
+        - updated_at
+        - value_type
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - objective:
+              work_item_container:
+                work_item_container_roles:
+                  _and:
+                    - _or:
+                        - created_by:
+                            _eq: X-Hasura-User-Id
+                        - _and:
+                            - app_created_by:
+                                _eq: X-Hasura-Platforma-App-User-Id
+                            - _not:
+                                app_created_by:
+                                  _eq: ""
+                    - _not:
+                        okr_role:
+                          _eq: none
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      allow_aggregations: true
+  - role: user
+    permission:
+      columns:
+        - achieved_at
+        - app_owned_by
+        - created_at
+        - data_source
+        - description
+        - ends_at
+        - id
+        - name
+        - objective_id
+        - owned_by
+        - progress_percentage
+        - starting_value
+        - starts_at
+        - target_value
+        - updated_at
+        - value_type
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - objective:
+              work_item_container:
+                work_item_container_roles:
+                  _and:
+                    - _or:
+                        - created_by:
+                            _eq: X-Hasura-User-Id
+                        - _and:
+                            - app_created_by:
+                                _eq: X-Hasura-Platforma-App-User-Id
+                            - _not:
+                                app_created_by:
+                                  _eq: ""
+                    - _not:
+                        okr_role:
+                          _eq: none
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      allow_aggregations: true
+event_triggers:
+  - name: insert_key_results_datascience
+    definition:
+      enable_manual: false
+      insert:
+        columns: '*'
+    retry_conf:
+      interval_sec: 10
+      num_retries: 0
+      timeout_sec: 60
+    webhook_from_env: DATAPIPELINE_ENDPOINT
+  - name: key_results
+    definition:
+      delete:
+        columns: '*'
+      enable_manual: true
+      insert:
+        columns: '*'
+      update:
+        columns:
+          - data_source
+          - target_value
+          - app_owned_by
+          - ends_at
+          - name
+          - starts_at
+          - starting_value
+          - deleted_at_epoch
+          - description
+          - objective_id
+          - value_type
+    retry_conf:
+      interval_sec: 10
+      num_retries: 0
+      timeout_sec: 120
+    webhook_from_env: HASURA_EVENTS_WEBHOOK_URL

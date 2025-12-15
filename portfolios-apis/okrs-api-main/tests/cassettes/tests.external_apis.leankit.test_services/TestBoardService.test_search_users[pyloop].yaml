@@ -1,0 +1,45 @@
+interactions:
+- request:
+    body: null
+    headers:
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://d09.leankit.io/io/okr/board/10136408886/user?search=
+  response:
+    body:
+      string: '{"pageMeta":{"totalRecords":114,"offset":0,"limit":25,"startRow":1,"endRow":25},"boardUsers":[{"userId":"10145733305","firstName":"Ajit","lastName":"D''Sa","emailAddress":"adsa@planview.com","boardId":"10136408886","administrator":true,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10145601702","firstName":"Alex","lastName":"Glabman","emailAddress":"aglabman@planview.com","boardId":"10136408886","administrator":true,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10114907543","firstName":"Analytics","lastName":"TestUser","emailAddress":"analytics-testuser@leankit.com","boardId":"10136408886","administrator":false,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10114438669","firstName":"autocard","lastName":"testdata","emailAddress":"autocard@leankit.com","boardId":"10136408886","administrator":false,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10145859153","firstName":"Ben","lastName":"Henderson","emailAddress":"bhenderson@planview.com","boardId":"10136408886","administrator":true,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10145867029","firstName":"Carla","lastName":"Cordovez","emailAddress":"ccordovez@planview.com","boardId":"10136408886","administrator":false,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10145869655","firstName":"Chad","lastName":"Huff","emailAddress":"chuff@planview.com","boardId":"10136408886","administrator":false,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10145734215","firstName":"Damon","lastName":"Bauer","emailAddress":"dbauer@planview.com","boardId":"10136408886","administrator":false,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10145689471","firstName":"Dee","lastName":"Schmidt","emailAddress":"dschmidt@planview.com","boardId":"10136408886","administrator":true,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10116393944","firstName":"Dennis","lastName":"LaFalafel","emailAddress":"dennis.lafreniere@leankit.com","boardId":"10136408886","administrator":true,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10125267287","firstName":"Doug","lastName":"Neiner","emailAddress":"dneiner@planview.com","boardId":"10136408886","administrator":true,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10130957522","firstName":"Doug","lastName":"Neiner","emailAddress":"doug@dougneiner.com","boardId":"10136408886","administrator":false,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10145603521","firstName":"Elijah","lastName":"Manor","emailAddress":"emanor@planview.com","boardId":"10136408886","administrator":true,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10145734719","firstName":"Eric","lastName":"Heiberg","emailAddress":"eheiberg@planview.com","boardId":"10136408886","administrator":true,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10145618068","firstName":"Gee","lastName":"Dovedale","emailAddress":"dovedale@leankit.com","boardId":"10136408886","administrator":false,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10119764388","firstName":"Genela","lastName":"Hardin","emailAddress":"ghardin@planview.com","boardId":"10136408886","administrator":true,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10128306286","firstName":"Genela","lastName":"Palmer-Hardin","emailAddress":"hardinpalmer@gmail.com","boardId":"10136408886","administrator":false,"WIP":null,"id":null,"licenseType":"reader","role":{"key":"boardReader","value":1,"label":"Reader"}},{"userId":"10145868039","firstName":"Greg","lastName":"Boxer","emailAddress":"gboxer@planview.com","boardId":"10136408886","administrator":false,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10113743588","firstName":"Hunter","lastName":"Heitzman","emailAddress":"hunter.heitzman@leankit.com","boardId":"10136408886","administrator":true,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10145859159","firstName":"John","lastName":"Mathis","emailAddress":"jmathis@planview.com","boardId":"10136408886","administrator":true,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10145859151","firstName":"Jon","lastName":"High","emailAddress":"jhigh@planview.com","boardId":"10136408886","administrator":true,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10145602409","firstName":"Jon","lastName":"Terry","emailAddress":"jterry@planview.com","boardId":"10136408886","administrator":false,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10145857808","firstName":"Jose","lastName":"Silva","emailAddress":"jsilva@planview.com","boardId":"10136408886","administrator":true,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10127670209","firstName":"josh","lastName":"bush","emailAddress":"josh.bush@leankit.com","boardId":"10136408886","administrator":true,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}},{"userId":"10145874402","firstName":"Josh","lastName":"Stewart","emailAddress":"jstewart@planview.com","boardId":"10136408886","administrator":false,"WIP":null,"id":null,"licenseType":"full","role":{"key":"boardAdministrator","value":4,"label":"Administrator"}}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '6624'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 01 Nov 2021 15:33:19 GMT
+      Etag:
+      - W/"19e0-a40Yrxx5kmTXeFCTJJ3uNsPZ90M"
+      X-RateLimit-Limit:
+      - '160'
+      X-RateLimit-Remaining:
+      - '153'
+      X-RateLimit-Reset:
+      - '1635780813'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload;
+      x-lk-app-description:
+      - LeanKit API
+      x-lk-app-name:
+      - '@banditsoftware/core-leankit-api'
+      x-lk-app-version:
+      - 50.8.0
+      x-powered-by:
+      - Express
+      x-request-correlation-id:
+      - 0a384300-3b29-11ec-8191-fec842fbf5cc
+    status:
+      code: 200
+      message: OK
+    url: https://d09.leankit.io/io/okr/board/10136408886/user?search=
+version: 1

@@ -1,0 +1,44 @@
+interactions:
+- request:
+    body:
+      client_id: bogus-id
+      client_secret: REDACTED
+      grant_type: client_credentials
+    headers:
+      Accept:
+      - application/json
+      Content-Type:
+      - application/x-www-form-urlencoded
+    method: POST
+    uri: https://platforma.pvintegrations-dev.net/inthub/api/v1/oauth2/token
+  response:
+    body:
+      string: "{\n\n  \"message\":\"invalid_client\"\n\n}"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '34'
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 08 Mar 2021 23:10:09 GMT
+      Via:
+      - 1.1 5acb462088c58215e9032fb914ced11e.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - So22doz8Ze6kgTzx7fByj-09E_2eaq0b1zYA0UNXzA3FGQb7QKqkqA==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-6046aed1-4d8bb3a26a02e4b4397229bc
+      X-Cache:
+      - Error from cloudfront
+      x-amz-apigw-id:
+      - b5BAwGtlvHcFZxg=
+      x-amzn-RequestId:
+      - b0e06ff3-2693-446d-94fa-f7cdc51b5121
+    status:
+      code: 400
+      message: Bad Request
+    url: https://platforma.pvintegrations-dev.net/inthub/api/v1/oauth2/token
+version: 1

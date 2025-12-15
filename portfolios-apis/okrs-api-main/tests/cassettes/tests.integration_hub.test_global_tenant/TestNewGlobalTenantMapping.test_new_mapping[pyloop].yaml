@@ -1,0 +1,169 @@
+interactions:
+- request:
+    body:
+      client_id: REDACTED
+      client_secret: REDACTED
+    headers:
+      Accept:
+      - application/json
+      Content-Type:
+      - application/x-www-form-urlencoded
+    method: POST
+    uri: https://platforma.pvintegrations-dev.net/inthub/api/v1/oauth2/token
+  response:
+    body:
+      string: '{"access_token":"REDACTED","expires_in":3600,"token_type":"Bearer"}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '905'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 18 May 2021 20:24:10 GMT
+      Via:
+      - 1.1 2e2a46256400c6a2d2f7ba0be8c89710.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - oC7cftdwsqoPjsaDwYO7pKqcCr5oiSsFdzTXLfA1_wKDsVqtxmAS-A==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-60a4226a-435071991bb2ba8931fab376
+      X-Cache:
+      - Miss from cloudfront
+      x-amz-apigw-id:
+      - fipQsEY8PHcFVXA=
+      x-amzn-RequestId:
+      - d2047b86-7795-4baa-89ef-8c1f3678173b
+    status:
+      code: 200
+      message: OK
+    url: https://platforma.pvintegrations-dev.net/inthub/api/v1/oauth2/token
+- request:
+    body: null
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://platforma.pvintegrations-dev.net/inthub/admin/api/v1/deployments/find?systemCode=okrs&environmentId=okrs-env-us-west-2&systemTenantId=okrs-d09-000001111
+  response:
+    body:
+      string: '{"errors":[{"type":12,"message":"Tenant with systemCode: ''okrs'',
+        environmentId: ''okrs-env-us-west-2'', systemTenantId: ''okrs-d09-000001111''
+        was not found.","context":null,"cause":null}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '185'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 18 May 2021 20:24:19 GMT
+      Strict-Transport-Security:
+      - max-age=2592000
+      Via:
+      - 1.1 2e2a46256400c6a2d2f7ba0be8c89710.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - 3J4-DLW6pOc7R9XYLNuyq1NQk4aql2dCWOx-DFvgz6_nfgr6NALsXQ==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-60a4226b-6b66c03b0e0e3fa235dc31c1;Sampled=0
+      X-Cache:
+      - Error from cloudfront
+      x-amz-apigw-id:
+      - fipQvGXDPHcFjzQ=
+      x-amzn-RequestId:
+      - 8810762e-f2b8-4db9-962c-571333551b1b
+    status:
+      code: 404
+      message: Not Found
+    url: https://platforma.pvintegrations-dev.net/inthub/admin/api/v1/deployments/find?systemCode=okrs&environmentId=okrs-env-us-west-2&systemTenantId=okrs-d09-000001111
+- request:
+    body: null
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://platforma.pvintegrations-dev.net/inthub/admin/api/v1/deployments/find?systemCode=lk&environmentId=d09&systemTenantId=000001111
+  response:
+    body:
+      string: '{"errors":[{"type":12,"message":"Tenant with systemCode: ''lk'', environmentId:
+        ''d09'', systemTenantId: ''000001111'' was not found.","context":null,"cause":null}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '159'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 18 May 2021 20:24:20 GMT
+      Strict-Transport-Security:
+      - max-age=2592000
+      Via:
+      - 1.1 2e2a46256400c6a2d2f7ba0be8c89710.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - Vc1IQAvOuMgYYgYFVxurW74Wybbwwt_ONIJnPLFqJcQ9XVW3qYr38Q==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-60a42273-700b272e7c85a50b385a68e5;Sampled=0
+      X-Cache:
+      - Error from cloudfront
+      x-amz-apigw-id:
+      - fipSIExHPHcFUZw=
+      x-amzn-RequestId:
+      - f176dcbf-c111-4337-bff3-229ad8119542
+    status:
+      code: 404
+      message: Not Found
+    url: https://platforma.pvintegrations-dev.net/inthub/admin/api/v1/deployments/find?systemCode=lk&environmentId=d09&systemTenantId=000001111
+- request:
+    body: null
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - REDACTED
+    method: POST
+    uri: https://platforma.pvintegrations-dev.net/inthub/admin/api/v1/tenants
+  response:
+    body:
+      string: '{"data":[{"globalTenantId":"d70501b1-8da8-4ff0-8c97-1c8a20c5023f","tenantName":"okrs-customer","salesforceId":null,"integratedDeployments":[{"systemCode":"okrs","environmentId":"okrs-env-us-west-2","systemTenantId":"okrs-d09-000001111"},{"systemCode":"lk","environmentId":"d09","systemTenantId":"000001111"}]}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '311'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 18 May 2021 20:24:20 GMT
+      Strict-Transport-Security:
+      - max-age=2592000
+      Via:
+      - 1.1 2e2a46256400c6a2d2f7ba0be8c89710.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - bRUO9gMJIYzvNl2daAXUDSKXd63A3UdBQpvT2DxBHhyAmjq2uVY7yg==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-60a42274-6012d1da66569823668d4882;Sampled=0
+      X-Cache:
+      - Miss from cloudfront
+      x-amz-apigw-id:
+      - fipSKFYwPHcFohA=
+      x-amzn-RequestId:
+      - be40e947-5044-4e10-acec-e7fb148befc0
+    status:
+      code: 200
+      message: OK
+    url: https://platforma.pvintegrations-dev.net/inthub/admin/api/v1/tenants
+version: 1

@@ -1,0 +1,84 @@
+interactions:
+- request:
+    body:
+      client_id: REDACTED
+      client_secret: REDACTED
+    headers:
+      Accept:
+      - application/json
+      Content-Type:
+      - application/x-www-form-urlencoded
+    method: POST
+    uri: https://us-west-2.pvintegrations-staging.net/inthub/api/v1/oauth2/token
+  response:
+    body:
+      string: '{"access_token":"REDACTED","expires_in":3600,"token_type":"Bearer"}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '908'
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 31 Mar 2021 19:23:41 GMT
+      Via:
+      - 1.1 2a6ad3d1a0683e7c86e06f217adad5fb.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - lwiQnkB8Z5ml4D73G5xzyG_K1gjuU1EXVBoS_BCXQ5ZVBPLYhVi8jw==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-6064cc3d-7c677eda4c3ed6786b160a7c
+      X-Cache:
+      - Miss from cloudfront
+      x-amz-apigw-id:
+      - dETZkHK2vHcFqrw=
+      x-amzn-RequestId:
+      - 4c59ca0a-c4a3-4d82-a0ae-53f8f71b2cc1
+    status:
+      code: 200
+      message: OK
+    url: https://us-west-2.pvintegrations-staging.net/inthub/api/v1/oauth2/token
+- request:
+    body: null
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://us-west-2.pvintegrations-staging.net/inthub/admin/api/v1/deployments/find?systemCode=okrs&environmentId=okrs-env-us-west-2&systemTenantId=okrs-i01-10100000101
+  response:
+    body:
+      string: '{"data":[{"integratedDeployment":{"systemCode":"okrs","environmentId":"okrs-env-us-west-2","systemTenantId":"okrs-i01-10100000101"},"globalTenantIds":["9e08395c-0fb1-4e92-b318-1c8c9c865e9d"]}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '193'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Wed, 31 Mar 2021 19:23:50 GMT
+      Strict-Transport-Security:
+      - max-age=2592000
+      Via:
+      - 1.1 2a6ad3d1a0683e7c86e06f217adad5fb.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - WoWRyP-md2F2h08RkT96pNxusK8gkrblXmRq5dVxSAqBI3J_j8uOsg==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-6064cc3d-147d0b282f0c468c7b214d3b
+      X-Cache:
+      - Miss from cloudfront
+      x-amz-apigw-id:
+      - dETZmEQxPHcFjaw=
+      x-amzn-RequestId:
+      - 81e3565f-c2fd-4da0-aab8-fad51cef9a0d
+    status:
+      code: 200
+      message: OK
+    url: https://us-west-2.pvintegrations-staging.net/inthub/admin/api/v1/deployments/find?systemCode=okrs&environmentId=okrs-env-us-west-2&systemTenantId=okrs-i01-10100000101
+version: 1

@@ -1,0 +1,35 @@
+table:
+  name: work_item_key_results_view
+  schema: public
+select_permissions:
+  - role: reporting
+    permission:
+      columns:
+        - deleted_at_epoch
+        - id
+        - objective_id
+        - work_item_id
+        - app_created_by
+        - app_last_updated_by
+        - app_owned_by
+        - created_by
+        - data_source
+        - description
+        - last_updated_by
+        - name
+        - owned_by
+        - tenant_group_id_str
+        - tenant_id_str
+        - value_type
+        - starting_value
+        - target_value
+        - progress_percentage
+        - achieved_at
+        - created_at
+        - ends_at
+        - starts_at
+        - updated_at
+      filter:
+        tenant_group_id_str:
+          _eq: X-Hasura-Org-Id
+      allow_aggregations: true

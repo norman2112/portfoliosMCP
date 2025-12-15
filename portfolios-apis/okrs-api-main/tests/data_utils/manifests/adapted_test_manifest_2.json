@@ -1,0 +1,549 @@
+{
+    "Setting": [
+        {
+            "old": {
+                "level_config": [
+                    {
+                        "depth": 0,
+                        "name": "Enterprise",
+                        "color": "#ba8aa4",
+                        "is_default": false
+                    },
+                    {
+                        "depth": 1,
+                        "name": "Portfolio",
+                        "color": "#f87b55",
+                        "is_default": false
+                    },
+                    {
+                        "depth": 2,
+                        "name": "Program",
+                        "color": "#8ab98e",
+                        "is_default": false
+                    },
+                    {
+                        "depth": 3,
+                        "name": "Team",
+                        "color": "#608eb6",
+                        "is_default": true
+                    }
+                ],
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "ih_setup_verified_at": "2023-05-17T16:30:53.423738",
+                "ih_global_tenant_id": "4fc56b67-92f0-4435-9cb0-18181d0129a0",
+                "id": 445550,
+                "tenant_group_id_str": "LEANKIT~d09-10146315773",
+                "app_created_by": "10146315774",
+                "app_last_updated_by": null,
+                "created_by": "10146315774",
+                "last_updated_by": null,
+                "created_at": "2023-05-17T16:30:44.801612+00:00",
+                "updated_at": "2023-05-17T16:30:53.418999+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": null
+            },
+            "new": {
+                "level_config": [
+                    {
+                        "depth": 0,
+                        "name": "Enterprise",
+                        "color": "#ba8aa4",
+                        "is_default": false
+                    },
+                    {
+                        "depth": 1,
+                        "name": "Portfolio",
+                        "color": "#f87b55",
+                        "is_default": false
+                    },
+                    {
+                        "depth": 2,
+                        "name": "Program",
+                        "color": "#8ab98e",
+                        "is_default": false
+                    },
+                    {
+                        "depth": 3,
+                        "name": "Team",
+                        "color": "#608eb6",
+                        "is_default": true
+                    }
+                ],
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "ih_setup_verified_at": "2023-05-17T16:30:53.423738",
+                "ih_global_tenant_id": "4fc56b67-92f0-4435-9cb0-18181d0129a0",
+                "id": 445550,
+                "tenant_group_id_str": "LEANKIT~d09-10146315773",
+                "app_created_by": "10126899937",
+                "app_last_updated_by": null,
+                "created_by": "10146315774",
+                "last_updated_by": null,
+                "created_at": "2023-05-17T16:30:44.801612+00:00",
+                "updated_at": "2023-05-17T16:30:53.418999+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": null
+            }
+        }
+    ],
+    "WorkItemContainer": [
+        {
+            "old": {
+                "external_type": "leankit",
+                "external_id": "10146315966",
+                "external_title": "Test Board",
+                "level_depth_default": 3,
+                "objective_editing_levels": [
+                    0,
+                    1,
+                    2,
+                    3
+                ],
+                "app_name": "leankit",
+                "id": 110295,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": "LEANKIT~d09-10146315773",
+                "app_created_by": "10146315774",
+                "app_last_updated_by": "10146315774",
+                "created_by": "10146315774",
+                "last_updated_by": "10146315774",
+                "created_at": "2023-05-17T16:30:44.815294+00:00",
+                "updated_at": "2023-05-17T16:32:01.676314+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": "10146315774",
+                "deleted_at_epoch": 0
+            },
+            "new": {
+                "external_type": "leankit",
+                "external_id": "10126899942",
+                "external_title": "Test Board",
+                "level_depth_default": 3,
+                "objective_editing_levels": [
+                    0,
+                    1,
+                    2,
+                    3
+                ],
+                "app_name": "leankit",
+                "id": 110295,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": "LEANKIT~d09-10146315773",
+                "app_created_by": "10126899937",
+                "app_last_updated_by": "10126899937",
+                "created_by": "10146315774",
+                "last_updated_by": "10146315774",
+                "created_at": "2023-05-17T16:30:44.815294+00:00",
+                "updated_at": "2023-05-17T16:32:01.676314+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": "10146315774",
+                "deleted_at_epoch": 0
+            }
+        },
+        {
+            "old": {
+                "external_type": "leankit",
+                "external_id": "10146316092",
+                "external_title": "Another Board",
+                "level_depth_default": 3,
+                "objective_editing_levels": [
+                    3
+                ],
+                "app_name": "leankit",
+                "id": 110298,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": "LEANKIT~d09-10146315773",
+                "app_created_by": "10146315774",
+                "app_last_updated_by": "10146315774",
+                "created_by": "10146315774",
+                "last_updated_by": "10146315774",
+                "created_at": "2023-05-17T16:33:37.266489+00:00",
+                "updated_at": "2023-05-17T16:34:00.468362+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": "10146315774",
+                "deleted_at_epoch": 0
+            },
+            "new": {
+                "external_type": "leankit",
+                "external_id": "10126899943",
+                "external_title": "Another Board",
+                "level_depth_default": 3,
+                "objective_editing_levels": [
+                    3
+                ],
+                "app_name": "leankit",
+                "id": 110298,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": "LEANKIT~d09-10146315773",
+                "app_created_by": "10126899937",
+                "app_last_updated_by": "10126899937",
+                "created_by": "10146315774",
+                "last_updated_by": "10146315774",
+                "created_at": "2023-05-17T16:33:37.266489+00:00",
+                "updated_at": "2023-05-17T16:34:00.468362+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": "10146315774",
+                "deleted_at_epoch": 0
+            }
+        }
+    ],
+    "Objective": [
+        {
+            "old": {
+                "name": "Test",
+                "description": null,
+                "progress_percentage": 0,
+                "level_depth": 3,
+                "app_owned_by": null,
+                "owned_by": null,
+                "parent_objective_id": null,
+                "work_item_container_id": 110295,
+                "id": 108330,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": "LEANKIT~d09-10146315773",
+                "app_created_by": "10146315774",
+                "app_last_updated_by": null,
+                "created_by": "10146315774",
+                "last_updated_by": null,
+                "created_at": "2023-05-17T16:32:01.676314+00:00",
+                "updated_at": "2023-05-17T16:32:01.676314+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": null,
+                "deleted_at_epoch": 0,
+                "starts_at": "2023-05-01T00:00:00+00:00",
+                "ends_at": "2023-05-31T00:00:00+00:00",
+                "achieved_at": null
+            },
+            "new": {
+                "name": "Test",
+                "description": null,
+                "progress_percentage": 0,
+                "level_depth": 3,
+                "app_owned_by": null,
+                "owned_by": null,
+                "parent_objective_id": null,
+                "work_item_container_id": 110295,
+                "id": 108330,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": "LEANKIT~d09-10146315773",
+                "app_created_by": "10126899937",
+                "app_last_updated_by": null,
+                "created_by": "10146315774",
+                "last_updated_by": null,
+                "created_at": "2023-05-17T16:32:01.676314+00:00",
+                "updated_at": "2023-05-17T16:32:01.676314+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": null,
+                "deleted_at_epoch": 0,
+                "starts_at": "2023-05-01T00:00:00+00:00",
+                "ends_at": "2023-05-31T00:00:00+00:00",
+                "achieved_at": null
+            }
+        },
+        {
+            "old": {
+                "name": "Hello",
+                "description": null,
+                "progress_percentage": 0,
+                "level_depth": 3,
+                "app_owned_by": null,
+                "owned_by": null,
+                "parent_objective_id": null,
+                "work_item_container_id": 110298,
+                "id": 108331,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": "LEANKIT~d09-10146315773",
+                "app_created_by": "10146315774",
+                "app_last_updated_by": null,
+                "created_by": "10146315774",
+                "last_updated_by": null,
+                "created_at": "2023-05-17T16:34:00.468362+00:00",
+                "updated_at": "2023-05-17T16:34:00.468362+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": null,
+                "deleted_at_epoch": 0,
+                "starts_at": "2023-05-01T00:00:00+00:00",
+                "ends_at": "2023-05-31T00:00:00+00:00",
+                "achieved_at": null
+            },
+            "new": {
+                "name": "Hello",
+                "description": null,
+                "progress_percentage": 0,
+                "level_depth": 3,
+                "app_owned_by": null,
+                "owned_by": null,
+                "parent_objective_id": null,
+                "work_item_container_id": 110298,
+                "id": 108331,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": "LEANKIT~d09-10146315773",
+                "app_created_by": "10126899937",
+                "app_last_updated_by": null,
+                "created_by": "10146315774",
+                "last_updated_by": null,
+                "created_at": "2023-05-17T16:34:00.468362+00:00",
+                "updated_at": "2023-05-17T16:34:00.468362+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": null,
+                "deleted_at_epoch": 0,
+                "starts_at": "2023-05-01T00:00:00+00:00",
+                "ends_at": "2023-05-31T00:00:00+00:00",
+                "achieved_at": null
+            }
+        }
+    ],
+    "KeyResult": [
+        {
+            "old": {
+                "name": "Kr1",
+                "description": null,
+                "starting_value": 1.0,
+                "target_value": 100.0,
+                "value_type": "count",
+                "data_source": "",
+                "progress_percentage": 0,
+                "app_owned_by": null,
+                "owned_by": null,
+                "objective_id": 108330,
+                "id": 272879,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": "LEANKIT~d09-10146315773",
+                "app_created_by": "10146315774",
+                "app_last_updated_by": null,
+                "created_by": "10146315774",
+                "last_updated_by": null,
+                "created_at": "2023-05-17T16:32:51.159251+00:00",
+                "updated_at": "2023-05-17T16:32:51.159251+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": null,
+                "deleted_at_epoch": 0,
+                "starts_at": "2023-05-01T00:00:00+00:00",
+                "ends_at": "2023-05-31T00:00:00+00:00",
+                "achieved_at": null
+            },
+            "new": {
+                "name": "Kr1",
+                "description": null,
+                "starting_value": 1.0,
+                "target_value": 100.0,
+                "value_type": "count",
+                "data_source": "",
+                "progress_percentage": 0,
+                "app_owned_by": null,
+                "owned_by": null,
+                "objective_id": 108330,
+                "id": 272879,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": "LEANKIT~d09-10146315773",
+                "app_created_by": "10126899937",
+                "app_last_updated_by": null,
+                "created_by": "10146315774",
+                "last_updated_by": null,
+                "created_at": "2023-05-17T16:32:51.159251+00:00",
+                "updated_at": "2023-05-17T16:32:51.159251+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": null,
+                "deleted_at_epoch": 0,
+                "starts_at": "2023-05-01T00:00:00+00:00",
+                "ends_at": "2023-05-31T00:00:00+00:00",
+                "achieved_at": null
+            }
+        }
+    ],
+    "WorkItem": [],
+    "KeyResultWorkItemMapping": [],
+    "ProgressPoint": [],
+    "ActivityLog": [
+        {
+            "old": {
+                "objective_id": 108330,
+                "key_result_id": null,
+                "progress_point_id": null,
+                "work_item_id": null,
+                "action": "insert.objectives",
+                "info": {
+                    "objective_name": "Test",
+                    "starts_at": "2023-05-01T00:00:00+00:00",
+                    "ends_at": "2023-05-31T00:00:00+00:00",
+                    "parent_objective_id": null,
+                    "parent_objective_name": null
+                },
+                "id": 201102,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": null,
+                "app_created_by": "10146315774",
+                "app_last_updated_by": null,
+                "created_by": null,
+                "last_updated_by": null,
+                "created_at": "2023-05-17T16:32:02.311503+00:00",
+                "updated_at": "2023-05-17T16:32:02.468936+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": null
+            },
+            "new": {
+                "objective_id": 108330,
+                "key_result_id": null,
+                "progress_point_id": null,
+                "work_item_id": null,
+                "action": "insert.objectives",
+                "info": {
+                    "objective_name": "Test",
+                    "starts_at": "2023-05-01T00:00:00+00:00",
+                    "ends_at": "2023-05-31T00:00:00+00:00",
+                    "parent_objective_id": null,
+                    "parent_objective_name": null
+                },
+                "id": 201102,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": null,
+                "app_created_by": "10126899937",
+                "app_last_updated_by": null,
+                "created_by": null,
+                "last_updated_by": null,
+                "created_at": "2023-05-17T16:32:02.311503+00:00",
+                "updated_at": "2023-05-17T16:32:02.468936+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": null
+            }
+        },
+        {
+            "old": {
+                "objective_id": 108330,
+                "key_result_id": 272879,
+                "progress_point_id": null,
+                "work_item_id": null,
+                "action": "insert.key_results",
+                "info": {
+                    "key_result_name": "Kr1",
+                    "key_result_progress_percentage": 0,
+                    "starting_value": 1,
+                    "target_value": 100,
+                    "starts_at": "2023-05-01T00:00:00+00:00",
+                    "ends_at": "2023-05-31T00:00:00+00:00",
+                    "objective_id": 108330,
+                    "objective_name": "Test",
+                    "objective_progress_percentage": 0
+                },
+                "id": 201103,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": null,
+                "app_created_by": "10146315774",
+                "app_last_updated_by": null,
+                "created_by": null,
+                "last_updated_by": null,
+                "created_at": "2023-05-17T16:32:51.943946+00:00",
+                "updated_at": "2023-05-17T16:32:51.935429+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": null
+            },
+            "new": {
+                "objective_id": 108330,
+                "key_result_id": 272879,
+                "progress_point_id": null,
+                "work_item_id": null,
+                "action": "insert.key_results",
+                "info": {
+                    "key_result_name": "Kr1",
+                    "key_result_progress_percentage": 0,
+                    "starting_value": 1,
+                    "target_value": 100,
+                    "starts_at": "2023-05-01T00:00:00+00:00",
+                    "ends_at": "2023-05-31T00:00:00+00:00",
+                    "objective_id": 108330,
+                    "objective_name": "Test",
+                    "objective_progress_percentage": 0
+                },
+                "id": 201103,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": null,
+                "app_created_by": "10126899937",
+                "app_last_updated_by": null,
+                "created_by": null,
+                "last_updated_by": null,
+                "created_at": "2023-05-17T16:32:51.943946+00:00",
+                "updated_at": "2023-05-17T16:32:51.935429+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": null
+            }
+        },
+        {
+            "old": {
+                "objective_id": 108331,
+                "key_result_id": null,
+                "progress_point_id": null,
+                "work_item_id": null,
+                "action": "insert.objectives",
+                "info": {
+                    "objective_name": "Hello",
+                    "starts_at": "2023-05-01T00:00:00+00:00",
+                    "ends_at": "2023-05-31T00:00:00+00:00",
+                    "parent_objective_id": null,
+                    "parent_objective_name": null
+                },
+                "id": 201104,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": null,
+                "app_created_by": "10146315774",
+                "app_last_updated_by": null,
+                "created_by": null,
+                "last_updated_by": null,
+                "created_at": "2023-05-17T16:34:00.854900+00:00",
+                "updated_at": "2023-05-17T16:34:00.978425+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": null
+            },
+            "new": {
+                "objective_id": 108331,
+                "key_result_id": null,
+                "progress_point_id": null,
+                "work_item_id": null,
+                "action": "insert.objectives",
+                "info": {
+                    "objective_name": "Hello",
+                    "starts_at": "2023-05-01T00:00:00+00:00",
+                    "ends_at": "2023-05-31T00:00:00+00:00",
+                    "parent_objective_id": null,
+                    "parent_objective_name": null
+                },
+                "id": 201104,
+                "tenant_id_str": "LEANKIT~d09-10146315773",
+                "tenant_group_id_str": null,
+                "app_created_by": "10126899937",
+                "app_last_updated_by": null,
+                "created_by": null,
+                "last_updated_by": null,
+                "created_at": "2023-05-17T16:34:00.854900+00:00",
+                "updated_at": "2023-05-17T16:34:00.978425+00:00",
+                "pv_tenant_id": "LEANKIT~d09-10146315773",
+                "pv_created_by": "10146315774",
+                "pv_last_updated_by": null
+            }
+        }
+    ],
+    "SUMMARY": {
+        "Setting": "exported 1 of 1 records",
+        "WorkItemContainer": "exported 2 of 2 records",
+        "Objective": "exported 2 of 2 records",
+        "KeyResult": "exported 1 of 1 records",
+        "WorkItem": "exported 0 of 0 records",
+        "KeyResultWorkItemMapping": "exported 0 of 0 records",
+        "ProgressPoint": "exported 0 of 0 records",
+        "ActivityLog": "exported 3 of 3 records"
+    }
+}

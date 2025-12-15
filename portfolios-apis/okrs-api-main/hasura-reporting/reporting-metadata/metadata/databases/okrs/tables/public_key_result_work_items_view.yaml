@@ -1,0 +1,27 @@
+table:
+  name: key_result_work_items_view
+  schema: public
+select_permissions:
+  - role: reporting
+    permission:
+      columns:
+        - id
+        - key_result_id
+        - work_item_container_id
+        - created_by
+        - external_id
+        - external_type
+        - item_type
+        - last_updated_by
+        - state
+        - tenant_group_id_str
+        - tenant_id_str
+        - title
+        - planned_finish
+        - planned_start
+        - created_at
+        - updated_at
+      filter:
+        tenant_group_id_str:
+          _eq: X-Hasura-Org-Id
+      allow_aggregations: true

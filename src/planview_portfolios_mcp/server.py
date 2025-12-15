@@ -21,21 +21,29 @@ if __name__ == "__main__" or not __package__:
     from planview_portfolios_mcp.soap_client import close_soap_client
     from planview_portfolios_mcp.tools import (
         allocate_resource,
+        batch_create_tasks,
+        batch_update_tasks,
         create_project,
         create_task,
         delete_task,
+        discover_financial_plan_info,
+        get_key_results_for_objective,
         get_project,
         get_project_attributes,
         get_resource,
         get_work,
         get_work_attributes,
+        list_all_objectives_with_key_results,
+        list_objectives,
         list_projects,
         list_resources,
         list_work,
         oauth_ping,
+        read_financial_plan,
         read_task,
         update_project,
         update_task,
+        upsert_financial_plan,
     )
 else:
     # Use relative imports when in package context
@@ -44,21 +52,29 @@ else:
     from .soap_client import close_soap_client
     from .tools import (
         allocate_resource,
+        batch_create_tasks,
+        batch_update_tasks,
         create_project,
         create_task,
         delete_task,
+        discover_financial_plan_info,
+        get_key_results_for_objective,
         get_project,
         get_project_attributes,
         get_resource,
         get_work,
         get_work_attributes,
+        list_all_objectives_with_key_results,
+        list_objectives,
         list_projects,
         list_resources,
         list_work,
         oauth_ping,
+        read_financial_plan,
         read_task,
         update_project,
         update_task,
+        upsert_financial_plan,
     )
 
 # Initialize FastMCP server
@@ -82,9 +98,19 @@ mcp.tool()(get_resource)
 mcp.tool()(allocate_resource)
 # Task service tools (SOAP API)
 mcp.tool()(create_task)
+mcp.tool()(batch_create_tasks)
 mcp.tool()(read_task)
 mcp.tool()(update_task)
+mcp.tool()(batch_update_tasks)
 mcp.tool()(delete_task)
+# Financial plan service tools (SOAP API)
+mcp.tool()(discover_financial_plan_info)
+mcp.tool()(read_financial_plan)
+mcp.tool()(upsert_financial_plan)
+# OKRs tools (REST API)
+mcp.tool()(list_objectives)
+mcp.tool()(get_key_results_for_objective)
+mcp.tool()(list_all_objectives_with_key_results)
 
 
 def cleanup():

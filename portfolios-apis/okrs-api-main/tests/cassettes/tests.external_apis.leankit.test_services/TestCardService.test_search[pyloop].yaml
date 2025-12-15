@@ -1,0 +1,68 @@
+interactions:
+- request:
+    body: null
+    headers:
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://d09.leankit.io/io/okr/card?board=10136408886&search=TEST
+  response:
+    body:
+      string: '{"cards":[{"assignedUsers":[],"id":"10145875549","index":9,"version":"1","title":"[TEST]
+        Petting Zoo Field Trip","description":null,"priority":"normal","size":0,"plannedStart":"2020-01-01","plannedFinish":"2021-01-01","actualFinish":null,"actualStart":null,"createdOn":"2021-10-28T21:36:29Z","archivedOn":null,"updatedOn":"2021-10-28T21:36:29Z","movedOn":"2021-10-28T21:36:29Z","tags":[],"containingCardId":null,"color":"#FFFFFF","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10136408886","title":"API
+        Testing - Libby1","version":284,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":null,"id":"10136408904","index":0,"laneClassType":"backlog","laneType":"ready","orientation":"vertical","title":"New
+        Requests","taskBoard":null},"type":{"id":"10136408888","title":"Other Work","cardColor":"#FFFFFF"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10145875064","index":8,"version":"1","title":"[TEST]
+        Petting Zoo Field Trip","description":null,"priority":"normal","size":0,"plannedStart":"2020-01-01","plannedFinish":"2021-01-01","actualFinish":null,"actualStart":null,"createdOn":"2021-10-27T20:55:30Z","archivedOn":null,"updatedOn":"2021-10-27T20:55:30Z","movedOn":"2021-10-27T20:55:30Z","tags":[],"containingCardId":null,"color":"#FFFFFF","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10136408886","title":"API
+        Testing - Libby1","version":284,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":null,"id":"10136408904","index":0,"laneClassType":"backlog","laneType":"ready","orientation":"vertical","title":"New
+        Requests","taskBoard":null},"type":{"id":"10136408888","title":"Other Work","cardColor":"#FFFFFF"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10145775827","index":1,"version":"2","title":"Test_consumer","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":null,"actualStart":"2021-04-30T11:55:26Z","createdOn":"2021-04-30T11:54:50Z","archivedOn":null,"updatedOn":"2021-04-30T11:55:26Z","movedOn":"2021-04-30T11:55:26Z","tags":[],"containingCardId":null,"color":"#FFFFFF","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10136408886","title":"API
+        Testing - Libby1","version":284,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":null,"id":"10136408901","index":2,"laneClassType":"active","laneType":"inProcess","orientation":"vertical","title":"Doing
+        Now","taskBoard":null},"type":{"id":"10136408888","title":"Other Work","cardColor":"#FFFFFF"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10137554324","index":2,"version":"4","title":"Description
+        Test2","description":"<span>Hey</span>","priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":null,"actualStart":null,"createdOn":"2018-08-29T20:03:16Z","archivedOn":null,"updatedOn":"2018-09-17T14:51:46Z","movedOn":"2018-08-29T20:03:16Z","tags":[],"containingCardId":null,"color":"#FFFFFF","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10136408886","title":"API
+        Testing - Libby1","version":284,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":null,"id":"10136408904","index":0,"laneClassType":"backlog","laneType":"ready","orientation":"vertical","title":"New
+        Requests","taskBoard":null},"type":{"id":"10136408888","title":"Other Work","cardColor":"#FFFFFF"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10137554231","index":1,"version":"4","title":"Description
+        Test2","description":"<span>Hey</span>","priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":null,"actualStart":null,"createdOn":"2018-08-29T20:00:55Z","archivedOn":null,"updatedOn":"2018-09-17T14:49:57Z","movedOn":"2018-08-29T20:00:55Z","tags":["tag2","tag3"],"containingCardId":null,"color":"#FFFFFF","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10136408886","title":"API
+        Testing - Libby1","version":284,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":null,"id":"10136408904","index":0,"laneClassType":"backlog","laneType":"ready","orientation":"vertical","title":"New
+        Requests","taskBoard":null},"type":{"id":"10136408888","title":"Other Work","cardColor":"#FFFFFF"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10137555027","index":3,"version":"4","title":"Description
+        Test2","description":"<span>Hey</span>","priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":null,"actualStart":null,"createdOn":"2018-08-29T20:04:49Z","archivedOn":null,"updatedOn":"2018-09-17T14:49:57Z","movedOn":"2018-08-29T20:04:49Z","tags":["tag2","tag3"],"containingCardId":null,"color":"#FFFFFF","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10136408886","title":"API
+        Testing - Libby1","version":284,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":null,"id":"10136408904","index":0,"laneClassType":"backlog","laneType":"ready","orientation":"vertical","title":"New
+        Requests","taskBoard":null},"type":{"id":"10136408888","title":"Other Work","cardColor":"#FFFFFF"},"taskBoardStats":null,"planningIncrement":null}],"pageMeta":{"totalRecords":6,"offset":0,"limit":200,"startRow":1,"endRow":6}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '6154'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 01 Nov 2021 15:32:33 GMT
+      Etag:
+      - W/"180a-SNM4+gSPKNCWASKGaEWeWCBQ7AA"
+      X-RateLimit-Limit:
+      - '160'
+      X-RateLimit-Remaining:
+      - '159'
+      X-RateLimit-Reset:
+      - '1635780813'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload;
+      x-lk-app-description:
+      - LeanKit API
+      x-lk-app-name:
+      - '@banditsoftware/core-leankit-api'
+      x-lk-app-version:
+      - 50.8.0
+      x-powered-by:
+      - Express
+      x-request-correlation-id:
+      - ee2f9870-3b28-11ec-8191-fec842fbf5cc
+    status:
+      code: 200
+      message: OK
+    url: https://d09.leankit.io/io/okr/card?board=10136408886&search=TEST
+version: 1

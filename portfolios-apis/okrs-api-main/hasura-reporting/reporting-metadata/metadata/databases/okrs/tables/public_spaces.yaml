@@ -1,0 +1,11 @@
+table:
+  name: spaces
+  schema: public
+array_relationships:
+  - name: space_work_item_container_mappings
+    using:
+      foreign_key_constraint_on:
+        column: space_id
+        table:
+          name: space_work_item_container_mappings
+          schema: public

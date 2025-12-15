@@ -83,12 +83,13 @@ class PlanviewSOAPClient:
                 xml_huge_tree=True,  # Handle large XML responses
             )
             
-            # Enable zeep XML logging to see what's being sent
+            # Only enable zeep debug logging if log level is DEBUG
             import logging
-            zeep_logger = logging.getLogger('zeep.wsdl')
-            zeep_logger.setLevel(logging.DEBUG)
-            zeep_transport_logger = logging.getLogger('zeep.transports')
-            zeep_transport_logger.setLevel(logging.DEBUG)
+            if settings.log_level == "DEBUG":
+                zeep_logger = logging.getLogger('zeep.wsdl')
+                zeep_logger.setLevel(logging.DEBUG)
+                zeep_transport_logger = logging.getLogger('zeep.transports')
+                zeep_transport_logger.setLevel(logging.DEBUG)
 
             wsdl_url = self._get_wsdl_url()
             logger.debug(f"Creating SOAP client for WSDL: {wsdl_url}")
@@ -165,6 +166,136 @@ async def close_soap_client():
     await _soap_client.close()
 
 
+@asynccontextmanager
+async def get_soap_client_for_service(service_path: str) -> AsyncContextManager[Client]:
+    """Get SOAP client for a specific service path.
+    
+    This is useful for services that use different WSDL URLs than the default TaskService.
+    
+    Args:
+        service_path: Service path (e.g., "/planview/services/FinancialPlanService.svc")
+        
+    Yields:
+        zeep Client instance for the specified service
+        
+    Example:
+        async with get_soap_client_for_service("/planview/services/FinancialPlanService.svc") as client:
+            # Use client for FinancialPlanService operations
+            pass
+    """
+    # Get OAuth token
+    if not settings.planview_client_id or not settings.planview_client_secret:
+        raise PlanviewAuthError(
+            "OAuth credentials are required (PLANVIEW_CLIENT_ID/PLANVIEW_CLIENT_SECRET)."
+        )
+    
+    token = await get_oauth_token()
+    auth_header = f"Bearer {token}"
+    
+    # Remove /polaris from base URL if present (SOAP services are at /planview, not /polaris)
+    base_url = settings.planview_api_url.rstrip("/")
+    if base_url.endswith("/polaris"):
+        base_url = base_url[:-7]  # Remove "/polaris"
+    
+    service_path_clean = service_path.lstrip("/")
+    wsdl_url = f"{base_url}/{service_path_clean}?wsdl"
+    
+    # Create requests.Session with auth headers
+    session = requests.Session()
+    session.headers.update(
+        {
+            "Authorization": auth_header,
+            "X-Tenant-Id": settings.planview_tenant_id,
+            "Content-Type": "text/xml; charset=utf-8",
+            "SOAPAction": "",
+        }
+    )
+    
+    # Create transport with pre-configured session
+    transport = Transport(session=session, timeout=settings.soap_timeout)
+    
+    # Create zeep client settings
+    zeep_settings = Settings(
+        strict=False,  # Allow extra fields
+        xml_huge_tree=True,  # Handle large XML responses
+    )
+    
+    logger.debug(f"Creating SOAP client for WSDL: {wsdl_url}")
+    
+    try:
+        # Create client (synchronous operation)
+        client = Client(wsdl=wsdl_url, transport=transport, settings=zeep_settings)
+        yield client
+    except TransportError as e:
+        if "401" in str(e) or "403" in str(e):
+            raise PlanviewAuthError(f"SOAP authentication failed: {str(e)}") from e
+        elif "404" in str(e):
+            raise PlanviewNotFoundError(f"SOAP service not found: {str(e)}") from e
+        else:
+            raise PlanviewConnectionError(f"SOAP transport error: {str(e)}") from e
+    except Exception as e:
+        raise PlanviewConnectionError(f"Failed to create SOAP client: {str(e)}") from e
+    finally:
+        # Clean up transport session
+        if hasattr(transport, 'session') and hasattr(transport.session, 'close'):
+            transport.session.close()
+
+
+def _convert_zeep_object_to_dict(obj: Any) -> dict[str, Any]:
+    """Recursively convert zeep object to dict, handling nested structures."""
+    if obj is None:
+        return {}
+    
+    result_dict = {}
+    
+    # Handle dict-like objects
+    if hasattr(obj, "__dict__"):
+        obj_dict = obj.__dict__
+        if "__values__" in obj_dict:
+            # zeep objects store values in __values__
+            obj_dict = obj_dict["__values__"]
+        
+        for key, value in obj_dict.items():
+            if key.startswith("_"):
+                continue
+            result_dict[key] = _convert_zeep_value_to_python(value)
+    
+    # Also try dir() approach for zeep objects
+    if not result_dict:
+        for attr in dir(obj):
+            if attr.startswith("_") or callable(getattr(obj, attr)):
+                continue
+            try:
+                value = getattr(obj, attr, None)
+                if value is not None:
+                    result_dict[attr] = _convert_zeep_value_to_python(value)
+            except Exception:
+                pass
+    
+    return result_dict
+
+
+def _convert_zeep_value_to_python(value: Any) -> Any:
+    """Convert zeep value to native Python type, handling nested structures."""
+    if value is None:
+        return None
+    
+    # Handle zeep objects
+    if hasattr(value, "__dict__") or (hasattr(value, "__class__") and "zeep" in str(type(value))):
+        return _convert_zeep_object_to_dict(value)
+    
+    # Handle lists/arrays
+    if isinstance(value, (list, tuple)):
+        return [_convert_zeep_value_to_python(item) for item in value]
+    
+    # Handle dicts
+    if isinstance(value, dict):
+        return {k: _convert_zeep_value_to_python(v) for k, v in value.items()}
+    
+    # Return primitive values as-is
+    return value
+
+
 def _parse_opensuite_result(result: Any) -> dict[str, Any]:
     """Parse OpenSuiteResult from SOAP response to dict format.
 
@@ -182,30 +313,52 @@ def _parse_opensuite_result(result: Any) -> dict[str, Any]:
     }
 
     # Parse successes
+    # Successes can be a dict with "OpenSuiteStatus" key or a direct list/iterable
     if hasattr(result, "Successes") and result.Successes:
-        for success in result.Successes:
+        successes_to_process = []
+        
+        # Handle nested structure: Successes may contain OpenSuiteStatus
+        if hasattr(result.Successes, "OpenSuiteStatus"):
+            successes_to_process = result.Successes.OpenSuiteStatus
+            if not isinstance(successes_to_process, list):
+                successes_to_process = [successes_to_process]
+        elif hasattr(result.Successes, "__iter__") and not isinstance(result.Successes, (str, bytes)):
+            # Direct iterable
+            successes_to_process = list(result.Successes)
+        else:
+            successes_to_process = [result.Successes]
+        
+        for success in successes_to_process:
             success_dict = {
                 "source_index": getattr(success, "SourceIndex", None),
                 "code": getattr(success, "Code", None),
                 "error_message": getattr(success, "ErrorMessage", None),
             }
-            # Extract DTO from success (contains keys only on success)
+            # Extract DTO from success (contains full DTO on read operations)
             if hasattr(success, "Dto"):
                 dto = success.Dto
-                # Convert DTO to dict
-                dto_dict = {}
-                if dto:
-                    for attr in dir(dto):
-                        if not attr.startswith("_") and not callable(getattr(dto, attr)):
-                            value = getattr(dto, attr, None)
-                            if value is not None:
-                                dto_dict[attr] = value
+                # Convert DTO to dict recursively
+                dto_dict = _convert_zeep_object_to_dict(dto)
                 success_dict["dto"] = dto_dict
             parsed["successes"].append(success_dict)
 
     # Parse failures
+    # Failures can be a dict with "OpenSuiteStatus" key or a direct list/iterable
     if hasattr(result, "Failures") and result.Failures:
-        for failure in result.Failures:
+        failures_to_process = []
+        
+        # Handle nested structure: Failures may contain OpenSuiteStatus
+        if hasattr(result.Failures, "OpenSuiteStatus"):
+            failures_to_process = result.Failures.OpenSuiteStatus
+            if not isinstance(failures_to_process, list):
+                failures_to_process = [failures_to_process]
+        elif hasattr(result.Failures, "__iter__") and not isinstance(result.Failures, (str, bytes)):
+            # Direct iterable
+            failures_to_process = list(result.Failures)
+        else:
+            failures_to_process = [result.Failures]
+        
+        for failure in failures_to_process:
             failure_dict = {
                 "source_index": getattr(failure, "SourceIndex", None),
                 "code": getattr(failure, "Code", None),
@@ -214,13 +367,7 @@ def _parse_opensuite_result(result: Any) -> dict[str, Any]:
             # Extract DTO from failure (contains full DTO on failure)
             if hasattr(failure, "Dto"):
                 dto = failure.Dto
-                dto_dict = {}
-                if dto:
-                    for attr in dir(dto):
-                        if not attr.startswith("_") and not callable(getattr(dto, attr)):
-                            value = getattr(dto, attr, None)
-                            if value is not None:
-                                dto_dict[attr] = value
+                dto_dict = _convert_zeep_object_to_dict(dto)
                 failure_dict["dto"] = dto_dict
             parsed["failures"].append(failure_dict)
 
@@ -234,13 +381,7 @@ def _parse_opensuite_result(result: Any) -> dict[str, Any]:
             }
             if hasattr(warning, "Dto"):
                 dto = warning.Dto
-                dto_dict = {}
-                if dto:
-                    for attr in dir(dto):
-                        if not attr.startswith("_") and not callable(getattr(dto, attr)):
-                            value = getattr(dto, attr, None)
-                            if value is not None:
-                                dto_dict[attr] = value
+                dto_dict = _convert_zeep_object_to_dict(dto)
                 warning_dict["dto"] = dto_dict
             parsed["warnings"].append(warning_dict)
 
@@ -276,9 +417,12 @@ def _handle_soap_result(result: Any) -> dict[str, Any]:
             if failure.get("dto"):
                 # Include DTO info in error
                 dto = failure["dto"]
-                key = dto.get("Key", "unknown")
-                description = dto.get("Description", "")
-                msg = f"{msg} (Key: {key}, Description: {description})"
+                key = dto.get("Key") or dto.get("EntityKey", "unknown")
+                description = dto.get("Description") or dto.get("EntityDescription", "")
+                if description:
+                    msg = f"{msg} (EntityKey: {key}, Description: {description})"
+                else:
+                    msg = f"{msg} (EntityKey: {key})"
             error_messages.append(msg)
 
         raise PlanviewValidationError(

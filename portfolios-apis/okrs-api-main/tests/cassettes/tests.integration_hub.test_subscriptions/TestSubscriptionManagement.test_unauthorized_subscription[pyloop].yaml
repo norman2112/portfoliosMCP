@@ -1,0 +1,43 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - REDACTED
+    method: POST
+    uri: https://us-west-2.pvintegrations-staging.net/inthub/api/v1/publish
+  response:
+    body:
+      string: '{"message":null}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '16'
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 22 Feb 2021 20:31:35 GMT
+      Via:
+      - 1.1 b112686b4ada2056296ca41ad849c706.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - T_QoMLFaktP7djocw1mvTFcfkCiwte0JXAn1T7kH_nNLLI-eYWPEYQ==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-603414a7-587d292048e918b429bc73b3
+      X-Cache:
+      - Error from cloudfront
+      x-amz-apigw-id:
+      - bKgqLECSvHcFsGw=
+      x-amzn-ErrorType:
+      - AuthorizerConfigurationException
+      x-amzn-RequestId:
+      - 91e1bdc9-fa8f-4ec9-85cd-2b41bd3a9c5a
+    status:
+      code: 500
+      message: Internal Server Error
+    url: https://us-west-2.pvintegrations-staging.net/inthub/api/v1/publish
+version: 1

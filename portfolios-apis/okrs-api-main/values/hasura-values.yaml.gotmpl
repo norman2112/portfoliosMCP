@@ -1,0 +1,30 @@
+
+{{- if hasKey .Values "replicaCount" }}
+replicaCount: {{ .Values.replicaCount }}
+{{ else }}
+replicaCount: 3
+{{ end }}
+
+env:
+  HASURA_GRAPHQL_DATABASE_URL: "postgresql://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)"
+configmap:
+  HASURA_BASE_API_URL: "http://okrs-api.{{ .Release.Namespace }}.svc.cluster.local/api"
+  HASURA_EVENTS_WEBHOOK_URL: "http://okrs-api.{{ .Release.Namespace }}.svc.cluster.local/api/events"
+  HASURA_GRAPHQL_DEV_MODE: false
+  HASURA_GRAPHQL_ENABLE_CONSOLE: true
+engineFlags:
+  jwtSecret: {{ .Values.hasura.jwtSecret | fetchSecretValue | quote }}
+  adminSecret: {{ .Values.hasura.adminSecret | fetchSecretValue | quote }}
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: "{{ .Release.Namespace }}-hasura-{{ .Values.aws.region }}.{{ .Values.domain }}"
+      paths:
+        - "/"
+  tls:
+    - secretName: "{{ .Release.Namespace }}-hasura-{{ .Values.aws.region}}-tls"
+      hosts:
+        - "{{ .Release.Namespace }}-hasura-{{ .Values.aws.region }}.{{ .Values.domain }}"

@@ -1,0 +1,66 @@
+interactions:
+- request:
+    body: null
+    headers:
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://d09.leankit.io/io/okr/board/10136408886
+  response:
+    body:
+      string: '{"users":[{"id":"10113280591","username":"lpadgett@planview.com","firstName":"Libby","lastName":"Padgett","fullName":"Libby
+        Padgett","emailAddress":"lpadgett@planview.com","gravatarLink":null,"avatar":null,"lastAccess":"2022-01-25T16:09:28.380Z","dateFormat":"MM/dd/yyyy","organizationId":"10113280894","boardId":"10136408886","wip":0,"roleTypeId":5,"settings":{},"boardRoles":[]},{"id":"10136409086","username":"leankitlibby+tu22@gmail.com","firstName":"libby","lastName":"tu22
+        me","fullName":"libby tu22 me","emailAddress":"leankitlibby+tu22@gmail.com","gravatarLink":null,"avatar":null,"lastAccess":"2018-11-09T21:48:08.293Z","dateFormat":"MM/dd/yyyy","organizationId":"10113280894","boardId":"10136408886","wip":0,"roleTypeId":0,"settings":{},"boardRoles":[]},{"id":"10145783577","username":"okrs-test-2@leankit.com","firstName":"OKRs","lastName":"Test2","fullName":"OKRs
+        Test2","emailAddress":"okrs-test-2@leankit.com","gravatarLink":null,"avatar":null,"lastAccess":"2021-11-08T05:58:51.053Z","dateFormat":"dd/MM/yyyy","organizationId":"10113280894","boardId":"10136408886","wip":0,"roleTypeId":2,"settings":{},"boardRoles":[]}],"classesOfService":[],"tags":["tag2","tag3"],"customFields":[],"planningSeries":[],"id":"10136408886","title":"API
+        Testing - Libby1","description":null,"creationDate":"2018-07-17T18:51:48.543Z","classOfServiceEnabled":false,"customIconFieldLabel":"Class
+        of Service","organizationId":"10113280894","version":303,"cardColorField":1,"isCardIdEnabled":true,"isHeaderEnabled":true,"isHyperlinkEnabled":false,"isPrefixEnabled":false,"prefix":null,"format":null,"isPrefixIncludedInHyperlink":false,"baseWipOnCardSize":false,"excludeCompletedAndArchiveViolations":false,"isDuplicateCardIdAllowed":true,"isAutoIncrementCardIdEnabled":false,"currentExternalCardId":"0","isWelcome":false,"isShared":true,"isArchived":false,"sharedBoardRole":"4","customBoardMoniker":null,"isPermalinkEnabled":false,"isExternalUrlEnabled":false,"allowUsersToDeleteCards":true,"allowPlanviewIntegration":false,"subscriptionId":null,"boardRole":"boardAdministrator","effectiveBoardRole":"boardAdministrator","cardTypes":[{"id":"10136408888","name":"Other
+        Work","colorHex":"#FFFFFF","isCardType":true,"isTaskType":false},{"id":"10136408889","name":"Defect","colorHex":"#F1C7C5","isCardType":true,"isTaskType":false},{"id":"10136408890","name":"Documentation","colorHex":"#D0CCE0","isCardType":true,"isTaskType":false},{"id":"10136408891","name":"Improvement","colorHex":"#BFDFC2","isCardType":true,"isTaskType":false},{"id":"10136408892","name":"New
+        Feature","colorHex":"#B8CFDF","isCardType":true,"isTaskType":false},{"id":"10136408893","name":"Risk
+        / Issue","colorHex":"#FAD7B2","isCardType":true,"isTaskType":false},{"id":"10136408894","name":"Subtask","colorHex":"#FFF8DF","isCardType":false,"isTaskType":true}],"laneClassTypes":[{"id":0,"name":"active"},{"id":1,"name":"backlog"},{"id":2,"name":"archive"}],"lanes":[{"id":"10136408899","name":"Not
+        Started - Future Work","description":null,"cardStatus":"notStarted","active":true,"cardLimit":0,"creationDate":"2018-07-17T18:51:48.526Z","index":0,"parentLaneId":null,"activityId":null,"orientation":"vertical","isConnectionDoneLane":false,"isDefaultDropLane":false,"columns":3,"wipLimit":0,"cardCount":22,"cardSize":22,"archiveCardCount":0,"sortBy":null,"subscriptionId":null,"laneClassType":"backlog","laneType":"ready","isCollapsed":false},{"id":"10136408904","name":"New
+        Requests","description":null,"cardStatus":"notStarted","active":true,"cardLimit":0,"creationDate":"2018-07-17T18:51:48.526Z","index":0,"parentLaneId":"10136408899","activityId":null,"orientation":"vertical","isConnectionDoneLane":false,"isDefaultDropLane":true,"columns":1,"wipLimit":0,"cardCount":20,"cardSize":20,"archiveCardCount":0,"sortBy":null,"subscriptionId":null,"laneClassType":"backlog","laneType":"ready","isCollapsed":false},{"id":"10136408907","name":"Finished
+        As Planned","description":null,"cardStatus":"finished","active":true,"cardLimit":0,"creationDate":"2018-07-17T18:51:48.526Z","index":0,"parentLaneId":"10136408900","activityId":null,"orientation":"horizontal","isConnectionDoneLane":false,"isDefaultDropLane":false,"columns":3,"wipLimit":0,"cardCount":0,"cardSize":0,"archiveCardCount":37,"sortBy":null,"subscriptionId":null,"laneClassType":"archive","laneType":"untyped","isCollapsed":false},{"id":"10136408903","name":"Approved","description":null,"cardStatus":"notStarted","active":true,"cardLimit":0,"creationDate":"2018-07-17T18:51:48.526Z","index":1,"parentLaneId":"10136408899","activityId":null,"orientation":"vertical","isConnectionDoneLane":false,"isDefaultDropLane":false,"columns":1,"wipLimit":0,"cardCount":0,"cardSize":0,"archiveCardCount":0,"sortBy":null,"subscriptionId":null,"laneClassType":"backlog","laneType":"ready","isCollapsed":false},{"id":"10136408906","name":"Started
+        but not Finished","description":null,"cardStatus":"finished","active":true,"cardLimit":0,"creationDate":"2018-07-17T18:51:48.526Z","index":1,"parentLaneId":"10136408900","activityId":null,"orientation":"horizontal","isConnectionDoneLane":false,"isDefaultDropLane":false,"columns":3,"wipLimit":0,"cardCount":0,"cardSize":0,"archiveCardCount":0,"sortBy":null,"subscriptionId":null,"laneClassType":"archive","laneType":"untyped","isCollapsed":false},{"id":"10137480660","name":"This
+        is the test lane","description":"<span>Hey</span>","cardStatus":"started","active":true,"cardLimit":0,"creationDate":"2018-08-28T15:31:44.050Z","index":1,"parentLaneId":null,"activityId":null,"orientation":"vertical","isConnectionDoneLane":false,"isDefaultDropLane":false,"columns":1,"wipLimit":0,"cardCount":0,"cardSize":0,"archiveCardCount":0,"sortBy":null,"subscriptionId":null,"laneClassType":"active","laneType":"untyped","isCollapsed":false},{"id":"10136408901","name":"Doing
+        Now","description":null,"cardStatus":"started","active":true,"cardLimit":0,"creationDate":"2018-07-17T18:51:48.526Z","index":2,"parentLaneId":null,"activityId":null,"orientation":"vertical","isConnectionDoneLane":false,"isDefaultDropLane":false,"columns":2,"wipLimit":0,"cardCount":2,"cardSize":2,"archiveCardCount":0,"sortBy":null,"subscriptionId":null,"laneClassType":"active","laneType":"inProcess","isCollapsed":false},{"id":"10136408905","name":"Discarded
+        Requests / Ideas","description":null,"cardStatus":"finished","active":true,"cardLimit":0,"creationDate":"2018-07-17T18:51:48.526Z","index":2,"parentLaneId":"10136408900","activityId":null,"orientation":"horizontal","isConnectionDoneLane":false,"isDefaultDropLane":false,"columns":3,"wipLimit":0,"cardCount":0,"cardSize":0,"archiveCardCount":0,"sortBy":null,"subscriptionId":null,"laneClassType":"archive","laneType":"untyped","isCollapsed":false},{"id":"10136408909","name":"Ready
+        to Start","description":null,"cardStatus":"notStarted","active":true,"cardLimit":0,"creationDate":"2018-07-17T18:51:48.526Z","index":2,"parentLaneId":"10136408899","activityId":null,"orientation":"vertical","isConnectionDoneLane":false,"isDefaultDropLane":false,"columns":1,"wipLimit":0,"cardCount":2,"cardSize":2,"archiveCardCount":0,"sortBy":null,"subscriptionId":null,"laneClassType":"backlog","laneType":"ready","isCollapsed":false},{"id":"10136408908","name":"Under
+        Review","description":null,"cardStatus":"started","active":true,"cardLimit":0,"creationDate":"2018-07-17T18:51:48.526Z","index":3,"parentLaneId":null,"activityId":null,"orientation":"vertical","isConnectionDoneLane":false,"isDefaultDropLane":false,"columns":2,"wipLimit":0,"cardCount":2,"cardSize":6,"archiveCardCount":0,"sortBy":null,"subscriptionId":null,"laneClassType":"active","laneType":"inProcess","isCollapsed":false},{"id":"10136408902","name":"Recently
+        Finished","description":null,"cardStatus":"finished","active":true,"cardLimit":0,"creationDate":"2018-07-17T18:51:48.526Z","index":4,"parentLaneId":null,"activityId":null,"orientation":"vertical","isConnectionDoneLane":true,"isDefaultDropLane":false,"columns":2,"wipLimit":0,"cardCount":2,"cardSize":2,"archiveCardCount":0,"sortBy":null,"subscriptionId":null,"laneClassType":"active","laneType":"completed","isCollapsed":false},{"id":"10136408900","name":"Finished
+        - Ready to Archive","description":null,"cardStatus":"finished","active":true,"cardLimit":0,"creationDate":"2018-07-17T18:51:48.526Z","index":5,"parentLaneId":null,"activityId":null,"orientation":"vertical","isConnectionDoneLane":false,"isDefaultDropLane":false,"columns":3,"wipLimit":0,"cardCount":0,"cardSize":0,"archiveCardCount":37,"sortBy":null,"subscriptionId":null,"laneClassType":"archive","laneType":"completed","isCollapsed":false}],"laneTypes":[{"id":1,"name":"ready"},{"id":2,"name":"inProcess"},{"id":3,"name":"completed"},{"id":99,"name":"untyped"}],"userSettings":{},"priorities":[{"id":3,"name":"critical"},{"id":2,"name":"high"},{"id":1,"name":"normal"},{"id":0,"name":"low"}],"layoutChecksum":"3a2166cc2ff5a0d63420afb05717ee91","defaultCardTypeId":"10136408888","defaultTaskTypeId":"10136408894"}'
+    headers:
+      Cache-Control:
+      - no-store, no-cache, must-revalidate, proxy-revalidate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '8964'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 01 Feb 2022 20:00:35 GMT
+      Expires:
+      - '0'
+      Pragma:
+      - no-cache
+      Surrogate-Control:
+      - no-store
+      X-RateLimit-Limit:
+      - '160'
+      X-RateLimit-Remaining:
+      - '158'
+      X-RateLimit-Reset:
+      - '1643745684'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload;
+      x-lk-app-name:
+      - core-board-service
+      x-lk-app-version:
+      - 9.70.0
+      x-request-correlation-id:
+      - 9ebb6940-8399-11ec-b3f5-da2d8a744a50
+    status:
+      code: 200
+      message: OK
+    url: https://d09.leankit.io/io/okr/board/10136408886
+version: 1

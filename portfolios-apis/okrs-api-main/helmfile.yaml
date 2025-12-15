@@ -1,0 +1,56 @@
+templates:
+  # Define values templates.
+  environment-values: &environment-values
+    values:
+      - project: okrs-api
+      - environments/{{ .Environment.Name }}/values.yaml
+
+  release-values: &release-values
+    values:
+      - values/{{`{{ .Release.Name }}`}}-values.yaml.gotmpl
+
+environments:
+  local:
+    <<: *environment-values
+  pentest-us-east-2:
+    <<: *environment-values
+  development-us-west-2:
+    <<: *environment-values
+  development-test-us-west-2:
+    <<: *environment-values
+  staging-us-west-2:
+    <<: *environment-values
+  staging-test-us-west-2:
+    <<: *environment-values
+  production-eu-central-1:
+    <<: *environment-values
+  production-test-eu-central-1:
+    <<: *environment-values
+  production-us-west-2:
+    <<: *environment-values
+  production-test-us-west-2:
+    <<: *environment-values
+
+repositories:
+  - name: platforma
+    url: s3://platforma-helm-charts-{{ .Environment.Name }}
+
+releases:
+  - name: hasura
+    chart: platforma/hasura
+    version: 1.0.11
+    namespace: okr
+    <<: *release-values
+  - name: okrs-api
+    chart: platforma/okrs-api
+    version: 0.3.3
+    namespace: okr
+    <<: *release-values
+  - name: postgresql-secrets
+    chart: platforma/postgresql-secrets
+    version: 1.0.0
+    namespace: okr
+    <<: *release-values
+
+helmDefaults:
+  createNamespace: true

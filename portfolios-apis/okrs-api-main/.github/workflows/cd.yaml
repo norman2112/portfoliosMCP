@@ -1,0 +1,134 @@
+name: Continuous Delivery Process
+on:
+  push:
+    branches:
+      - main # stage & prod env
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: select the environment to deploy your changes
+        required: true
+        type: choice
+        options:
+        - dev
+        - dev1
+        - perf
+
+jobs:
+  # This job is used to set all the env variables to be used during the build
+  # workaround because env context limitations - https://docs.github.com/en/actions/learn-github-actions/contexts#env-context
+  #
+  # image builder job
+  image-builder:
+    uses: pv-platforma/constantine/.github/workflows/runner.yaml@v3.3.1
+    #needs: prepare_vars
+    secrets:
+      # constants across regions
+      code_artifact_domain: ${{ secrets.AWS_CODEARTIFACT_DOMAIN_PRODUCTION_US_WEST_2 }}
+      code_artifact_owner: ${{ secrets.AWS_CODEARTIFACT_DOMAIN_OWNER_PRODUCTION_US_WEST_2 }}
+      gh_token: ${{ secrets.PLATFORMA_GH }} # mandatory for gitHub release
+    with:
+      region: "us-west-2"
+      job_type: 'image_build' # used as an identifier for image build only during the deployment.
+      environment: 'dev'
+    if: >
+      (github.actor != 'platformagh') && (inputs.environment == 'dev' || inputs.environment == 'dev1' || inputs.environment == 'perf' || github.ref == 'refs/heads/main')
+
+  ## development environment jobs
+  development:
+    uses: pv-platforma/constantine/.github/workflows/runner.yaml@v3.3.1
+    needs: image-builder
+    with:
+      environment: "dev" # github environment
+      region: "us-west-2"
+    if: >
+      ((inputs.environment == 'dev') &&
+      (startsWith(github.ref_name, 'feat') ||
+       startsWith(github.ref_name, 'fix') ||
+       startsWith(github.ref_name, 'bug') ||
+       startsWith(github.ref_name, 'chore')))
+  development-dev1:
+    uses: pv-platforma/constantine/.github/workflows/runner.yaml@v3.3.1
+    needs: image-builder
+    with:
+      environment: "dev1" # github environment
+      region: "us-west-2"
+    if: >
+      ((inputs.environment == 'dev1') &&
+      (startsWith(github.ref_name, 'feat') ||
+       startsWith(github.ref_name, 'fix') ||
+       startsWith(github.ref_name, 'bug') ||
+       startsWith(github.ref_name, 'chore')))
+  development-perf:
+    uses: pv-platforma/constantine/.github/workflows/runner.yaml@v3.3.1
+    needs: image-builder
+    with:
+      environment: "perf" # github environment
+      region: "us-west-2"
+    if: >
+      ((inputs.environment == 'perf') &&
+      (startsWith(github.ref_name, 'feat') ||
+       startsWith(github.ref_name, 'fix') ||
+       startsWith(github.ref_name, 'bug') ||
+       startsWith(github.ref_name, 'chore'))) 
+  perf-async-deployment:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    needs:
+      - development-perf
+    if: always()  && needs.development-perf.result != 'skipped'
+    steps:
+      - name: Clone
+        uses: actions/checkout@v3
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::486329218230:role/fd-github-role
+          aws-region: us-west-2   
+      - name: Deploy okrs-api-async to Perf Development
+        uses: pv-platforma/constantine/.github/composite-actions/eks-operator@main
+        with:
+          service_name: okrs-api
+          namespace: okrs-perf
+          image_name: okrs-api-async
+          image_tag: perf
+          cluster_name: fd-platform-usw2-dev-cluster
+          ecr_registry: 486329218230.dkr.ecr.us-west-2.amazonaws.com
+          environment: perf    
+
+  # staging environment job
+  staging:
+     uses: pv-platforma/constantine/.github/workflows/runner.yaml@v3.3.1
+     needs: development
+     with:
+       environment: "stage" # github environment
+       region: "us-west-2"
+     if: github.actor != 'platformagh' && github.ref == 'refs/heads/main' # release-candidate
+
+   ## production environment job matrix
+  production:
+     strategy:
+       max-parallel: 1 #this should not be more than 1
+       matrix:
+         include:
+           # Array of regions where service needs to be deployed.
+           - region: us-west-2
+             environment: "prod" # github environment
+
+           - region: eu-central-1
+             environment: "prod" # github environment
+
+           - region: ap-southeast-2
+             environment: "prod" # github environment
+
+     uses: pv-platforma/constantine/.github/workflows/runner.yaml@v3.3.1
+     needs: staging
+     secrets:
+       gh_token: ${{ secrets.PLATFORMA_GH }} # mandatory for gitHub release
+     with:
+       environment: ${{ matrix.environment }}
+       region: ${{ matrix.region }}
+     if: github.actor != 'platformagh' && github.ref == 'refs/heads/main'
+

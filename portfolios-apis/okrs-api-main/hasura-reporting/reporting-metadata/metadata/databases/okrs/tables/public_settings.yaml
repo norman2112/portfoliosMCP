@@ -1,0 +1,23 @@
+table:
+  name: settings
+  schema: public
+select_permissions:
+  - role: reporting
+    permission:
+      columns:
+        - id
+        - app_created_by
+        - app_last_updated_by
+        - created_by
+        - ih_global_tenant_id
+        - last_updated_by
+        - tenant_group_id_str
+        - tenant_id_str
+        - level_config
+        - ih_setup_verified_at
+        - created_at
+        - updated_at
+      filter:
+        tenant_group_id_str:
+          _eq: X-Hasura-Org-Id
+      allow_aggregations: true

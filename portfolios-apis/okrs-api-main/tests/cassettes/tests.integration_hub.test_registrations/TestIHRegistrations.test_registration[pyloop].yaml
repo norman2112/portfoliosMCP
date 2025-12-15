@@ -1,0 +1,82 @@
+interactions:
+- request:
+    body:
+      client_id: REDACTED
+      client_secret: REDACTED
+    headers:
+      Accept:
+      - application/json
+      Content-Type:
+      - application/x-www-form-urlencoded
+    method: POST
+    uri: https://platforma.pvintegrations-dev.net/inthub/api/v1/oauth2/token
+  response:
+    body:
+      string: '{"access_token":"REDACTED","expires_in":3600,"token_type":"Bearer"}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '924'
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 09 Jun 2021 18:31:29 GMT
+      Via:
+      - 1.1 19b05f214fc39ae88d71a54e371962ab.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - Ghzatb0Pde0YZjrUc8_m-gCZZEQ1J3NYQeDVu_Mktwslp8XiJ0Pjlw==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-60c10901-398651a631b7327c3835c202
+      X-Cache:
+      - Miss from cloudfront
+      x-amz-apigw-id:
+      - Aq5YOF0SPHcFs8A=
+      x-amzn-RequestId:
+      - 4ebf311e-4e59-4ae2-98bb-627c4e27d798
+    status:
+      code: 200
+      message: OK
+    url: https://platforma.pvintegrations-dev.net/inthub/api/v1/oauth2/token
+- request:
+    body: null
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - REDACTED
+    method: POST
+    uri: https://platforma.pvintegrations-dev.net/inthub/api/v1/register
+  response:
+    body:
+      string: '{"queues":["okrs_okrs_okrs-env-us-west-2_adapter-okrs-d08_queue_1.fifo"],"tenantMapping":{"okrs-d08-10100000101":{"globalTenantIds":["74ef27c7-aa51-40ca-ace6-78efdd2e40b3"],"queue":"okrs_okrs_okrs-env-us-west-2_adapter-okrs-d08_queue_1.fifo"}}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '244'
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 09 Jun 2021 18:31:29 GMT
+      Via:
+      - 1.1 19b05f214fc39ae88d71a54e371962ab.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - 5tRUlTXY2sRIwkv9D2kyQzciveeUWTXiXV9CSSnzFqk0NZXhczRJwg==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-60c10901-20709dc76fd42b5167daeac4;Sampled=0
+      X-Cache:
+      - Miss from cloudfront
+      x-amz-apigw-id:
+      - Aq5YSGB7PHcFskg=
+      x-amzn-RequestId:
+      - 120f7534-1bf6-469a-9f35-cfe8d782e3d0
+    status:
+      code: 200
+      message: OK
+    url: https://platforma.pvintegrations-dev.net/inthub/api/v1/register
+version: 1

@@ -1,0 +1,35 @@
+table:
+  name: progress_points
+  schema: public
+object_relationships:
+  - name: key_result
+    using:
+      foreign_key_constraint_on: key_result_id
+select_permissions:
+  - role: reporting
+    permission:
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - comment
+        - created_at
+        - created_by
+        - deleted_at_epoch
+        - id
+        - key_result_id
+        - key_result_progress_percentage
+        - last_updated_by
+        - measured_at
+        - objective_progress_percentage
+        - target_id
+        - tenant_group_id_str
+        - tenant_id_str
+        - updated_at
+        - value
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+      allow_aggregations: true

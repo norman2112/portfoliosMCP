@@ -1,0 +1,69 @@
+### What we need
+# ENV Vars
+# region: (AWS_REGION)
+# "domain": {"env": "IH_DOMAIN"},
+#"client_id": {"env": "IH_CLIENT_ID"},
+#"client_secret": {"env": "IH_CLIENT_SECRET"},
+#"lk_env": {"env": "LK_ENV"},
+# DATBASE_URL
+
+# ####################
+# BaseBuilder
+# ####################
+FROM python:3.8.7-slim-buster as builder
+LABEL maintainer="platforma@planview.com"
+
+WORKDIR /usr/src/app
+
+# Copy the codebase
+COPY . .
+
+ENV PSYCOPG2_VERSION 2.8.6
+
+# Build the psycopg2 package, and the okrs-api package and all its dependencies.
+RUN apt-get update \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+  gcc \
+  libpq-dev \
+  python3-dev \
+  && pip install -U pip wheel \
+  && pip install poetry \
+  && pip download --no-deps --no-binary :all: psycopg2==${PSYCOPG2_VERSION} \
+  && tar xfz psycopg2-${PSYCOPG2_VERSION}.tar.gz \
+  && cd psycopg2-${PSYCOPG2_VERSION} \
+  && python setup.py build \
+  && python3 setup.py bdist_wheel \
+  && mkdir -p /usr/src/app/deps/ \
+  && cp dist/* /usr/src/app/deps/ \
+  && cd /usr/src/app \
+  && poetry build -f wheel \
+  && poetry export --without-hashes > requirements.txt \
+  && pip wheel -w /usr/src/app/deps/ -r requirements.txt \
+  && cp dist/* /usr/src/app/deps/
+
+# ####################
+# Runtime
+# ###################
+FROM python:3.8.7-slim-buster as runtime
+LABEL maintainer="platforma@planview.com"
+
+WORKDIR /usr/src/app
+
+# Copy the files to install
+COPY --from=builder /usr/src/app/deps/ /usr/src/tmp/
+
+# Copy the openapi specification.
+COPY openapi/openapi.yml ./openapi/openapi.yml
+
+# Copy the Integration Hub Subscription Syncer tool.
+COPY tools/ih_subscription_syncer.py ./tools/ih_subscription_syncer.py
+
+RUN apt-get update \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+  curl \
+  libpq5 \
+  && pip install --no-cache-dir /usr/src/tmp/* \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /tmp/*
+
+WORKDIR /usr/src/app/tools

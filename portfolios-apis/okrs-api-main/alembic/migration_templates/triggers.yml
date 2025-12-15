@@ -1,0 +1,359 @@
+# TODO: Link to documentation as to how to use the trigger schema
+
+function_schema: platforma_functions
+triggers:
+  - name: set_timestamp
+    description: >
+      Set created_at and updated_at timestamp triggers for these fields
+    tables:
+      - activity_logs
+      - key_results
+      - objectives
+      - progress_points
+      - settings
+      - work_items
+      - work_item_containers
+      - custom_attributes_settings
+      - custom_attributes_configs
+      - custom_attributes_values
+    condition: "BEFORE INSERT OR UPDATE"
+    function_src: >
+      BEGIN NEW.updated_at = NOW();RETURN NEW;END;
+  - name: check_wic_level_depth_default
+    description: >
+      Check the work_item_container level_depth_default field to make sure the value
+      is within levels from the settings
+    tables:
+      - work_item_containers
+    condition: "BEFORE INSERT OR UPDATE OF level_depth_default"
+    function_src: >
+      DECLARE level_okay boolean;
+      BEGIN IF NEW.level_depth_default IS NOT NULL THEN
+      SELECT
+        EXISTS INTO level_okay (
+          SELECT
+            lc.depth
+          FROM
+            (
+              SELECT
+                CAST(obj.val ->> 'depth' AS INTEGER) AS depth
+              FROM
+                settings
+                JOIN LATERAL json_array_elements(level_config) obj(val) ON CAST(obj.val ->> 'depth' AS INTEGER) > -1
+              WHERE
+                tenant_id_str = NEW.tenant_id_str OR tenant_group_id_str = NEW.tenant_group_id_str
+            ) lc
+          WHERE
+            lc.depth = NEW.level_depth_default
+        );
+      IF NOT level_okay THEN RAISE EXCEPTION 'work_item_container (id: %, level_depth_default: %) level_depth_default is invalid',
+      NEW.id,
+      NEW.level_depth_default;
+      END IF;
+      END IF;
+      RETURN NEW;
+      END;
+  - name: set_wic_objective_editing_levels_and_level_depth_default
+    description: >
+      Automatically set the objective_editing_levels and level_depth_default when created
+    tables:
+      - work_item_containers
+    condition: "BEFORE INSERT"
+    function_src: >
+        DECLARE
+            default_level_depth TEXT;
+        BEGIN
+            IF NEW.objective_editing_levels IS NOT NULL OR NEW.level_depth_default IS NOT NULL THEN
+            RAISE EXCEPTION
+                'work_item_containers objective_editing_levels and level_depth_default must both be null on insert.';
+            END IF;
+            SELECT CAST(obj.val->>'depth' AS TEXT) INTO default_level_depth
+                FROM settings
+                JOIN LATERAL json_array_elements(level_config) obj(val) ON CAST(obj.val->>'depth' AS INTEGER) > -1
+                WHERE (tenant_id_str = NEW.tenant_id_str OR tenant_group_id_str = NEW.tenant_group_id_str)
+                AND CAST(obj.val->>'is_default' AS BOOLEAN) IS TRUE;
+            NEW.level_depth_default = COALESCE(default_level_depth::int, 3);
+            NEW.objective_editing_levels = CONCAT('[', COALESCE(default_level_depth, '3'), ']');
+            RETURN NEW;
+        END;
+  - name: check_parent_objective_level_depth
+    description: >
+      WHEN: objectives have a `parent_objective_id`
+      ENSURE: the parent objective's `level_depth` is a lower value than the child objective's `level_depth`.
+    tables:
+      - objectives
+    condition: "BEFORE INSERT OR UPDATE OF parent_objective_id, level_depth"
+    function_src: >
+      DECLARE level_okay boolean; level_depth_id int;
+      BEGIN
+        IF NEW.parent_objective_id IS NOT NULL AND (NEW.deleted_at_epoch = 0 OR OLD.parent_objective_id IS NULL OR OLD.parent_objective_id <> NEW.parent_objective_id) THEN
+          SELECT EXISTS INTO level_okay (
+            SELECT 1 FROM objectives
+              WHERE id = NEW.parent_objective_id AND level_depth < NEW.level_depth
+          );
+          IF NOT level_okay THEN
+            SELECT level_depth INTO level_depth_id FROM objectives
+              WHERE id = NEW.parent_objective_id;
+          RAISE EXCEPTION
+            'Parent objective (id: %, level_depth: %) must have lower level depth than child objective (id: %, level_depth: %)',
+            NEW.parent_objective_id, level_depth_id, NEW.id, NEW.level_depth;
+          END IF;
+        END IF;
+        RETURN NEW;
+      END;
+  - name: check_child_objectives_level_depth
+    description: >
+      WHEN: a [child] objective has a parent_objective_id
+      ENSURE: the [child] objective's `level_depth` has a greater value than the parent objective's `level_depth`.
+    tables:
+      - objectives
+    condition: "BEFORE UPDATE OF level_depth"
+    function_src: >
+      DECLARE levels_violation boolean;
+      BEGIN
+        SELECT EXISTS INTO levels_violation (
+          SELECT 1 FROM objectives
+            WHERE parent_objective_id = NEW.id AND level_depth <= NEW.level_depth AND deleted_at_epoch = 0
+        );
+        IF levels_violation
+          THEN RAISE EXCEPTION
+            'Changing Objective (id: %, level_depth: %) to (level_depth: %) is not allowed as at
+             least one child objective would have an equal or lower level_depth',
+            NEW.id, OLD.level_depth, NEW.level_depth;
+        END IF;
+        RETURN NEW;
+      END;
+  - name: check_level_depth_for_child_objective
+    description: >
+      Check objective level_depth vs levels in settings level_config.
+
+      This function is only concerned with objectives that have parent
+      objectives.
+
+      The following conditions must be met in order to avoid raising an
+      exception.
+
+      - The level depth of the child must be greater than the level depth of
+      the parent.
+      - The parent_id of the objective must be different than the id of the
+      objective.
+    tables:
+      - objectives
+    condition: "BEFORE INSERT OR UPDATE OF level_depth"
+    function_src: >
+      DECLARE level_not_okay boolean; level_depth_id int;
+      BEGIN
+        IF NEW.parent_objective_id IS NOT NULL AND (NEW.deleted_at_epoch = 0 OR OLD.parent_objective_id IS NULL OR OLD.parent_objective_id <> NEW.parent_objective_id) THEN
+          SELECT EXISTS INTO level_not_okay (
+            SELECT 1 FROM objectives
+              WHERE id = NEW.parent_objective_id
+                AND (level_depth >= NEW.level_depth OR id = NEW.id)
+          );
+          IF level_not_okay THEN
+            SELECT level_depth INTO level_depth_id
+              FROM objectives
+              WHERE id = NEW.parent_objective_id;
+            RAISE EXCEPTION
+              'Parent objective (id: %, level_depth: %) must have lower
+               level depth than child objective (id: %, level_depth: %)',
+              NEW.parent_objective_id, level_depth_id, NEW.id, NEW.level_depth;
+          END IF;
+        END IF;
+        RETURN NEW;
+      END;
+  - name: check_parent_objective_insert_access
+    description: >
+      WHEN: a parent objective is to be added to a `work_item_container`
+      ENSURE: the `work_item_container_role` for this user on this `work_item_contianer` is not "none"
+    tables:
+      - objectives
+    condition: "BEFORE INSERT"
+    function_src: >
+      DECLARE access_denied boolean;
+      parent_work_item_container_id int;
+      BEGIN IF NEW.parent_objective_id IS NOT NULL THEN
+      SELECT
+        EXISTS INTO access_denied (
+          SELECT
+            o.work_item_container_id
+          FROM
+            objectives o
+            LEFT JOIN work_item_container_roles w ON o.work_item_container_id = w.work_item_container_id
+          WHERE
+            o.id = NEW.parent_objective_id
+            AND (w.app_created_by = NEW.app_created_by OR w.created_by = NEW.created_by)
+            AND w.okr_role = 'none'
+        );
+      IF access_denied THEN
+      SELECT
+        work_item_container_id INTO parent_work_item_container_id
+      FROM
+        objectives
+      WHERE
+        id = NEW.parent_objective_id;
+      RAISE EXCEPTION 'Cannot save parent_objective_id: %. No access to parent objective work_item_container: %',
+      NEW.parent_objective_id,
+      parent_work_item_container_id;
+      END IF;
+      END IF;
+      RETURN NEW;
+      END;
+  - name: check_parent_objective_update_access
+    description: >
+      WHEN: a parent objective is to be updated on specific `work_item_container`
+      ENSURE: the user's `work_item_container_role` for that `work_item_container` is not "none".
+    tables:
+      - objectives
+    condition: "BEFORE UPDATE"
+    function_src: >
+      DECLARE access_denied boolean;
+      parent_work_item_container_id int;
+      BEGIN IF NEW.parent_objective_id IS NOT NULL THEN IF NEW.parent_objective_id = NEW.id THEN RAISE EXCEPTION 'parent_objective_id cannot be current objective id: %',
+      NEW.parent_objective_id;
+      END IF;
+      SELECT
+        EXISTS INTO access_denied (
+          SELECT
+            o.work_item_container_id
+          FROM
+            objectives o
+            LEFT JOIN work_item_container_roles w ON o.work_item_container_id = w.work_item_container_id
+          WHERE
+            o.id = NEW.parent_objective_id
+            AND (w.app_created_by = NEW.app_last_updated_by OR w.created_by = NEW.last_updated_by)
+            AND w.okr_role = 'none'
+            AND (OLD.parent_objective_id IS NULL OR OLD.parent_objective_id <> NEW.parent_objective_id)
+        );
+      IF access_denied THEN
+      SELECT
+        work_item_container_id INTO parent_work_item_container_id
+      FROM
+        objectives
+      WHERE
+        id = NEW.parent_objective_id;
+      RAISE EXCEPTION 'Cannot save parent_objective_id: %. No access to parent objective work_item_container: %',
+      NEW.parent_objective_id,
+      parent_work_item_container_id;
+      END IF;
+      END IF;
+      RETURN NEW;
+      END;
+  - name: check_objective_level_depth_insert
+    description: >
+      WHEN: an objective is being inserted
+      ENSURE: the objective's `level_depth` is in the associated `work_item_containers` `objective_editing_levels`
+    tables:
+      - objectives
+    condition: "BEFORE INSERT"
+    function_src: >
+      DECLARE level_okay boolean;
+      BEGIN
+      SELECT
+        EXISTS INTO level_okay (
+          SELECT
+            lc.level
+          FROM
+            (
+              SELECT
+                UNNEST(
+                  CONCAT('{', d.list, '}'):: int[]
+                ) AS level
+              FROM
+                work_item_containers w,
+                LATERAL (
+                  SELECT
+                    string_agg(value :: text, ', ') AS list
+                  FROM
+                    json_array_elements_text(w.objective_editing_levels)
+                ) d
+              WHERE
+                id = NEW.work_item_container_id
+            ) lc
+          WHERE
+            lc.level = NEW.level_depth
+        );
+      IF NOT level_okay THEN RAISE EXCEPTION 'objective (id: %, level_depth: %) level_depth is invalid',
+      NEW.id,
+      NEW.level_depth;
+      END IF;
+      RETURN NEW;
+      END;
+  - name: check_objective_level_depth_update
+    description: >
+      WHEN: an objective is updated
+      ENSURE: that the `level_depth` specified is within the range of levels
+      in `settings.level_config`
+
+      To re-iterate, on UPDATE ONLY, we are checking the settings to see if the
+      objectives.level is within the settings levels.
+    tables:
+      - objectives
+    condition: "BEFORE UPDATE"
+    function_src: >
+      DECLARE level_okay boolean;
+      BEGIN IF NEW.deleted_at_epoch = 0 OR OLD.level_depth <> NEW.level_depth THEN
+      SELECT
+        EXISTS INTO level_okay (
+          SELECT
+            lc.depth
+          FROM
+            (
+              SELECT
+                CAST(obj.val ->> 'depth' AS INTEGER) AS depth
+              FROM
+                settings
+                JOIN LATERAL json_array_elements(level_config) obj(val) ON CAST(obj.val ->> 'depth' AS INTEGER) > -1
+              WHERE
+                (tenant_id_str = NEW.tenant_id_str OR tenant_group_id_str = NEW.tenant_group_id_str)
+            ) lc
+          WHERE
+            lc.depth = NEW.level_depth
+        );
+      IF NOT level_okay THEN RAISE EXCEPTION 'objective (id: %, level_depth: %) level_depth is invalid',
+      NEW.id,
+      NEW.level_depth;
+      END IF;
+      END IF;
+      RETURN NEW;
+      END;
+  - name: check_key_results_dates
+    description: >
+      Make sure of the following regarding key_result starts_at and ends_at:
+      - starts_at must be before ends_at
+      - starts_at must not be before objective starts_at
+      - ends_at must not be after objective ends_at
+    tables:
+      - key_results
+    condition: "BEFORE INSERT OR UPDATE"
+    function_src: >
+      DECLARE date_invalid boolean;
+      BEGIN IF NEW.starts_at :: timestamp > NEW.ends_at :: timestamp THEN RAISE EXCEPTION 'key_result starts_at must be before ends_at.';
+      END IF;
+      SELECT
+        EXISTS INTO date_invalid (
+          SELECT
+            id
+          FROM
+            objectives o
+          WHERE
+            o.starts_at :: timestamp > NEW.starts_at :: timestamp
+            AND o.id = NEW.objective_id AND NEW.deleted_at_epoch = 0
+        );
+      IF date_invalid THEN RAISE EXCEPTION 'Key result cannot start before related objective.';
+      END IF;
+      SELECT
+        EXISTS INTO date_invalid (
+          SELECT
+            id
+          FROM
+            objectives o
+          WHERE
+            o.ends_at :: timestamp < NEW.ends_at :: timestamp
+            AND o.id = NEW.objective_id and NEW.deleted_at_epoch = 0
+        );
+      IF date_invalid THEN RAISE EXCEPTION 'Key result cannot end after related objective.';
+      END IF;
+      RETURN NEW;
+      END;
+
+

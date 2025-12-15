@@ -1,0 +1,147 @@
+table:
+  name: progress_points
+  schema: public
+object_relationships:
+  - name: key_result
+    using:
+      foreign_key_constraint_on: key_result_id
+select_permissions:
+  - role: edit
+    permission:
+      columns:
+        - comment
+        - created_at
+        - id
+        - key_result_id
+        - measured_at
+        - updated_at
+        - value
+        - key_result_progress_percentage
+        - objective_progress_percentage
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      allow_aggregations: true
+  - role: manage
+    permission:
+      columns:
+        - comment
+        - created_at
+        - id
+        - key_result_id
+        - measured_at
+        - updated_at
+        - value
+        - key_result_progress_percentage
+        - objective_progress_percentage
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      allow_aggregations: true
+  - role: okrs-integration
+    permission:
+      columns:
+        - comment
+        - id
+        - key_result_id
+        - measured_at
+        - target_id
+        - value
+      filter:
+        _and:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - deleted_at_epoch:
+              _eq: "0"
+    comment: ""
+  - role: read
+    permission:
+      columns:
+        - comment
+        - created_at
+        - id
+        - key_result_id
+        - measured_at
+        - updated_at
+        - value
+        - key_result_progress_percentage
+        - objective_progress_percentage
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      allow_aggregations: true
+  - role: user
+    permission:
+      columns:
+        - comment
+        - created_at
+        - id
+        - key_result_id
+        - measured_at
+        - updated_at
+        - value
+        - key_result_progress_percentage
+        - objective_progress_percentage
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      allow_aggregations: true
+event_triggers:
+  - name: progress_points
+    definition:
+      delete:
+        columns: '*'
+      enable_manual: true
+      insert:
+        columns: '*'
+      update:
+        columns:
+          - measured_at
+          - value
+          - deleted_at_epoch
+          - comment
+    retry_conf:
+      interval_sec: 10
+      num_retries: 0
+      timeout_sec: 60
+    webhook_from_env: HASURA_EVENTS_WEBHOOK_URL

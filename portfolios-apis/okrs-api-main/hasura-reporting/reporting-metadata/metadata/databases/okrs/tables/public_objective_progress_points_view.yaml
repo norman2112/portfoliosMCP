@@ -1,0 +1,27 @@
+table:
+  name: objective_progress_points_view
+  schema: public
+select_permissions:
+  - role: reporting
+    permission:
+      columns:
+        - deleted_at_epoch
+        - id
+        - key_result_id
+        - objective_id
+        - app_created_by
+        - app_last_updated_by
+        - comment
+        - created_by
+        - last_updated_by
+        - tenant_group_id_str
+        - tenant_id_str
+        - measured_at
+        - value
+        - key_result_progress_percentage
+        - objective_progress_percentage
+        - created_at
+        - updated_at
+      filter:
+        tenant_group_id_str:
+          _eq: X-Hasura-Org-Id

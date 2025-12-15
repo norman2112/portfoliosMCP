@@ -1,0 +1,442 @@
+table:
+  name: user_settings
+  schema: public
+insert_permissions:
+  - role: edit
+    permission:
+      check:
+        _and:
+          - is_deleted:
+              _eq: false
+          - _and:
+              - _or:
+                  - created_by:
+                      _eq: X-Hasura-User-Id
+                  - _and:
+                      - app_created_by:
+                          _eq: X-Hasura-Platforma-App-User-Id
+                      - _not:
+                          app_created_by:
+                            _eq: ""
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - app_user_id
+        - created_at
+        - created_by
+        - id
+        - is_deleted
+        - last_updated_by
+        - pv_created_by
+        - pv_last_updated_by
+        - pv_tenant_id
+        - tenant_group_id_str
+        - tenant_id_str
+        - type
+        - updated_at
+        - user_id
+        - value
+    comment: ""
+  - role: manage
+    permission:
+      check:
+        _and:
+          - is_deleted:
+              _eq: false
+          - _and:
+              - _or:
+                  - created_by:
+                      _eq: X-Hasura-User-Id
+                  - _and:
+                      - app_created_by:
+                          _eq: X-Hasura-Platforma-App-User-Id
+                      - _not:
+                          app_created_by:
+                            _eq: ""
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - app_user_id
+        - created_at
+        - created_by
+        - id
+        - is_deleted
+        - last_updated_by
+        - pv_created_by
+        - pv_last_updated_by
+        - pv_tenant_id
+        - tenant_group_id_str
+        - tenant_id_str
+        - type
+        - updated_at
+        - user_id
+        - value
+    comment: ""
+  - role: user
+    permission:
+      check:
+        _and:
+          - is_deleted:
+              _eq: false
+          - _and:
+              - _or:
+                  - created_by:
+                      _eq: X-Hasura-User-Id
+                  - _and:
+                      - app_created_by:
+                          _eq: X-Hasura-Platforma-App-User-Id
+                      - _not:
+                          app_created_by:
+                            _eq: ""
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - app_user_id
+        - created_at
+        - created_by
+        - id
+        - is_deleted
+        - last_updated_by
+        - pv_created_by
+        - pv_last_updated_by
+        - pv_tenant_id
+        - tenant_group_id_str
+        - tenant_id_str
+        - type
+        - updated_at
+        - user_id
+        - value
+    comment: ""
+select_permissions:
+  - role: edit
+    permission:
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - app_user_id
+        - created_by
+        - id
+        - last_updated_by
+        - tenant_group_id_str
+        - tenant_id_str
+        - type
+        - user_id
+        - value
+      filter:
+        _and:
+          - is_deleted:
+              _eq: false
+          - _and:
+              - _or:
+                  - created_by:
+                      _eq: X-Hasura-User-Id
+                  - _and:
+                      - app_created_by:
+                          _eq: X-Hasura-Platforma-App-User-Id
+                      - _not:
+                          app_created_by:
+                            _eq: ""
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+    comment: ""
+  - role: manage
+    permission:
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - app_user_id
+        - created_by
+        - id
+        - last_updated_by
+        - tenant_group_id_str
+        - tenant_id_str
+        - type
+        - user_id
+        - value
+      filter:
+        _and:
+          - is_deleted:
+              _eq: false
+          - _and:
+              - _or:
+                  - created_by:
+                      _eq: X-Hasura-User-Id
+                  - _and:
+                      - app_created_by:
+                          _eq: X-Hasura-Platforma-App-User-Id
+                      - _not:
+                          app_created_by:
+                            _eq: ""
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+    comment: ""
+  - role: read
+    permission:
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - app_user_id
+        - created_by
+        - id
+        - last_updated_by
+        - tenant_group_id_str
+        - tenant_id_str
+        - type
+        - user_id
+        - value
+      filter:
+        _and:
+          - is_deleted:
+              _eq: false
+          - _and:
+              - _or:
+                  - created_by:
+                      _eq: X-Hasura-User-Id
+                  - _and:
+                      - app_created_by:
+                          _eq: X-Hasura-Platforma-App-User-Id
+                      - _not:
+                          app_created_by:
+                            _eq: ""
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - app_user_id
+        - created_by
+        - id
+        - last_updated_by
+        - tenant_group_id_str
+        - tenant_id_str
+        - type
+        - user_id
+        - value
+      filter:
+        _and:
+          - is_deleted:
+              _eq: false
+          - _and:
+              - _or:
+                  - created_by:
+                      _eq: X-Hasura-User-Id
+                  - _and:
+                      - app_created_by:
+                          _eq: X-Hasura-Platforma-App-User-Id
+                      - _not:
+                          app_created_by:
+                            _eq: ""
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+    comment: ""
+update_permissions:
+  - role: edit
+    permission:
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - app_user_id
+        - created_at
+        - created_by
+        - id
+        - is_deleted
+        - last_updated_by
+        - pv_created_by
+        - pv_last_updated_by
+        - pv_tenant_id
+        - tenant_group_id_str
+        - tenant_id_str
+        - type
+        - updated_at
+        - user_id
+        - value
+      filter:
+        _and:
+          - is_deleted:
+              _eq: false
+          - _and:
+              - _or:
+                  - created_by:
+                      _eq: X-Hasura-User-Id
+                  - _and:
+                      - app_created_by:
+                          _eq: X-Hasura-Platforma-App-User-Id
+                      - _not:
+                          app_created_by:
+                            _eq: ""
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      check: null
+    comment: ""
+  - role: manage
+    permission:
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - app_user_id
+        - created_at
+        - created_by
+        - id
+        - is_deleted
+        - last_updated_by
+        - pv_created_by
+        - pv_last_updated_by
+        - pv_tenant_id
+        - tenant_group_id_str
+        - tenant_id_str
+        - type
+        - updated_at
+        - user_id
+        - value
+      filter:
+        _and:
+          - is_deleted:
+              _eq: false
+          - _and:
+              - _or:
+                  - created_by:
+                      _eq: X-Hasura-User-Id
+                  - _and:
+                      - app_created_by:
+                          _eq: X-Hasura-Platforma-App-User-Id
+                      - _not:
+                          app_created_by:
+                            _eq: ""
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      check: null
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - app_user_id
+        - created_at
+        - created_by
+        - id
+        - is_deleted
+        - last_updated_by
+        - pv_created_by
+        - pv_last_updated_by
+        - pv_tenant_id
+        - tenant_group_id_str
+        - tenant_id_str
+        - type
+        - updated_at
+        - user_id
+        - value
+      filter:
+        _and:
+          - is_deleted:
+              _eq: false
+          - _and:
+              - _or:
+                  - created_by:
+                      _eq: X-Hasura-User-Id
+                  - _and:
+                      - app_created_by:
+                          _eq: X-Hasura-Platforma-App-User-Id
+                      - _not:
+                          app_created_by:
+                            _eq: ""
+          - _or:
+              - tenant_group_id_str:
+                  _eq: X-Hasura-Org-Id
+              - _and:
+                  - tenant_id_str:
+                      _eq: X-Hasura-Platforma-App-Tenant-Id
+                  - _not:
+                      tenant_id_str:
+                        _eq: ""
+      check: null
+    comment: ""
+event_triggers:
+  - name: user_settings
+    definition:
+      enable_manual: true
+      insert:
+        columns: '*'
+      update:
+        columns:
+          - type
+          - value
+          - app_user_id
+          - user_id
+    retry_conf:
+      interval_sec: 10
+      num_retries: 0
+      timeout_sec: 60
+    webhook_from_env: HASURA_EVENTS_WEBHOOK_URL

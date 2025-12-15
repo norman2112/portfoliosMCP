@@ -1,0 +1,1150 @@
+type Query {
+  basic_current_user(
+    product_types: [ProductType]
+    scope_types: [ScopeType]
+    domain: String
+    context_ids: [String]
+  ): BasicUserInfo
+}
+
+type Mutation {
+  connect_activities(
+    key_result_id: Int!
+    work_item_container: WorkItemContainerInput!
+    work_items: [WorkItemInput]
+  ): [KeyResultWorkItemMapping]
+}
+
+type Query {
+  connected_apps(
+    enabled: Boolean
+  ): ConnectedAppsDetails
+}
+
+type Mutation {
+  create_activity(
+    key_result_id: Int!
+    product_type: ProductType!
+    scope_type: ScopeType
+    context_id: String!
+    context_title: String!
+    domain: String
+    title: String!
+    external_activity_type_id: String!
+    planned_start: String
+    planned_finish: String
+  ): WorkItem
+}
+
+type Query {
+  current_user(
+    product_types: [ProductType]
+    scope_types: [ScopeType]
+    domain: String
+    context_ids: [String]
+    e1_new_strategy_work_apis: Boolean
+  ): UserInfo
+}
+
+type Mutation {
+  current_user_async(
+    product_types: [ProductType]
+    scope_types: [ScopeType]
+    domain: String
+    context_ids: [String]
+    e1_new_strategy_work_apis: Boolean
+  ): UserInfo
+}
+
+type Query {
+  current_user_v2(
+    product_types: [ProductType]
+    scope_types: [ScopeType]
+  ): CurrentUserV2
+}
+
+type Query {
+  custom_attributes(
+    object_id: bigint!
+    object_type: CustomAttributeObjectType!
+  ): [CustomAttribute]
+}
+
+type Query {
+  custom_attributes_configurations(
+    is_archived: Boolean
+    is_active: Boolean
+  ): [CustomAttributesConfiguration]
+}
+
+type Mutation {
+  delete_custom_attributes_confguration(
+    id: bigint!
+  ): CustomAttributesConfiguration
+}
+
+type Mutation {
+  delete_key_result_and_log(
+    id: bigint!
+  ): KeyResultId
+}
+
+type Mutation {
+  delete_key_result_work_item_mapping_and_log(
+    id: Int!
+  ): KeyResultWorkItemMappingId
+}
+
+type Mutation {
+  delete_level_from_level_config(
+    level_depth: Int!
+  ): ErrorsAndLevelConfig
+}
+
+type Mutation {
+  delete_level_from_level_config_v2(
+    level_depth: Int!
+  ): LevelConfigAndErrors
+}
+
+type Mutation {
+  delete_objective_and_log(
+    id: bigint!
+  ): ObjectiveId
+}
+
+type Mutation {
+  delete_progress_point(
+    id: bigint!
+  ): ProgressPointId
+}
+
+type Mutation {
+  delete_progress_point_and_log(
+    id: Int!
+  ): ProgressPointId
+}
+
+type Mutation {
+  delete_work_item_containers_async(
+    container_type: ScopeType!
+    external_ids: [String]!
+  ): [Int]!
+}
+
+type Query {
+  fetch_activity_logs(
+    key_result_id: bigint
+    objective_id: bigint
+  ): [ActivityLogsResponse]
+}
+
+type Query {
+  fetch_key_results(
+    offset: Int
+    limit: Int
+    ids: String
+  ): BulkKeyResults!
+}
+
+type Query {
+  fetch_objectives(
+    offset: Int
+    limit: Int
+    ids: String
+  ): BulkObjectives!
+}
+
+type Query {
+  get_activity_associated_okrs(
+    activity_ids: [String!]!
+    container_type: String!
+  ): ActivityAssociatedOKR!
+}
+
+type Query {
+  get_channel(
+    container_id: String!
+  ): ChannelDetails!
+}
+
+type Query {
+  get_history(
+    id: bigint!
+    type: ObjectType!
+  ): [HistoryResponse]
+}
+
+type Query {
+  get_level_config: [LevelConfig]
+}
+
+type Query {
+  get_user_setting(
+    type: UserSettingType!
+    user_id: String!
+    app_user_id: String!
+  ): [UserSettingResponse]
+}
+
+type Mutation {
+  insert_custom_attributes_configuration(
+    label: String!
+    tooltip: String
+    value: json
+    ca_config_type: CustomAttributeConfigurationTypes!
+    is_default: Boolean
+    is_archived: Boolean
+    is_mandatory_objective: Boolean
+    is_mandatory_keyresult: Boolean
+    is_objective: Boolean
+    is_keyresult: Boolean
+  ): CustomAttributesConfiguration
+}
+
+type Mutation {
+  insert_customattributes_settings(
+    label: String!
+    tooltip: String
+    label_hidden: Boolean
+    enabled: Boolean
+  ): customattributes_settings_id
+}
+
+type Mutation {
+  insert_keyresult(
+    name: String!
+    description: String
+    data_source: String
+    starts_at: timestamptz
+    ends_at: timestamptz
+    objective_id: bigint!
+    app_owned_by: String
+    owned_by: String
+    starting_value: float8!
+    target_value: float8
+    value_type: String
+    ca_values: json
+    targets: json
+  ): KeyresultId
+}
+
+type Mutation {
+  insert_level_config(
+    new_level: json!
+  ): ErrorsAndLevelConfig
+}
+
+type Mutation {
+  insert_objective(
+    external_id: String!
+    external_type: String!
+    external_title: String!
+    name: String!
+    level_depth: Int!
+    starts_at: timestamptz!
+    ends_at: timestamptz!
+    parent_objective_id: bigint
+    app_owned_by: String
+    owned_by: String
+    description: String
+    ca_values: json
+  ): ObjectiveId
+}
+
+type Mutation {
+  insert_progress_point(
+    key_result_id: bigint!
+    value: float8!
+    measured_at: date!
+    comment: String
+  ): ProgressPointId
+}
+
+type Mutation {
+  insert_user_setting(
+    type: UserSettingType!
+    user_id: String!
+    app_user_id: String!
+    value: [ColumnConfigInput!]!
+  ): UserSetting
+}
+
+type Query {
+  list_activities(
+    activity_ids: [String]
+    work_item_container_id: Int
+    key_result_id: Int
+    search_string: String
+    states: [WorkState]
+    domain: String
+    product_type: ProductType!
+    scope_type: ScopeType
+    limit: Int
+    exclude_no_access: Boolean
+  ): [WorkItemDetails]
+}
+
+type Query {
+  list_activity_containers(
+    container_ids: [String]
+    domain: String
+    product_types: [ProductType]
+    scope_types: [ScopeType]
+    limit: Int
+    search_string: String
+    exclude_no_access: Boolean
+    e1_new_strategy_work_apis: Boolean
+  ): [WorkItemContainer]
+}
+
+type Mutation {
+  list_activity_containers_async(
+    domain: String
+    product_types: [ProductType]
+    scope_types: [ScopeType]
+    limit: Int
+    search_string: String
+    exclude_no_access: Boolean
+    e1_new_strategy_work_apis: Boolean
+  ): [WorkItemContainer]
+}
+
+type Query {
+  list_activity_containers_v2(
+    container_ids: [String]
+    product_types: [ProductType]
+    scope_types: [ScopeType]
+  ): [WorkItemContainer]
+}
+
+type Query {
+  list_activity_types(
+    context_id: String!
+    product_type: ProductType!
+    scope_type: ScopeType
+    domain: String
+  ): [ActivityType]
+}
+
+type Query {
+  list_objectives(
+    container_id: String!
+    domain: String
+    product_type: ProductType!
+    objective_ids: [Int]
+    include_activities: Boolean
+    include_progress_points: Boolean
+  ): [ObjectiveDetails]
+}
+
+type Query {
+  multi_level_okr(
+    external_id: String!
+    external_type: String!
+    from_date: timestamptz!
+    to_date: timestamptz!
+    level_depth: [Int!]!
+    is_card_view: Boolean
+    order_by: String!
+    order: String!
+    filter_parent_objective_ids: [bigint]
+    filter_child_objective_ids: [bigint]
+    filter_keyword: String
+    filter_from_date: timestamptz
+    filter_to_date: timestamptz
+    filter_owners: [String]
+    filter_is_unassigned: Boolean
+    custom_attributes_filters_list: [CustomAttributeFilter!]
+    filter_work_item_container_ids: [bigint]
+  ): MultiLevelOKR!
+}
+
+type Query {
+  multi_level_okr_filter_lists(
+    external_id: String!
+    external_type: String!
+    from_date: timestamptz!
+    to_date: timestamptz!
+    level_depth: [Int!]!
+    is_card_view: Boolean
+  ): MultiLevelOKRFilterLists!
+}
+
+type Query {
+  objective_by_id(
+    id: bigint!
+  ): Objective
+}
+
+type Query {
+  objectives_by_wic_id(
+    work_item_container_id: bigint!
+  ): [Objective!]!
+}
+
+type Query {
+  search_activities(
+    search_string: String
+    context_id: String!
+    product_type: ProductType!
+    scope_type: ScopeType
+    domain: String
+    limit: Int
+  ): [WorkItem]
+}
+
+type Query {
+  search_activity_containers(
+    search_string: String
+    product_type: ProductType!
+    scope_type: ScopeType
+    domain: String
+    limit: Int
+  ): [WorkItemContainer]
+}
+
+type Query {
+  search_users(
+    search_string: String
+    context_id: String!
+    product_type: ProductType!
+    scope_type: ScopeType
+    domain: String
+    limit: Int
+  ): [User]
+}
+
+type Mutation {
+  toggle_is_color_threshold_enabled_setting(
+    is_color_threshold_enabled: Boolean!
+  ): IsColorThresholdEnabledSetting
+}
+
+type Mutation {
+  toggle_rollup_setting(
+    roll_up_progress: Boolean!
+  ): RollupSetting
+}
+
+type Mutation {
+  update_color_threshold_config(
+    input: [ColorThresholdConfigInput!]!
+  ): ColorThresholdConfigResponse!
+}
+
+type Mutation {
+  update_custom_attributes_configuration(
+    id: Int!
+    label: String
+    tooltip: String
+    value: json
+    is_objective: Boolean
+    is_keyresult: Boolean
+    is_mandatory_objective: Boolean
+    is_mandatory_keyresult: Boolean
+    is_archived: Boolean
+  ): CustomAttributesConfiguration
+}
+
+type Mutation {
+  update_customattributes_settings(
+    label: String
+    tooltip: String
+    label_hidden: Boolean
+    enabled: Boolean
+  ): customattributes_settings_id
+}
+
+type Mutation {
+  update_keyresult(
+    id: bigint!
+    name: String!
+    description: String
+    data_source: String
+    starts_at: timestamptz
+    ends_at: timestamptz
+    objective_id: bigint!
+    app_owned_by: String
+    owned_by: String
+    starting_value: float8!
+    target_value: float8
+    value_type: String
+    ca_values: json
+    targets: json
+  ): KeyresultId
+}
+
+type Mutation {
+  update_keyresult_inline(
+    id: bigint!
+    name: String
+    owned_by: String
+  ): KeyresultId
+}
+
+type Mutation {
+  update_level_config(
+    level_config: json!
+  ): ErrorsAndLevelConfig
+}
+
+type Mutation {
+  update_objective(
+    id: bigint!
+    name: String!
+    level_depth: Int!
+    starts_at: timestamptz!
+    ends_at: timestamptz!
+    parent_objective_id: bigint
+    app_owned_by: String
+    owned_by: String
+    description: String
+    ca_values: json
+  ): ObjectiveId
+}
+
+type Mutation {
+  update_objective_inline(
+    id: bigint!
+    name: String
+    owned_by: String
+  ): ObjectiveId
+}
+
+type Mutation {
+  update_progress_point(
+    id: bigint!
+    value: float8!
+    comment: String
+  ): ProgressPointId
+}
+
+type Mutation {
+  update_user_setting(
+    id: Int!
+    type: UserSettingType!
+    user_id: String!
+    app_user_id: String!
+    value: [ColumnConfigInput!]!
+  ): UserSetting
+}
+
+type Query {
+  users_info(
+    user_ids: [String]!
+  ): [UserDetail]
+}
+
+enum WorkState {
+  not_started
+  in_progress
+  finished
+}
+
+enum ProductType {
+  leankit
+  e1
+  e1_prm
+  e1_work
+}
+
+enum ActionType {
+  add_or_edit
+  delete
+}
+
+enum CustomAttributeConfigurationTypes {
+  text
+  date
+  numeric
+  singleselect
+  multiselect
+}
+
+enum CustomAttributeObjectType {
+  objective
+  keyresult
+}
+
+enum ObjectType {
+  objective
+  keyresult
+}
+
+enum ScopeType {
+  e1_strategy
+  e1_work
+  lk_board
+}
+
+enum UserSettingType {
+  listviewcolumnconfig
+}
+
+input WorkItemContainerInput {
+  external_type: ProductType!
+  external_id: String!
+  external_title: String!
+}
+
+input WorkItemInput {
+  title: String!
+  external_type: ProductType!
+  container_type: ScopeType
+  external_id: String!
+  item_type: String
+  state: WorkState!
+  planned_start: String
+  planned_finish: String
+}
+
+input CustomAttrConfigInput {
+  label: String!
+  tooltip: String
+  value: json
+  ca_config_type: CustomAttributeConfigurationTypes!
+  is_default: Boolean
+  is_archived: Boolean
+  is_mandatory: Boolean
+  is_objective: Boolean
+  is_keyresult: Boolean
+}
+
+input CustomAttributeValueInput {
+  ca_config_id: Int!
+  value: json
+}
+
+input ColorThresholdConfigInput {
+  min: Int!
+  max: Int!
+  name: String!
+  colorCode: String!
+}
+
+input ColumnConfigInput {
+  id: String!
+  name: String!
+  hidden: Boolean!
+  index: Int
+  column_type: String!
+}
+
+input CustomAttributeFilter {
+  ca_config_id: Int!
+  ca_config_type: String!
+  value: json!
+}
+
+type WorkItem {
+  id: Int
+  title: String
+  external_type: ProductType!
+  container_type: ScopeType
+  external_id: String!
+  item_type: String
+  state: WorkState
+  planned_start: String
+  planned_finish: String
+}
+
+type WorkItemContainer {
+  id: Int
+  title: String
+  external_type: ProductType!
+  external_id: String!
+  app_name: String
+}
+
+type KeyResultWorkItemMapping {
+  id: Int!
+  key_result_id: Int!
+  work_item_id: Int!
+}
+
+type ActivityType {
+  id: Int
+  name: String!
+}
+
+type OrgSettings {
+  level_config: json!
+}
+
+type SettingsId {
+  id: Int
+}
+
+type Errors {
+  errors: [String]
+}
+
+type User {
+  id: String
+  first_name: String!
+  last_name: String!
+  email_address: String!
+  role: String!
+  administrator: Boolean!
+  planview_user_id: String
+}
+
+type UserInfo {
+  id: String!
+  first_name: String
+  last_name: String
+  email_address: String
+  work_item_container_roles: json!
+}
+
+type ObjectiveId {
+  id: bigint
+}
+
+type KeyResultId {
+  id: bigint
+}
+
+type ProgressPointId {
+  id: bigint
+}
+
+type KeyResultWorkItemMappingId {
+  id: bigint
+}
+
+type ErrorsAndLevelConfig {
+  errors: [String]
+  level_config: json
+}
+
+type WorkItemDetails {
+  id: Int
+  title: String
+  external_type: ProductType!
+  container_type: ScopeType
+  external_id: String!
+  work_item_container: json
+  item_type: String
+  state: WorkState
+  planned_start: String
+  planned_finish: String
+  key_result_work_item_mapping_id: Int
+  is_accessible: Boolean
+}
+
+type UserDetail {
+  avatar: String
+  id: String!
+  planview_user_id: String
+  first_name: String
+  last_name: String
+  email_address: String
+  is_deleted: Boolean
+}
+
+type ObjectiveDetails {
+  id: Int!
+  name: String
+  parent_objective_id: Int
+  level_depth: Int!
+  starts_at: String
+  ends_at: String
+  progress_percentage: Int
+  created_at: String
+  owned_by: String
+  app_owned_by: String
+  container: json
+  key_results: json
+}
+
+type ChannelDetails {
+  container_channel: String!
+  tenant_channel: String!
+  user_channel: String!
+  subscriber_key: String!
+  uuid: String!
+}
+
+type ConnectedAppsDetails {
+  apps: [String]
+  domains: json
+  is_pvadmin: Boolean
+  e1_new_route: Boolean
+  e1_new_strategy_work_apis: Boolean
+}
+
+type CustomAttribute {
+  id: bigint!
+  object_id: bigint!
+  object_type: CustomAttributeObjectType!
+  ca_config_id: bigint!
+  value: json
+  configuration: json
+  tenant_id_str: String
+  tenant_group_id_str: String
+  app_created_by: String
+  app_last_updated_by: String
+  created_by: String
+  last_updated_by: String
+}
+
+type CustomAttributesConfiguration {
+  id: bigint!
+  label: String!
+  ca_config_type: CustomAttributeConfigurationTypes!
+  is_default: Boolean
+  is_archived: Boolean
+  is_mandatory_objective: Boolean
+  is_mandatory_keyresult: Boolean
+  is_deleted: Boolean
+  is_objective: Boolean
+  is_keyresult: Boolean
+  tooltip: String
+  value: json
+  tenant_id_str: String
+  tenant_group_id_str: String
+  app_created_by: String
+  app_last_updated_by: String
+  created_by: String
+  last_updated_by: String
+  created_at: String
+  updated_at: String
+}
+
+type CustomAttributeResponse {
+  configuration: json
+  values: json
+}
+
+type CustomAttributeValue {
+  id: Int!
+  value: json
+  object_id: Int!
+  created_by: String
+  object_type: String
+  ca_config_id: Int!
+  tenant_id_str: String
+  app_created_by: String
+  last_updated_by: String
+  app_last_updated_by: String
+  tenant_group_id_str: String
+}
+
+type KeyresultId {
+  id: bigint
+}
+
+type HistoryResponse {
+  id: bigint!
+  action: String
+  app_created_by: String
+  app_last_updated_by: String
+  created_at: String
+  info: json
+  key_result_id: bigint
+  objective_id: bigint
+  progress_point_id: bigint
+  updated_at: String
+  work_item_id: bigint
+}
+
+type customattributes_settings_id {
+  id: bigint
+}
+
+type CurrentUserV2 {
+  work_item_container_roles: json!
+}
+
+type BasicUserInfo {
+  id: String
+  first_name: String
+  last_name: String
+  email_address: String
+  work_item_container_roles: json
+}
+
+type UserSetting {
+  id: bigint!
+  type: UserSettingType!
+  user_id: String!
+  app_user_id: String!
+  value: [ColumnConfig!]!
+  tenant_id_str: String
+  tenant_group_id_str: String
+  app_created_by: String
+  app_last_updated_by: String
+  created_by: String
+  last_updated_by: String
+}
+
+type UserSettingResponse {
+  id: bigint
+  type: UserSettingType
+  user_id: String
+  app_user_id: String
+  value: [ColumnConfig!]!
+}
+
+type MultiLevelOKR {
+  objectives: [MultiLevelObjective!]!
+  work_item_containers: [MultiLevelWorkItemContainer!]!
+}
+
+type MultiLevelObjective {
+  id: bigint!
+  name: String!
+  starts_at: timestamptz!
+  ends_at: timestamptz!
+  progress_percentage: Float!
+  level_depth: Int!
+  parent_objective_id: bigint
+  key_results: [MultiLevelKeyResult!]!
+  key_results_count: Int!
+  child_objectives_count: Int!
+  app_owned_by: String
+  work_item_container_id: bigint!
+  latest_progress_measured_at: timestamptz
+  rolled_up_progress_percentage: Float!
+  custom_attribute_values: [CustomAttributeValueMLQ!]!
+}
+
+type MultiLevelKeyResult {
+  id: bigint!
+  objective_id: bigint!
+  name: String!
+  starts_at: timestamptz!
+  ends_at: timestamptz!
+  starting_value: Float!
+  target_value: Float!
+  value_type: String!
+  progress_percentage: Float!
+  progress_point: MultiLevelProgressPoint!
+  work_item_container_id: bigint!
+  app_owned_by: String
+  upcoming_target_date: timestamptz
+  upcoming_target_value: String
+  custom_attribute_values: [CustomAttributeValueMLQ!]!
+}
+
+type MultiLevelWorkItemContainer {
+  id: bigint!
+  app_name: String!
+  container_type: String!
+  external_id: String!
+  external_title: String!
+}
+
+type MultiLevelProgressPoint {
+  measured_at: timestamptz!
+  value: Float!
+}
+
+type MultiLevelOKRFilterLists {
+  parent_objectives: [MultiLevelFilterObjective!]!
+  child_objectives: [MultiLevelFilterObjective!]!
+  owners: [String]!
+  ca_filters_list: [MultiLevelFilterCustomAttributes]
+  work_item_containers: [MultiLevelWorkItemContainer!]!
+}
+
+type MultiLevelFilterObjective {
+  id: bigint!
+  name: String!
+  parent_objective_id: bigint
+}
+
+type Objective {
+  id: bigint!
+  name: String!
+  description: String
+  parent_objective_id: bigint
+  work_item_container_id: bigint!
+  level_depth: Int!
+  starts_at: timestamptz!
+  ends_at: timestamptz!
+  progress_percentage: Int!
+  rolled_up_progress_percentage: Int!
+  created_at: timestamptz!
+  owned_by: String
+  scope_id: String!
+  scope_type: String!
+}
+
+type RollupSetting {
+  id: bigint
+  roll_up_progress: Boolean
+}
+
+type KeyResult {
+  id: bigint!
+  name: String!
+  description: String
+  objective_id: bigint!
+  overall_starts_at: timestamptz!
+  overall_ends_at: timestamptz!
+  starting_value: Float!
+  final_target_value: Float!
+  targets: [Target!]!
+  progress_percentage: Int!
+  created_at: timestamptz!
+  owned_by: String
+  progress_points: [ProgressPoint!]!
+}
+
+type ProgressPoint {
+  id: bigint!
+  measured_at: timestamptz!
+  value: Float!
+  comment: String
+}
+
+type BulkKeyResults {
+  total_records: Int!
+  key_results: [KeyResult!]!
+}
+
+type BulkObjectives {
+  total_records: Int!
+  objectives: [Objective!]!
+}
+
+type LevelConfigAndErrors {
+  errors: [ResponseError]
+  level_config: json
+}
+
+type ResponseError {
+  code: String
+  message: String
+  details: [Details]
+}
+
+type Target {
+  id: bigint!
+  starts_at: timestamptz!
+  ends_at: timestamptz!
+  value: Float!
+}
+
+type ActivityLogsResponse {
+  action: String!
+  model: String!
+  objective_id: bigint!
+  key_result_id: bigint
+  progress_point_id: bigint
+  created_by: String
+  created_at: timestamptz!
+  info: json!
+}
+
+type Details {
+  attribute: String
+  value: String
+  entities: String
+  primary_level: String
+}
+
+type Level {
+  color: String!
+  depth: Int!
+  is_default: Boolean!
+  name: String!
+}
+
+type LevelConfig {
+  level_config: [Level]
+}
+
+type UseColorThresholdFlagAndConfig {
+  is_color_threshold_enabled: Boolean!
+  color_threshold_config: [ColorThresholdConfigResponse!]!
+  error: [String]
+}
+
+type IsColorThresholdEnabledSetting {
+  id: bigint
+  is_color_threshold_enabled: Boolean
+}
+
+type ColorThresholdConfig {
+  name: String!
+  min: Int!
+  max: Int!
+  colorCode: String!
+}
+
+type ColorThresholdConfigResponse {
+  color_threshold_config: [ColorThresholdConfig!]!
+  is_color_threshold_enabled: Boolean!
+}
+
+type ActivityAssociatedOKR {
+  objectives: [ActivityAssociatedObjective!]!
+  work_item_containers: [ActivityAssociatedWIC!]!
+  work_items: [ActivityAssociatedWorkItem!]!
+}
+
+type ActivityAssociatedObjective {
+  id: bigint!
+  name: String!
+  description: String
+  starts_at: timestamptz!
+  ends_at: timestamptz!
+  progress_percentage: Int!
+  rolled_up_progress_percentage: Int!
+  level_depth: Int!
+  parent_objective_id: bigint
+  work_item_container_id: bigint!
+  key_results: [ActivityAssociatedKeyResult!]!
+}
+
+type ActivityAssociatedKeyResult {
+  id: bigint!
+  objective_id: bigint!
+  name: String!
+  description: String
+  overall_starts_at: timestamptz!
+  overall_ends_at: timestamptz!
+  starting_value: Float!
+  final_target_value: Float!
+  progress_percentage: Int!
+  work_item_ids: [bigint!]!
+}
+
+type ActivityAssociatedWIC {
+  id: bigint!
+  external_id: String!
+  title: String!
+  container_type: String!
+}
+
+type ActivityAssociatedWorkItem {
+  id: bigint!
+  external_id: String!
+  container_type: String!
+}
+
+type MultiLevelFilterCustomAttributes {
+  ca_config_type: String!
+  id: bigint!
+  label: String!
+  tooltip: String
+  value: [json]
+}
+
+type ColumnConfig {
+  id: String!
+  name: String!
+  hidden: Boolean!
+  index: Int
+  column_type: String!
+}
+
+type CustomAttributeValueMLQ {
+  ca_config_id: bigint!
+  ca_config_type: String!
+  values: [String!]!
+}

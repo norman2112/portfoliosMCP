@@ -1,0 +1,128 @@
+table:
+  name: work_item_key_results_view
+  schema: public
+select_permissions:
+  - role: edit
+    permission:
+      columns:
+        - achieved_at
+        - app_created_by
+        - app_last_updated_by
+        - app_owned_by
+        - created_at
+        - data_source
+        - description
+        - ends_at
+        - id
+        - name
+        - objective_id
+        - progress_percentage
+        - starting_value
+        - starts_at
+        - target_value
+        - updated_at
+        - value_type
+        - work_item_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+  - role: manage
+    permission:
+      columns:
+        - achieved_at
+        - app_created_by
+        - app_last_updated_by
+        - app_owned_by
+        - created_at
+        - data_source
+        - description
+        - ends_at
+        - id
+        - name
+        - objective_id
+        - progress_percentage
+        - starting_value
+        - starts_at
+        - target_value
+        - updated_at
+        - value_type
+        - work_item_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+  - role: read
+    permission:
+      columns:
+        - achieved_at
+        - app_created_by
+        - app_last_updated_by
+        - app_owned_by
+        - created_at
+        - data_source
+        - description
+        - ends_at
+        - id
+        - name
+        - objective_id
+        - progress_percentage
+        - starting_value
+        - starts_at
+        - target_value
+        - updated_at
+        - value_type
+        - work_item_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+  - role: user
+    permission:
+      columns:
+        - achieved_at
+        - app_created_by
+        - app_last_updated_by
+        - app_owned_by
+        - created_at
+        - data_source
+        - description
+        - ends_at
+        - id
+        - name
+        - objective_id
+        - progress_percentage
+        - starting_value
+        - starts_at
+        - target_value
+        - updated_at
+        - value_type
+        - work_item_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""

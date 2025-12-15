@@ -1,0 +1,84 @@
+interactions:
+- request:
+    body:
+      client_id: REDACTED
+      client_secret: REDACTED
+    headers:
+      Accept:
+      - application/json
+      Content-Type:
+      - application/x-www-form-urlencoded
+    method: POST
+    uri: https://platforma.pvintegrations-dev.net/inthub/api/v1/oauth2/token
+  response:
+    body:
+      string: '{"access_token":"REDACTED","expires_in":3600,"token_type":"Bearer"}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '905'
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 21 May 2021 19:34:30 GMT
+      Via:
+      - 1.1 e258e37d4fcd422e705889e4e77d0535.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - UQ8vI0pYIpqfBZyxCbQ53HSNPNwo1ulNPwTTyJ8dfFTeDgbRJojFqg==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-60a80b46-06af415e43c9004a6a474106
+      X-Cache:
+      - Miss from cloudfront
+      x-amz-apigw-id:
+      - fsazCFhcvHcF2XQ=
+      x-amzn-RequestId:
+      - fa178469-1a15-4065-8ea6-6d9fe23cfee3
+    status:
+      code: 200
+      message: OK
+    url: https://platforma.pvintegrations-dev.net/inthub/api/v1/oauth2/token
+- request:
+    body: null
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://platforma.pvintegrations-dev.net/inthub/admin/api/v1/deployments/find?systemCode=okrs&environmentId=okrs-env-us-west-2&systemTenantId=okrs-d08-10100000101
+  response:
+    body:
+      string: '[{"systemCode":"okrs","environmentId":"okrs-env-us-west-2","systemTenantId":"okrs-d08-10100000101","globalTenantId":["74ef27c7-aa51-40ca-ace6-78efdd2e40b3"]}]'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '158'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Fri, 21 May 2021 19:34:30 GMT
+      Strict-Transport-Security:
+      - max-age=2592000
+      Via:
+      - 1.1 e258e37d4fcd422e705889e4e77d0535.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - VM1V8XZrLDzp0H0GFtx49P2JrzvfhZcr3KhDsuPNfufN9dJeNROVdQ==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-60a80b46-42b2c1c237511bbe3f574be4;Sampled=0
+      X-Cache:
+      - Miss from cloudfront
+      x-amz-apigw-id:
+      - fsazEHS_PHcFXFg=
+      x-amzn-RequestId:
+      - 1b6f95c2-1cf2-4b16-9888-50bac09c18c8
+    status:
+      code: 200
+      message: OK
+    url: https://platforma.pvintegrations-dev.net/inthub/admin/api/v1/deployments/find?systemCode=okrs&environmentId=okrs-env-us-west-2&systemTenantId=okrs-d08-10100000101
+version: 1

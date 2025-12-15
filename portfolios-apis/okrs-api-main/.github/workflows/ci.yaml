@@ -1,0 +1,20 @@
+name: Continuous Integration Process
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: pv-platforma/constantine/.github/workflows/okrs-ci.yaml@v3.3.1
+    secrets:
+      aws_codeartifact_domain_var: ${{ secrets.AWS_CODEARTIFACT_DOMAIN_PRODUCTION_US_WEST_2 }}
+      aws_codeartifact_domain_owner_var: ${{ secrets.AWS_CODEARTIFACT_DOMAIN_OWNER_PRODUCTION_US_WEST_2 }}
+    with:
+      test_db_url: postgresql://postgres:postgres@localhost:5432/postgres
+      aws_region: "us-west-2" # Default aws-region for aws cli.
+      postgres_version: "12.2"
