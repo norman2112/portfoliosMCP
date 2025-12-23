@@ -1,0 +1,15 @@
+FROM okrs-api-local-base:latest
+LABEL maintainer="eheiberg@planview.com,aluther@planview.com,mmcknight@planview.com"
+LABEL descripton="OKRs API Local"
+
+WORKDIR /usr/src/app
+
+COPY docker/wait /wait
+
+# Copy entry point.
+COPY docker/docker-entrypoint-local.sh /docker-entrypoint.sh
+
+RUN chmod +x /wait /docker-entrypoint.sh
+
+# Set entrypoint.
+ENTRYPOINT sh -c "/wait && /docker-entrypoint.sh"

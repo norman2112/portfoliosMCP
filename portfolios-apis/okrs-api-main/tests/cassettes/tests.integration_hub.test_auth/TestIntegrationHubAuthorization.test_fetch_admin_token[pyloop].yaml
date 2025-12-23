@@ -1,0 +1,44 @@
+interactions:
+- request:
+    body:
+      client_id: REDACTED
+      client_secret: REDACTED
+      grant_type: client_credentials
+    headers:
+      Accept:
+      - application/json
+      Content-Type:
+      - application/x-www-form-urlencoded
+    method: POST
+    uri: https://platforma.pvintegrations-dev.net/inthub/api/v1/oauth2/token
+  response:
+    body:
+      string: '{"access_token":"REDACTED","expires_in":3600,"token_type":"Bearer"}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '905'
+      Content-Type:
+      - application/json
+      Date:
+      - Thu, 11 Mar 2021 20:01:29 GMT
+      Via:
+      - 1.1 e38128e592976d85c893d4f72db5480c.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - aiOoQ2b1emSM9CAR59D84zI6WZBHTp0uL6xSFhya5QytXAmMiWi6fQ==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-604a7718-766116a63818072547a1e8a9
+      X-Cache:
+      - Miss from cloudfront
+      x-amz-apigw-id:
+      - cCeL6EC4vHcFoIw=
+      x-amzn-RequestId:
+      - e32e8242-748e-40cc-8b5f-12b857b4032f
+    status:
+      code: 200
+      message: OK
+    url: https://platforma.pvintegrations-dev.net/inthub/api/v1/oauth2/token
+version: 1

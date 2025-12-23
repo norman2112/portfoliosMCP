@@ -1,0 +1,327 @@
+table:
+  name: work_items
+  schema: public
+object_relationships:
+  - name: work_item_container
+    using:
+      foreign_key_constraint_on: work_item_container_id
+array_relationships:
+  - name: key_result_work_item_mappings
+    using:
+      foreign_key_constraint_on:
+        column: work_item_id
+        table:
+          name: key_result_work_item_mappings
+          schema: public
+insert_permissions:
+  - role: edit
+    permission:
+      check: {}
+      set:
+        app_created_by: x-hasura-Platforma-App-User-Id
+        app_name: x-hasura-App-Name
+        created_by: x-hasura-User-Id
+        tenant_group_id_str: x-hasura-Org-Id
+        tenant_id_str: x-hasura-Platforma-App-Tenant-Id
+      columns:
+        - container_type
+        - external_id
+        - external_type
+        - item_type
+        - planned_finish
+        - planned_start
+        - state
+        - title
+        - work_item_container_id
+  - role: manage
+    permission:
+      check: {}
+      set:
+        app_created_by: x-hasura-Platforma-App-User-Id
+        app_name: x-hasura-App-Name
+        created_by: x-hasura-User-Id
+        tenant_group_id_str: x-hasura-Org-Id
+        tenant_id_str: x-hasura-Platforma-App-Tenant-Id
+      columns:
+        - container_type
+        - external_id
+        - external_type
+        - item_type
+        - planned_finish
+        - planned_start
+        - state
+        - title
+        - work_item_container_id
+  - role: user
+    permission:
+      check: {}
+      set:
+        app_created_by: x-hasura-Platforma-App-User-Id
+        app_name: x-hasura-App-Name
+        created_by: x-hasura-User-Id
+        tenant_group_id_str: x-hasura-Org-Id
+        tenant_id_str: x-hasura-Platforma-App-Tenant-Id
+      columns:
+        - container_type
+        - external_id
+        - external_type
+        - item_type
+        - planned_finish
+        - planned_start
+        - state
+        - title
+        - work_item_container_id
+select_permissions:
+  - role: edit
+    permission:
+      columns:
+        - app_name
+        - container_type
+        - created_at
+        - external_id
+        - external_type
+        - id
+        - item_type
+        - planned_finish
+        - planned_start
+        - state
+        - title
+        - updated_at
+        - work_item_container_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+      allow_aggregations: true
+  - role: manage
+    permission:
+      columns:
+        - app_name
+        - container_type
+        - created_at
+        - external_id
+        - external_type
+        - id
+        - item_type
+        - planned_finish
+        - planned_start
+        - state
+        - title
+        - updated_at
+        - work_item_container_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+      allow_aggregations: true
+  - role: read
+    permission:
+      columns:
+        - app_name
+        - container_type
+        - created_at
+        - external_id
+        - external_type
+        - id
+        - item_type
+        - planned_finish
+        - planned_start
+        - state
+        - title
+        - updated_at
+        - work_item_container_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+      allow_aggregations: true
+  - role: user
+    permission:
+      columns:
+        - app_name
+        - container_type
+        - created_at
+        - external_id
+        - external_type
+        - id
+        - item_type
+        - planned_finish
+        - planned_start
+        - state
+        - title
+        - updated_at
+        - work_item_container_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+      allow_aggregations: true
+update_permissions:
+  - role: edit
+    permission:
+      columns:
+        - container_type
+        - external_id
+        - external_type
+        - item_type
+        - planned_finish
+        - planned_start
+        - state
+        - title
+        - work_item_container_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+      check: null
+      set:
+        app_last_updated_by: x-hasura-Platforma-App-User-Id
+        last_updated_by: x-hasura-User-Id
+  - role: manage
+    permission:
+      columns:
+        - container_type
+        - external_id
+        - external_type
+        - item_type
+        - planned_finish
+        - planned_start
+        - state
+        - title
+        - work_item_container_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+      check: null
+      set:
+        app_last_updated_by: x-hasura-Platforma-App-User-Id
+        last_updated_by: x-hasura-User-Id
+  - role: okrs_consumer
+    permission:
+      columns:
+        - container_type
+        - external_id
+        - external_type
+        - ih_subscription_response
+        - item_type
+        - latest_ih_message
+        - planned_finish
+        - planned_start
+        - state
+        - tenant_id_str
+        - title
+      filter: {}
+      check: null
+  - role: user
+    permission:
+      columns:
+        - container_type
+        - external_id
+        - external_type
+        - item_type
+        - planned_finish
+        - planned_start
+        - state
+        - title
+        - work_item_container_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+      check: null
+      set:
+        app_last_updated_by: x-hasura-Platforma-App-User-Id
+        last_updated_by: x-hasura-User-Id
+delete_permissions:
+  - role: edit
+    permission:
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+  - role: manage
+    permission:
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+  - role: user
+    permission:
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+event_triggers:
+  - name: work_items
+    definition:
+      delete:
+        columns: '*'
+      enable_manual: true
+      insert:
+        columns: '*'
+    retry_conf:
+      interval_sec: 10
+      num_retries: 0
+      timeout_sec: 60
+    webhook_from_env: HASURA_EVENTS_WEBHOOK_URL

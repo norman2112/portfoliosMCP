@@ -1,0 +1,23 @@
+{
+	"github_actions": {
+		"iam_role_arn": "arn:aws:iam::323341875315:role/fd-github-role"
+	},
+	"ecr_registry": "323341875315.dkr.ecr.us-west-2.amazonaws.com",
+	"us_west_2": {
+		"k8s_cluster_name": "usw2-pf-prod",
+		"k8s_namespace": "okrs",
+    "region_shortname": "usw2"
+	},
+	"eu_central_1": {
+		"k8s_cluster_name": "euc1-pf-prod",
+		"k8s_namespace": "okrs",
+    "region_shortname": "euc1"
+	},
+	"ap_southeast_2": {
+		"k8s_cluster_name": "aps2-pf-prod",
+		"k8s_namespace": "okrs",
+    "region_shortname": "aps2"
+	},
+  "service_type": "foundation",
+	"service_name": "okrs"
+}

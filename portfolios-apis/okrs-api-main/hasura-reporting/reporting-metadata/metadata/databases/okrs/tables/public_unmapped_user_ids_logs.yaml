@@ -1,0 +1,7 @@
+table:
+  name: unmapped_user_ids_logs
+  schema: public
+object_relationships:
+  - name: planview_id_migration_log
+    using:
+      foreign_key_constraint_on: audit_id

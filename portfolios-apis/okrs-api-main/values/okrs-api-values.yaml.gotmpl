@@ -1,0 +1,52 @@
+fullnameOverride: "okrs-api"
+
+{{- if hasKey .Values "replicaCount" }}
+replicaCount: {{ .Values.replicaCount }}
+{{ else }}
+replicaCount: 3
+{{ end }}
+
+service:
+  type: ClusterIP
+
+ingress:
+  enabled: false
+
+persistence:
+  enabled: false
+
+image:
+  registry: 323341875315.dkr.ecr.us-west-2.amazonaws.com
+  repository: okrs-api
+  tag: {{ env "TAG" | default "latest" }}
+
+okr:
+  hasuraEndpoint: http://hasura.okr.svc.cluster.local
+
+readinessProbe:
+  path: /healthcheck
+
+livenessProbe:
+  path: /healthcheck
+
+env:
+  {{ range $key, $val := .Values.apiSecrets }}
+  {{ $key }}: {{ $val | quote }}
+  {{ end }}
+{{- if hasKey .Values "DATABASE_URL" }}
+  DATABASE_URL: {{ .Values.DATABASE_URL }}
+{{ else }}
+  DATABASE_URL: postgresql://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)
+{{ end }}
+  AWS_REGION: {{ .Values.aws.region }}
+
+configmap:
+  {{ range $key, $val := .Values.configmap }}
+  {{ $key }}: {{ $val | quote }}
+  {{ end }}
+
+serviceAccount:
+  annotations:
+    {{ range $key, $val := .Values.serviceAccount.annotations }}
+    {{ $key }}: {{ $val | quote }}
+    {{ end }}

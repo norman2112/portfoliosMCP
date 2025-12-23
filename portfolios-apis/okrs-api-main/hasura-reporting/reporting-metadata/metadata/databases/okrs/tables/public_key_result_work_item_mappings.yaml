@@ -1,0 +1,29 @@
+table:
+  name: key_result_work_item_mappings
+  schema: public
+object_relationships:
+  - name: key_result
+    using:
+      foreign_key_constraint_on: key_result_id
+  - name: work_item
+    using:
+      foreign_key_constraint_on: work_item_id
+select_permissions:
+  - role: reporting
+    permission:
+      columns:
+        - id
+        - key_result_id
+        - work_item_id
+        - app_created_by
+        - app_last_updated_by
+        - created_by
+        - last_updated_by
+        - tenant_group_id_str
+        - tenant_id_str
+        - created_at
+        - updated_at
+      filter:
+        tenant_group_id_str:
+          _eq: X-Hasura-Org-Id
+      allow_aggregations: true

@@ -1,0 +1,711 @@
+actions:
+  - name: basic_current_user
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/basic-current-user'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: connect_activities
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/connect-activities'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: connected_apps
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/connected-apps'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: create_activity
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/create-activity'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: user
+  - name: current_user
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/current-user'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: current_user_async
+    definition:
+      kind: asynchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/current-user'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: current_user_v2
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/current-user-v2'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: custom_attributes
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/custom-attributes'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: custom_attributes_configurations
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/custom-attributes-configurations'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: delete_custom_attributes_confguration
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/delete-custom-attributes-configuration'
+      forward_client_headers: true
+    permissions:
+      - role: manage
+  - name: delete_key_result_and_log
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/delete-key-result-and-log'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: user
+  - name: delete_key_result_work_item_mapping_and_log
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/delete-key-result-work-item-mapping-and-log'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: user
+  - name: delete_level_from_level_config
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/delete-level-from-level-config'
+      forward_client_headers: true
+    permissions:
+      - role: manage
+      - role: user
+  - name: delete_level_from_level_config_v2
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/delete-level-from-level-config'
+      forward_client_headers: true
+    permissions:
+      - role: user
+      - role: manage
+    comment: api to delete level config
+  - name: delete_objective_and_log
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/delete-objective-and-log'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: user
+  - name: delete_progress_point
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/delete-progress-point'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: user
+  - name: delete_progress_point_and_log
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/delete-progress-point-and-log'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: user
+  - name: delete_work_item_containers_async
+    definition:
+      kind: asynchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/delete-work-item-containers'
+      forward_client_headers: true
+    permissions:
+      - role: manage
+      - role: user
+  - name: fetch_activity_logs
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/activity-logs'
+      forward_client_headers: true
+      timeout: 60
+    permissions:
+      - role: okrs-integration
+    comment: Get activity logs
+  - name: fetch_key_results
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/fetch-key-results'
+      forward_client_headers: true
+      timeout: 60
+    permissions:
+      - role: okrs-integration
+    comment: Fetch paginated key results
+  - name: fetch_objectives
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/fetch-objectives'
+      forward_client_headers: true
+      timeout: 60
+    permissions:
+      - role: okrs-integration
+    comment: Fetch paginated objectives
+  - name: get_activity_associated_okrs
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/activity-associated-okrs'
+      forward_client_headers: true
+    permissions:
+      - role: read
+      - role: edit
+      - role: manage
+      - role: user
+    comment: Retrieves a list of Objectives and Key Results associated with a given activity, including ancestral objectives and their key results, where applicable.
+  - name: get_channel
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/get-channel'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: get_history
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/get-history'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: get_level_config
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/get-level-config'
+      forward_client_headers: true
+    permissions:
+      - role: read
+      - role: okrs-integration
+      - role: user
+      - role: manage
+      - role: edit
+  - name: get_user_setting
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/get-user-setting'
+      forward_client_headers: true
+    permissions:
+      - role: user
+      - role: manage
+      - role: edit
+    comment: api to give user setting for column configs
+  - name: insert_custom_attributes_configuration
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/insert-custom-attributes-configuration'
+      forward_client_headers: true
+    permissions:
+      - role: manage
+  - name: insert_customattributes_settings
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/insert-custom-attributes-settings'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: insert_keyresult
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/insert-keyresult'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: insert_level_config
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/insert-level-config'
+      forward_client_headers: true
+    permissions:
+      - role: manage
+      - role: user
+  - name: insert_objective
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/insert-objective'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: insert_progress_point
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/insert-progress-point'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: user
+  - name: insert_user_setting
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/insert-user-setting'
+      forward_client_headers: true
+    permissions:
+      - role: user
+      - role: manage
+      - role: edit
+  - name: list_activities
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/list-activities'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: list_activity_containers
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/list-activity-containers'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: list_activity_containers_async
+    definition:
+      kind: asynchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/list-activity-containers'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: list_activity_containers_v2
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/list-activity-containers-v2'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: list_activity_types
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/list-activity-types'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: list_objectives
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/list-objectives'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: multi_level_okr
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/multi-level-okr'
+      forward_client_headers: true
+    permissions:
+      - role: read
+      - role: user
+      - role: manage
+      - role: edit
+    comment: Fetches objectives, key results, and progress points along with their relationships for a specified work item container
+  - name: multi_level_okr_filter_lists
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/multi-level-okr-filter-lists'
+      forward_client_headers: true
+    permissions:
+      - role: read
+      - role: user
+      - role: manage
+      - role: edit
+    comment: Fetches filter lists for multi level okr
+  - name: objective_by_id
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/fetch-objective-by-id'
+      forward_client_headers: true
+      timeout: 60
+    permissions:
+      - role: okrs-integration
+    comment: Fetch objective by id
+  - name: objectives_by_wic_id
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/fetch-objectives-by-wic-id'
+      forward_client_headers: true
+      timeout: 60
+    permissions:
+      - role: okrs-integration
+    comment: Fetch objectives by wic id
+  - name: search_activities
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/search-activities'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: search_activity_containers
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/search-activity-containers'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: search_users
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/search-users'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: toggle_is_color_threshold_enabled_setting
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/toggle-is-color-threshold-enabled-setting'
+      forward_client_headers: true
+    permissions:
+      - role: manage
+  - name: toggle_rollup_setting
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/toggle-rollup-setting'
+      forward_client_headers: true
+    permissions:
+      - role: manage
+  - name: update_color_threshold_config
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/update-color-threshold-config'
+      forward_client_headers: true
+    permissions:
+      - role: manage
+  - name: update_custom_attributes_configuration
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/update-custom-attributes-configuration'
+      forward_client_headers: true
+    permissions:
+      - role: manage
+  - name: update_customattributes_settings
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/update-custom-attributes-settings'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: update_keyresult
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/update-keyresult'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: update_keyresult_inline
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/update-keyresult-inline'
+      forward_client_headers: true
+    permissions:
+      - role: read
+      - role: user
+      - role: manage
+      - role: edit
+  - name: update_level_config
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/update-level-config'
+      forward_client_headers: true
+    permissions:
+      - role: manage
+      - role: user
+  - name: update_objective
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/update-objective'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+  - name: update_objective_inline
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/update-objective-inline'
+      forward_client_headers: true
+    permissions:
+      - role: read
+      - role: user
+      - role: manage
+      - role: edit
+  - name: update_progress_point
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/update-progress-point'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: user
+  - name: update_user_setting
+    definition:
+      kind: synchronous
+      handler: '{{HASURA_BASE_API_URL}}/actions/update-user-setting'
+      forward_client_headers: true
+    permissions:
+      - role: user
+      - role: manage
+      - role: edit
+    comment: Update user settings action
+  - name: users_info
+    definition:
+      kind: ""
+      handler: '{{HASURA_BASE_API_URL}}/actions/users-info'
+      forward_client_headers: true
+    permissions:
+      - role: edit
+      - role: manage
+      - role: read
+      - role: user
+custom_types:
+  enums:
+    - name: WorkState
+      values:
+        - description: null
+          is_deprecated: null
+          value: not_started
+        - description: null
+          is_deprecated: null
+          value: in_progress
+        - description: null
+          is_deprecated: null
+          value: finished
+    - name: ProductType
+      values:
+        - description: null
+          is_deprecated: null
+          value: leankit
+        - description: null
+          is_deprecated: null
+          value: e1
+        - description: null
+          is_deprecated: null
+          value: e1_prm
+        - description: null
+          is_deprecated: null
+          value: e1_work
+    - name: ActionType
+      values:
+        - description: null
+          is_deprecated: null
+          value: add_or_edit
+        - description: null
+          is_deprecated: null
+          value: delete
+    - name: CustomAttributeConfigurationTypes
+      values:
+        - description: null
+          is_deprecated: null
+          value: text
+        - description: null
+          is_deprecated: null
+          value: date
+        - description: null
+          is_deprecated: null
+          value: numeric
+        - description: null
+          is_deprecated: null
+          value: singleselect
+        - description: null
+          is_deprecated: null
+          value: multiselect
+    - name: CustomAttributeObjectType
+      values:
+        - description: null
+          is_deprecated: null
+          value: objective
+        - description: null
+          is_deprecated: null
+          value: keyresult
+    - name: ObjectType
+      values:
+        - description: null
+          is_deprecated: null
+          value: objective
+        - description: null
+          is_deprecated: null
+          value: keyresult
+    - name: ScopeType
+      values:
+        - description: null
+          is_deprecated: null
+          value: e1_strategy
+        - description: null
+          is_deprecated: null
+          value: e1_work
+        - description: null
+          is_deprecated: null
+          value: lk_board
+    - name: UserSettingType
+      values:
+        - description: null
+          is_deprecated: null
+          value: listviewcolumnconfig
+  input_objects:
+    - name: WorkItemContainerInput
+    - name: WorkItemInput
+    - name: CustomAttrConfigInput
+    - name: CustomAttributeValueInput
+    - name: ColorThresholdConfigInput
+    - name: ColumnConfigInput
+    - name: CustomAttributeFilter
+  objects:
+    - name: WorkItem
+    - name: WorkItemContainer
+    - name: KeyResultWorkItemMapping
+    - name: ActivityType
+    - name: OrgSettings
+    - name: SettingsId
+    - name: Errors
+    - name: User
+    - name: UserInfo
+    - name: ObjectiveId
+    - name: KeyResultId
+    - name: ProgressPointId
+    - name: KeyResultWorkItemMappingId
+    - name: ErrorsAndLevelConfig
+    - name: WorkItemDetails
+    - name: UserDetail
+    - name: ObjectiveDetails
+    - name: ChannelDetails
+    - name: ConnectedAppsDetails
+    - name: CustomAttribute
+    - name: CustomAttributesConfiguration
+    - name: CustomAttributeResponse
+    - name: CustomAttributeValue
+    - name: KeyresultId
+    - name: HistoryResponse
+    - name: customattributes_settings_id
+    - name: CurrentUserV2
+    - name: BasicUserInfo
+    - name: UserSetting
+    - name: UserSettingResponse
+    - name: MultiLevelOKR
+    - name: MultiLevelObjective
+    - name: MultiLevelKeyResult
+    - name: MultiLevelWorkItemContainer
+    - name: MultiLevelProgressPoint
+    - name: MultiLevelOKRFilterLists
+    - name: MultiLevelFilterObjective
+    - name: Objective
+    - name: RollupSetting
+    - name: KeyResult
+    - name: ProgressPoint
+    - name: BulkKeyResults
+    - name: BulkObjectives
+    - name: LevelConfigAndErrors
+    - name: ResponseError
+    - name: Target
+    - name: ActivityLogsResponse
+    - name: Details
+    - name: Level
+    - name: LevelConfig
+    - name: UseColorThresholdFlagAndConfig
+    - name: IsColorThresholdEnabledSetting
+    - name: ColorThresholdConfig
+    - name: ColorThresholdConfigResponse
+    - name: ActivityAssociatedOKR
+    - name: ActivityAssociatedObjective
+    - name: ActivityAssociatedKeyResult
+    - name: ActivityAssociatedWIC
+    - name: ActivityAssociatedWorkItem
+    - name: MultiLevelFilterCustomAttributes
+    - name: ColumnConfig
+    - name: CustomAttributeValueMLQ
+    - name: MultiLevelFilterCustomAttributes
+  scalars: []

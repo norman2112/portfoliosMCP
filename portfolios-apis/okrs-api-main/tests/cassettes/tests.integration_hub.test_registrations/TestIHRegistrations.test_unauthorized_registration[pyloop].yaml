@@ -1,0 +1,41 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - REDACTED
+    method: POST
+    uri: https://platforma.pvintegrations-dev.net/inthub/api/v1/register
+  response:
+    body:
+      string: '{"message":null}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '16'
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 22 Feb 2021 20:07:59 GMT
+      Via:
+      - 1.1 446da9be3ac2cdfd129b87089ed4e4b7.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - 1CSVYG6_geuLiK0J_xPAJ2HFoYpbfR7kXZTWg4-cfhpysNGwfBHcYQ==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Cache:
+      - Error from cloudfront
+      x-amz-apigw-id:
+      - bKdM7HMlPHcFkAQ=
+      x-amzn-ErrorType:
+      - AuthorizerConfigurationException
+      x-amzn-RequestId:
+      - c3d1a01a-b3c6-4857-9160-227ef9b8b74f
+    status:
+      code: 500
+      message: Internal Server Error
+    url: https://platforma.pvintegrations-dev.net/inthub/api/v1/register
+version: 1

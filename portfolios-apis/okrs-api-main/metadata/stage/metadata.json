@@ -1,0 +1,13 @@
+{
+	"github_actions": {
+		"iam_role_arn": "arn:aws:iam::938847957161:role/fd-github-role"
+	},
+	"ecr_registry": "938847957161.dkr.ecr.us-west-2.amazonaws.com",
+  "image_tag": "rc",
+	"us_west_2": {
+		"k8s_cluster_name": "fd-platform-usw2-staging",
+		"k8s_namespace": "okrs"
+	},
+  "service_type": "foundation",
+	"service_name": "okrs"
+}

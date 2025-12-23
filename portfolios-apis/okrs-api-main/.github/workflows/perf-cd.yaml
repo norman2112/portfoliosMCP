@@ -1,0 +1,94 @@
+name: Okrs Performance CD
+
+on:
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: okrs-api
+  ASYNC_IMAGE_NAME: okrs-api
+  NAMESPACE: okrs-perf
+  IMAGE_TAG: ${{github.run_id}}-${{ github.sha }}
+  AWS_REGION: us-west-2
+  ENVIRONMENT: perf
+  DEV_EKS_CLUSTER: fd-platform-usw2-dev-cluster
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    name: Build Image
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::486329218230:role/fd-github-role
+          aws-region: us-west-2
+
+      ### Composite action created by @atlas DevOps team in the pv-platforma/infra repository
+      - id: image-builder
+        uses: pv-platforma/infra/.github/composite-workflow/image-build@v6.0.2
+      
+      - name: Print built image name and tag
+        run: |
+          echo "Built image:"
+          echo "${{ secrets.ECR_PERF_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+
+  perf-development:
+    runs-on: ubuntu-latest
+    name: Deploy to Perf Development
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      ENVIRONMENT: perf
+      AWS_REGION: us-west-2
+      DEV_EKS_CLUSTER: fd-platform-usw2-dev-cluster
+    needs:
+      - image
+    steps:
+      - name: Clone
+        uses: actions/checkout@v3
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::486329218230:role/fd-github-role
+          aws-region: us-west-2  
+
+      ### Composite action created by @atlas DevOps team in the pv-platforma/infra repository
+      - id: platforma-env
+        uses: pv-platforma/infra/.github/composite-workflow/platforma-env@v6.0.2
+        continue-on-error: true
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT_US_WEST_2 }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT_US_WEST_2 }}
+          ecr-aws-region: ${{ secrets.AWS_REGION_DEVELOPMENT_US_WEST_2 }}
+          kube-aws-region: ${{ secrets.AWS_REGION_DEVELOPMENT_US_WEST_2 }}
+
+          target_env: ${{ env.ENVIRONMENT }}
+          image_name: ${{ env.IMAGE_NAME }}
+          registry_name: ${{ secrets.ECR_PERF_REGISTRY }}
+          namespace: ${{ env.NAMESPACE }}
+          cluster_name: ${{ env.DEV_EKS_CLUSTER }}
+
+      - name: Set okrs-api-async container image to latest perf tag digest from ECR
+        run: |
+          aws eks update-kubeconfig --name ${{ env.DEV_EKS_CLUSTER }} --region ${{ env.AWS_REGION }}
+          REPO="${{ secrets.ECR_PERF_REGISTRY }}/perf-okrs-api"
+          DIGEST=$(aws ecr describe-images \
+            --repository-name perf-okrs-api \
+            --region ${{ env.AWS_REGION }} \
+            --query 'imageDetails[?contains(imageTags, `perf`)].imageDigest' \
+            --output text | tail -n1)
+          IMAGE="${REPO}@${DIGEST}"
+          echo "Latest perf image: $IMAGE"
+          if ! command -v kubectl &> /dev/null; then
+            curl -LO https://dl.k8s.io/release/v1.23.6/bin/linux/amd64/kubectl && sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+          fi
+          kubectl set image deployment/okrs-api-async okrs-api-async=$IMAGE -n ${{ env.NAMESPACE }}      
+          kubectl rollout restart deployment/okrs-api-async -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/okrs-api-async -n ${{ env.NAMESPACE }} --timeout=15m &
+          wait

@@ -1,0 +1,26 @@
+table:
+  name: custom_attributes_values
+  schema: public
+object_relationships:
+  - name: custom_attributes_config
+    using:
+      foreign_key_constraint_on: ca_config_id
+event_triggers:
+  - name: custom_attributes_values
+    definition:
+      delete:
+        columns: '*'
+      enable_manual: true
+      insert:
+        columns: '*'
+      update:
+        columns:
+          - ca_config_id
+          - object_id
+          - value
+          - object_type
+    retry_conf:
+      interval_sec: 10
+      num_retries: 0
+      timeout_sec: 60
+    webhook_from_env: HASURA_EVENTS_WEBHOOK_URL

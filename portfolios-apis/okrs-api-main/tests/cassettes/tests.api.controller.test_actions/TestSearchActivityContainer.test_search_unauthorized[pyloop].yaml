@@ -1,0 +1,47 @@
+interactions:
+- request:
+    body: null
+    headers:
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://d08.leankit.io/io/okr/board?search=Test
+  response:
+    body:
+      string: '{"statusCode":401,"error":"Unauthorized","message":"Unauthorized"}'
+    headers:
+      Cache-Control:
+      - no-store, no-cache, must-revalidate, proxy-revalidate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '66'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Thu, 28 Oct 2021 22:32:53 GMT
+      Expires:
+      - '0'
+      Pragma:
+      - no-cache
+      Surrogate-Control:
+      - no-store
+      X-RateLimit-Limit:
+      - '60'
+      X-RateLimit-Remaining:
+      - '58'
+      X-RateLimit-Reset:
+      - '1635460379'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload;
+      x-lk-app-name:
+      - core-board-service
+      x-lk-app-version:
+      - 9.59.1
+      x-request-correlation-id:
+      - fd8f7d90-383e-11ec-885f-665b0b7f1689
+    status:
+      code: 401
+      message: Unauthorized
+    url: https://d08.leankit.io/io/okr/board?search=Test
+version: 1

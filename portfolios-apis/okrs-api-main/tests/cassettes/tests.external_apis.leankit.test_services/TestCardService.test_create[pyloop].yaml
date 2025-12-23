@@ -1,0 +1,52 @@
+interactions:
+- request:
+    body: null
+    headers:
+      authorization:
+      - REDACTED
+    method: POST
+    uri: https://d09.leankit.io/io/okr/card?returnFullRecord=true
+  response:
+    body:
+      string: '{"actualFinish":null,"actualStart":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10136408886","title":"API
+        Testing - Libby1","version":285,"isArchived":false},"customIcon":null,"customIconLabel":"Class
+        of Service","color":"#FFFFFF","iconPath":null,"createdOn":"2021-11-01T15:33:16Z","archivedOn":null,"description":null,"plannedFinish":"2021-01-01","customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"id":"10145875832","index":10,"lane":{"cardLimit":0,"description":null,"id":"10136408904","index":0,"laneClassType":"backlog","laneType":"ready","orientation":"vertical","title":"New
+        Requests","taskBoard":null},"updatedOn":"2021-11-01T15:33:16Z","movedOn":"2021-11-01T15:33:16Z","priority":"normal","size":0,"plannedStart":"2020-01-01","tags":[],"title":"[TEST]
+        Petting Zoo Field Trip","version":"1","type":{"id":"10136408888","title":"Other
+        Work","cardColor":"#FFFFFF"},"taskBoardStats":null,"subscriptionId":null,"createdBy":{"id":"10145734719","emailAddress":"eheiberg@planview.com","fullName":"Eric
+        Heiberg","avatar":"https://d09.leankit.io/avatar/Show/10145734719?s=25"},"updatedBy":{"id":"10145734719","emailAddress":"eheiberg@planview.com","fullName":"Eric
+        Heiberg","avatar":"https://d09.leankit.io/avatar/Show/10145734719?s=25"},"movedBy":null,"archivedBy":null,"assignedUsers":[],"attachments":[],"comments":[],"parentCards":[],"customFields":[],"connectedCardStats":null}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '1436'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 01 Nov 2021 15:33:16 GMT
+      Etag:
+      - W/"59c-U2M3rli9kpto3O49dGwGCNo8gh0"
+      X-RateLimit-Limit:
+      - '160'
+      X-RateLimit-Remaining:
+      - '157'
+      X-RateLimit-Reset:
+      - '1635780813'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload;
+      x-lk-app-description:
+      - LeanKit API
+      x-lk-app-name:
+      - '@banditsoftware/core-leankit-api'
+      x-lk-app-version:
+      - 50.8.0
+      x-powered-by:
+      - Express
+      x-request-correlation-id:
+      - 0835e350-3b29-11ec-8191-fec842fbf5cc
+    status:
+      code: 201
+      message: Created
+    url: https://d09.leankit.io/io/okr/card?returnFullRecord=true
+version: 1

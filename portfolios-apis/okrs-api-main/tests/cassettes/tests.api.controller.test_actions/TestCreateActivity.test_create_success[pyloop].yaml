@@ -1,0 +1,119 @@
+interactions:
+- request:
+    body: null
+    headers:
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://d08.leankit.io/io/okr/board/10121496436
+  response:
+    body:
+      string: "{\"users\":[{\"id\":\"10121496032\",\"username\":\"eheiberg@planview.com\",\"firstName\":\"Eric\",\"lastName\":\"Heiberg\",\"fullName\":\"Eric
+        Heiberg\",\"emailAddress\":\"eheiberg@planview.com\",\"gravatarLink\":null,\"avatar\":null,\"lastAccess\":\"2022-02-09T17:27:59.210Z\",\"dateFormat\":\"MM/dd/yyyy\",\"organizationId\":\"10100000101\",\"boardId\":\"10121496436\",\"wip\":0,\"roleTypeId\":5,\"settings\":{},\"boardRoles\":[]},{\"id\":\"10122163240\",\"username\":\"adsa@planview.com\",\"firstName\":\"Ajit\",\"lastName\":\"D'Sa\",\"fullName\":\"Ajit
+        D'Sa\",\"emailAddress\":\"adsa@planview.com\",\"gravatarLink\":null,\"avatar\":null,\"lastAccess\":\"2022-01-27T17:58:43.000Z\",\"dateFormat\":\"MM/dd/yyyy\",\"organizationId\":\"10100000101\",\"boardId\":\"10121496436\",\"wip\":0,\"roleTypeId\":1,\"settings\":{},\"boardRoles\":[]}],\"classesOfService\":[],\"tags\":[],\"customFields\":[],\"planningSeries\":[],\"id\":\"10121496436\",\"title\":\"OKRs
+        API Test\",\"description\":\"A scrum board we will use to test the API\",\"creationDate\":\"2020-07-23T18:58:39.690Z\",\"classOfServiceEnabled\":false,\"customIconFieldLabel\":\"Class
+        of Service\",\"organizationId\":\"10100000101\",\"version\":80,\"cardColorField\":1,\"isCardIdEnabled\":false,\"isHeaderEnabled\":false,\"isHyperlinkEnabled\":false,\"isPrefixEnabled\":false,\"prefix\":\"\",\"format\":\"\",\"isPrefixIncludedInHyperlink\":false,\"baseWipOnCardSize\":false,\"excludeCompletedAndArchiveViolations\":false,\"isDuplicateCardIdAllowed\":false,\"isAutoIncrementCardIdEnabled\":false,\"currentExternalCardId\":\"0\",\"isWelcome\":false,\"isShared\":false,\"isArchived\":false,\"sharedBoardRole\":\"0\",\"customBoardMoniker\":null,\"isPermalinkEnabled\":false,\"isExternalUrlEnabled\":false,\"allowUsersToDeleteCards\":false,\"allowPlanviewIntegration\":false,\"subscriptionId\":null,\"boardRole\":\"boardAdministrator\",\"effectiveBoardRole\":\"boardAdministrator\",\"cardTypes\":[{\"id\":\"10121496438\",\"name\":\"Defect\",\"colorHex\":\"#F69679\",\"isCardType\":true,\"isTaskType\":true},{\"id\":\"10121496439\",\"name\":\"User
+        Story\",\"colorHex\":\"#FFBB00\",\"isCardType\":true,\"isTaskType\":true},{\"id\":\"10121496440\",\"name\":\"Task\",\"colorHex\":\"#D3E0E4\",\"isCardType\":true,\"isTaskType\":true},{\"id\":\"10121496441\",\"name\":\"Epic\",\"colorHex\":\"#8CC63F\",\"isCardType\":true,\"isTaskType\":true}],\"laneClassTypes\":[{\"id\":0,\"name\":\"active\"},{\"id\":1,\"name\":\"backlog\"},{\"id\":2,\"name\":\"archive\"}],\"lanes\":[{\"id\":\"10121496446\",\"name\":\"Backlog\",\"description\":\"\",\"cardStatus\":\"notStarted\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":0,\"parentLaneId\":null,\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":7,\"wipLimit\":0,\"cardCount\":5,\"cardSize\":5,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"backlog\",\"laneType\":\"ready\",\"isCollapsed\":false},{\"id\":\"10121496447\",\"name\":\"Archive\",\"description\":\"\",\"cardStatus\":\"finished\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":0,\"parentLaneId\":null,\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":7,\"wipLimit\":0,\"cardCount\":2,\"cardSize\":2,\"archiveCardCount\":48,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"archive\",\"laneType\":\"ready\",\"isCollapsed\":true},{\"id\":\"10121496451\",\"name\":\"Dev
+        or Pair A\",\"description\":\"\",\"cardStatus\":\"started\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":0,\"parentLaneId\":\"10121496449\",\"activityId\":null,\"orientation\":\"horizontal\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":0,\"cardCount\":1,\"cardSize\":1,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"active\",\"laneType\":\"untyped\",\"isCollapsed\":false},{\"id\":\"10121496454\",\"name\":\"Product
+        Backlog\",\"description\":\"\",\"cardStatus\":\"notStarted\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":0,\"parentLaneId\":\"10121496446\",\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":true,\"columns\":3,\"wipLimit\":0,\"cardCount\":5,\"cardSize\":5,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"backlog\",\"laneType\":\"untyped\",\"isCollapsed\":false},{\"id\":\"10121496456\",\"name\":\"Proposed\",\"description\":\"\",\"cardStatus\":\"notStarted\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":0,\"parentLaneId\":\"10121496455\",\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":0,\"cardCount\":0,\"cardSize\":0,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"backlog\",\"laneType\":\"untyped\",\"isCollapsed\":false},{\"id\":\"10121496448\",\"name\":\"Current
+        Sprint Backlog\",\"description\":\"<p>At the beginning of the sprint, move
+        all cards from the Backlog's &quot;Committed&quot; lane into this lane.</p>\",\"cardStatus\":\"started\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":1,\"parentLaneId\":null,\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":0,\"cardCount\":2,\"cardSize\":2,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"active\",\"laneType\":\"ready\",\"isCollapsed\":false},{\"id\":\"10121496452\",\"name\":\"Dev
+        or Pair B\",\"description\":\"\",\"cardStatus\":\"started\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":1,\"parentLaneId\":\"10121496449\",\"activityId\":null,\"orientation\":\"horizontal\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":0,\"cardCount\":0,\"cardSize\":0,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"active\",\"laneType\":\"untyped\",\"isCollapsed\":false},{\"id\":\"10121496455\",\"name\":\"Next
+        Sprint Backlog\",\"description\":\"\",\"cardStatus\":\"notStarted\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":1,\"parentLaneId\":\"10121496446\",\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":4,\"wipLimit\":0,\"cardCount\":0,\"cardSize\":0,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"backlog\",\"laneType\":\"untyped\",\"isCollapsed\":false},{\"id\":\"10121496457\",\"name\":\"Committed\",\"description\":\"<p>Based
+        on the team's velocity and ability to commit, limit the WIP in this column
+        to the number of stories the team will commit to for the next sprint</p>\",\"cardStatus\":\"notStarted\",\"active\":true,\"cardLimit\":10,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":1,\"parentLaneId\":\"10121496455\",\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":10,\"cardCount\":0,\"cardSize\":0,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"backlog\",\"laneType\":\"untyped\",\"isCollapsed\":false},{\"id\":\"10121496449\",\"name\":\"In
+        Process\",\"description\":\"<p>Limit the number of stories in progress to
+        the number of developers or pairs + 1.\_</p>\\n<p>\_</p>\\n<p>If a developer
+        or Pair is blocked and cannot start a new story, they should check with the
+        other developers to see if they can help finish a story that is already in
+        Process.\_</p>\",\"cardStatus\":\"started\",\"active\":true,\"cardLimit\":4,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":2,\"parentLaneId\":null,\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":4,\"cardCount\":2,\"cardSize\":2,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"active\",\"laneType\":\"inProcess\",\"isCollapsed\":false},{\"id\":\"10121496453\",\"name\":\"Dev
+        or Pair C\",\"description\":\"\",\"cardStatus\":\"started\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":2,\"parentLaneId\":\"10121496449\",\"activityId\":null,\"orientation\":\"horizontal\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":0,\"cardCount\":1,\"cardSize\":1,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"active\",\"laneType\":\"untyped\",\"isCollapsed\":false},{\"id\":\"10121496450\",\"name\":\"Done\",\"description\":\"<p>After
+        the Sprint retrospective, move all cards from this lane into the Archive.\_</p>\\n<p>\_</p>\\n<p>This
+        simple Backlog-&gt; In Process-&gt; Done workflow is provided as an example.
+        You might want to provide extra lanes for any specialists or non-committed
+        resources, lanes for deployment and user acceptance, QA, etc.\_</p>\",\"cardStatus\":\"started\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":3,\"parentLaneId\":null,\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":0,\"cardCount\":0,\"cardSize\":0,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"active\",\"laneType\":\"completed\",\"isCollapsed\":false}],\"laneTypes\":[{\"id\":1,\"name\":\"ready\"},{\"id\":2,\"name\":\"inProcess\"},{\"id\":3,\"name\":\"completed\"},{\"id\":99,\"name\":\"untyped\"}],\"userSettings\":{},\"priorities\":[{\"id\":3,\"name\":\"critical\"},{\"id\":2,\"name\":\"high\"},{\"id\":1,\"name\":\"normal\"},{\"id\":0,\"name\":\"low\"}],\"layoutChecksum\":\"66b39d8764a071355dd9d6fa29af75ec\",\"defaultCardTypeId\":\"10121496438\",\"defaultTaskTypeId\":\"10121496438\"}"
+    headers:
+      Cache-Control:
+      - no-store, no-cache, must-revalidate, proxy-revalidate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '9041'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Wed, 09 Feb 2022 17:42:42 GMT
+      Expires:
+      - '0'
+      Pragma:
+      - no-cache
+      Surrogate-Control:
+      - no-store
+      X-RateLimit-Limit:
+      - '160'
+      X-RateLimit-Remaining:
+      - '159'
+      X-RateLimit-Reset:
+      - '1644428623'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload;
+      x-lk-app-name:
+      - core-board-service
+      x-lk-app-version:
+      - 10.0.0
+      x-request-correlation-id:
+      - aeb5d330-89cf-11ec-9f10-c236eeb3967f
+    status:
+      code: 200
+      message: OK
+    url: https://d08.leankit.io/io/okr/board/10121496436
+- request:
+    body: null
+    headers:
+      authorization:
+      - REDACTED
+    method: POST
+    uri: https://d08.leankit.io/io/okr/card?returnFullRecord=true
+  response:
+    body:
+      string: '{"actualFinish":null,"actualStart":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":81,"isArchived":false},"customIcon":null,"customIconLabel":"Class
+        of Service","color":"#F69679","iconPath":null,"createdOn":"2022-02-09T17:42:43Z","archivedOn":null,"description":null,"plannedFinish":"2024-01-01","customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"id":"10126268692","index":5,"lane":{"cardLimit":0,"description":"","id":"10121496454","index":0,"laneClassType":"backlog","laneType":"untyped","orientation":"vertical","title":"Product
+        Backlog","taskBoard":null},"updatedOn":"2022-02-09T17:42:43Z","movedOn":"2022-02-09T17:42:43Z","priority":"normal","size":0,"plannedStart":"2020-01-01","tags":[],"title":"Go-Kart
+        Extravaganza","version":"1","type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"subscriptionId":null,"createdBy":{"id":"10121496032","emailAddress":"eheiberg@planview.com","fullName":"Eric
+        Heiberg","avatar":"https://d08.leankit.io/avatar/Show/10121496032?s=25"},"updatedBy":{"id":"10121496032","emailAddress":"eheiberg@planview.com","fullName":"Eric
+        Heiberg","avatar":"https://d08.leankit.io/avatar/Show/10121496032?s=25"},"movedBy":null,"archivedBy":null,"assignedUsers":[],"attachments":[],"comments":[],"parentCards":[],"customFields":[],"connectedCardStats":null}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '1417'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Wed, 09 Feb 2022 17:42:43 GMT
+      Etag:
+      - W/"589-eyX6GDAw0hciHHSv1oY84gpO210"
+      X-RateLimit-Limit:
+      - '160'
+      X-RateLimit-Remaining:
+      - '158'
+      X-RateLimit-Reset:
+      - '1644428623'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload;
+      x-lk-app-description:
+      - LeanKit API
+      x-lk-app-name:
+      - '@banditsoftware/core-leankit-api'
+      x-lk-app-version:
+      - 52.0.0
+      x-powered-by:
+      - Express
+      x-request-correlation-id:
+      - af15a670-89cf-11ec-9f10-c236eeb3967f
+    status:
+      code: 201
+      message: Created
+    url: https://d08.leankit.io/io/okr/card?returnFullRecord=true
+version: 1

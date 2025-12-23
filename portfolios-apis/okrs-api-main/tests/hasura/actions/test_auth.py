@@ -1,0 +1,126 @@
+"""Test the common utilities."""
+
+import pytest
+
+from okrs_api.hasura.actions.auth import JWTParser, PlanviewTokenServicePayloadParser
+
+
+class TestJWTParser:
+    """Ensure the JWT Parser parses properly."""
+
+    PLANVIEW_TOKEN_SERVICE_JWT = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzOTk3ZmM0MS1kMGVjLTRlYWYtODRkMi03YmMzZTIxZjU3MTUiLCJodHRwczovL2hhc3VyYS5pby9qd3QvY2xhaW1zIjoie1wiWC1IQVNVUkEtREVGQVVMVC1ST0xFXCI6IFwidXNlclwiLCBcIlgtSEFTVVJBLUFQUC1OQU1FXCI6IFwibGVhbmtpdFwiLCBcIlgtSEFTVVJBLUFMTE9XRUQtUk9MRVNcIjogW1widXNlclwiXSwgXCJYLUhBU1VSQS1VU0VSLUlEXCI6IFwiMTAxNDU3MzQ3MTlcIiwgXCJYLUhBU1VSQS1PUkctSURcIjogXCJMRUFOS0lUfmQxMi0xMjNcIiwgXCJYLUhBU1VSQS1QTEFURk9STUEtQVBQLVRFTkFOVC1JRFwiOiBcIkxFQU5LSVR-ZDEyLTEyM1wiLCBcIlgtSEFTVVJBLVBMQVRGT1JNQS1BUFAtVVNFUi1JRFwiOiBcIjEwMTQ1NzM0NzE5XCJ9IiwiaXNzIjoiaHR0cHM6Ly9jb2duaXRvLWlkcC51cy13ZXN0LTIuYW1hem9uYXdzLmNvbS91cy13ZXN0LTJfRWdSNGp5cWlYIiwiYXBwX2RvbWFpbiI6ImQwOS5sZWFua2l0LmlvIiwiY29nbml0bzp1c2VybmFtZSI6InBsYXRmb3JtYS11c2VyIiwiYXBwX2NvbnRleHRfaWQiOiIxMDEzNjQwODg4NiIsInBsYXRmb3JtYV91c2VyX2lkIjoiMTAxNDU3MzQ3MTkiLCJhcHBfbmFtZSI6ImxlYW5raXQiLCJldmVudF9pZCI6IjY0MjJjYjg5LTY1NWMtNDg1Yy1iYmI4LTEwYTU0NTRjYjg0ZiIsInBsYXRmb3JtYV9yb2xlIjoidXNlciIsImFwcF91c2VyX2lkIjoiMTAxNDU3MzQ3MTkiLCJ0b2tlbl91c2UiOiJpZCIsInBsYXRmb3JtYV9hY2NvdW50X2lkIjoiTEVBTktJVH5kMTItMTIzIiwiYXV0aF90aW1lIjoxNjMxMTAwMDAwLCJhcHBfYWNjb3VudF9pZCI6IjEwMTEzMjgwODk0IiwiZXhwIjoxNjM1NDYwMjA0OSwiYXBwX3JvbGVzIjoidXNlciIsImlhdCI6MTYzNTQ1NjYwNH0.dqVp8_WZ8PnzUFF2pVQZdXNQfZHP94pVzTrMA3WjVYc"
+    BAD_HASURA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTk3ZmM0MS1kMGVjLTRlYWYtODRkMi03YmMzZTIxZjU3MTUiLCJodHRwczovL2hhc3VyYS5pby9qd3QvY2xhaW1zIjoie1wiWC1IQVNVUkEtREVGQVVMVC1ST0xFXCI6IFwibWFuYWdlXCIsIFwiWC1IQVNVUkEtQUxMT1dFRC1ST0xFU1wiOiBbXCJtYW5hZ2VcIl19IiwiaXNzIjoiaHR0cHM6Ly9jb2duaXRvLWlkcC51cy13ZXN0LTIuYW1hem9uYXdzLmNvbS91cy13ZXN0LTJfRWdSNGp5cWlYIiwiYXBwX2RvbWFpbiI6ImQwOS5sZWFua2l0LmlvIiwiY29nbml0bzp1c2VybmFtZSI6InBsYXRmb3JtYS11c2VyIiwiYXBwX2NvbnRleHRfaWQiOiIxMDEzOTg0NzkxNiIsInBsYXRmb3JtYV91c2VyX2lkIjoiOTkiLCJhcHBfbmFtZSI6ImxlYW5raXQiLCJhdWQiOiIxYThlbzNrM2RiNGIzaDk5NnBqMnRxYTUwaSIsImV2ZW50X2lkIjoiY2IwZjBhMDMtOTE3Yy00YzVhLWJjN2QtYTExMWU4NzgyMzZkIiwicGxhdGZvcm1hX3JvbGUiOiJtYW5hZ2UiLCJ0b2tlbl91c2UiOiJpZCIsInBsYXRmb3JtYV9hY2NvdW50X2lkIjoiTEVBTktJVH5kMDktMTAxMTMyODA4OTQiLCJhdXRoX3RpbWUiOjE2MzY1NzExMjcsImFwcF9hY2NvdW50X2lkIjoiMTAxMDAwMDAxMDEiLCJleHAiOjE2OTk5OTk5OTk5LCJhcHBfcm9sZXMiOiJib2FyZEFkbWluaXN0cmF0b3IiLCJpYXQiOjE2MzY1NzExMjd9.K-9LPxO3IJlNRrMYX2KiBUOjYXEs1HpkLj5IZDFFvrc"
+    USER_ID = "10145734719"
+    ORG_ID = "LEANKIT~d12-123"
+    JWT_WITHOUT_USER_ID = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzOTk3ZmM0MS1kMGVjLTRlYWYtODRkMi03YmMzZTIxZjU3MTUiLCJodHRwczovL2hhc3VyYS5pby9qd3QvY2xhaW1zIjoie1wiWC1IQVNVUkEtREVGQVVMVC1ST0xFXCI6IFwidXNlclwiLCBcIlgtSEFTVVJBLUFQUC1OQU1FXCI6IFwibGVhbmtpdFwiLCBcIlgtSEFTVVJBLUFMTE9XRUQtUk9MRVNcIjogW1widXNlclwiXSwgXCJYLUhBU1VSQS1VU0VSLUlEXCI6IFwiMTAxNDU3MzQ3MTlcIiwgXCJYLUhBU1VSQS1PUkctSURcIjogXCJMRUFOS0lUfmQxMi0xMjNcIiwgXCJYLUhBU1VSQS1QTEFURk9STUEtQVBQLVRFTkFOVC1JRFwiOiBcIkxFQU5LSVR-ZDEyLTEyM1wiLCBcIlgtSEFTVVJBLVBMQVRGT1JNQS1BUFAtVVNFUi1JRFwiOiBcIlwifSIsImlzcyI6Imh0dHBzOi8vY29nbml0by1pZHAudXMtd2VzdC0yLmFtYXpvbmF3cy5jb20vdXMtd2VzdC0yX0VnUjRqeXFpWCIsImFwcF9kb21haW4iOiJkMDkubGVhbmtpdC5pbyIsImNvZ25pdG86dXNlcm5hbWUiOiJwbGF0Zm9ybWEtdXNlciIsImFwcF9jb250ZXh0X2lkIjoiMTAxMzY0MDg4ODYiLCJwbGF0Zm9ybWFfdXNlcl9pZCI6IjEwMTQ1NzM0NzE5IiwiYXBwX25hbWUiOiJsZWFua2l0IiwiZXZlbnRfaWQiOiI2NDIyY2I4OS02NTVjLTQ4NWMtYmJiOC0xMGE1NDU0Y2I4NGYiLCJwbGF0Zm9ybWFfcm9sZSI6InVzZXIiLCJhcHBfdXNlcl9pZCI6IjEwMTQ1NzM0NzE5IiwidG9rZW5fdXNlIjoiaWQiLCJwbGF0Zm9ybWFfYWNjb3VudF9pZCI6IkxFQU5LSVR-ZDEyLTEyMyIsImF1dGhfdGltZSI6MTYzMTEwMDAwMCwiYXBwX2FjY291bnRfaWQiOiIxMDExMzI4MDg5NCIsImV4cCI6MTYzNTQ2MDIwNDksImFwcF9yb2xlcyI6InVzZXIiLCJpYXQiOjE2MzU0NTY2MDR9.NEbTvSSq2yxf9wgnDY4HzFMNKPZt9AgOr4B53xCncVk"
+    JWT_WITHOUT_TENANT_ID = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzOTk3ZmM0MS1kMGVjLTRlYWYtODRkMi03YmMzZTIxZjU3MTUiLCJodHRwczovL2hhc3VyYS5pby9qd3QvY2xhaW1zIjoie1wiWC1IQVNVUkEtREVGQVVMVC1ST0xFXCI6IFwidXNlclwiLCBcIlgtSEFTVVJBLUFQUC1OQU1FXCI6IFwibGVhbmtpdFwiLCBcIlgtSEFTVVJBLUFMTE9XRUQtUk9MRVNcIjogW1widXNlclwiXSwgXCJYLUhBU1VSQS1VU0VSLUlEXCI6IFwiMTAxNDU3MzQ3MTlcIiwgXCJYLUhBU1VSQS1PUkctSURcIjogXCJMRUFOS0lUfmQxMi0xMjNcIiwgXCJYLUhBU1VSQS1QTEFURk9STUEtQVBQLVRFTkFOVC1JRFwiOiBcIlwiLCBcIlgtSEFTVVJBLVBMQVRGT1JNQS1BUFAtVVNFUi1JRFwiOiBcIlwifSIsImlzcyI6Imh0dHBzOi8vY29nbml0by1pZHAudXMtd2VzdC0yLmFtYXpvbmF3cy5jb20vdXMtd2VzdC0yX0VnUjRqeXFpWCIsImFwcF9kb21haW4iOiJkMDkubGVhbmtpdC5pbyIsImNvZ25pdG86dXNlcm5hbWUiOiJwbGF0Zm9ybWEtdXNlciIsImFwcF9jb250ZXh0X2lkIjoiMTAxMzY0MDg4ODYiLCJwbGF0Zm9ybWFfdXNlcl9pZCI6IjEwMTQ1NzM0NzE5IiwiYXBwX25hbWUiOiJsZWFua2l0IiwiZXZlbnRfaWQiOiI2NDIyY2I4OS02NTVjLTQ4NWMtYmJiOC0xMGE1NDU0Y2I4NGYiLCJwbGF0Zm9ybWFfcm9sZSI6InVzZXIiLCJhcHBfdXNlcl9pZCI6IjEwMTQ1NzM0NzE5IiwidG9rZW5fdXNlIjoiaWQiLCJwbGF0Zm9ybWFfYWNjb3VudF9pZCI6IkxFQU5LSVR-ZDEyLTEyMyIsImF1dGhfdGltZSI6MTYzMTEwMDAwMCwiYXBwX2FjY291bnRfaWQiOiIxMDExMzI4MDg5NCIsImV4cCI6MTYzNTQ2MDIwNDksImFwcF9yb2xlcyI6InVzZXIiLCJpYXQiOjE2MzU0NTY2MDR9.G-kR8aao3_xBKHKrCQt-G_fphCywSR0f7GtqgNBMEf0"
+    JWT_WITHOUT_ANY_USER_ID = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzOTk3ZmM0MS1kMGVjLTRlYWYtODRkMi03YmMzZTIxZjU3MTUiLCJodHRwczovL2hhc3VyYS5pby9qd3QvY2xhaW1zIjoie1wiWC1IQVNVUkEtREVGQVVMVC1ST0xFXCI6IFwidXNlclwiLCBcIlgtSEFTVVJBLUFQUC1OQU1FXCI6IFwibGVhbmtpdFwiLCBcIlgtSEFTVVJBLUFMTE9XRUQtUk9MRVNcIjogW1widXNlclwiXSwgXCJYLUhBU1VSQS1VU0VSLUlEXCI6IFwiXCIsIFwiWC1IQVNVUkEtT1JHLUlEXCI6IFwiTEVBTktJVH5kMTItMTIzXCIsIFwiWC1IQVNVUkEtUExBVEZPUk1BLUFQUC1URU5BTlQtSURcIjogXCJMRUFOS0lUfmQxMi0xMjNcIiwgXCJYLUhBU1VSQS1QTEFURk9STUEtQVBQLVVTRVItSURcIjogXCJcIn0iLCJpc3MiOiJodHRwczovL2NvZ25pdG8taWRwLnVzLXdlc3QtMi5hbWF6b25hd3MuY29tL3VzLXdlc3QtMl9FZ1I0anlxaVgiLCJhcHBfZG9tYWluIjoiZDA5LmxlYW5raXQuaW8iLCJjb2duaXRvOnVzZXJuYW1lIjoicGxhdGZvcm1hLXVzZXIiLCJhcHBfY29udGV4dF9pZCI6IjEwMTM2NDA4ODg2IiwicGxhdGZvcm1hX3VzZXJfaWQiOiIxMDE0NTczNDcxOSIsImFwcF9uYW1lIjoibGVhbmtpdCIsImV2ZW50X2lkIjoiNjQyMmNiODktNjU1Yy00ODVjLWJiYjgtMTBhNTQ1NGNiODRmIiwicGxhdGZvcm1hX3JvbGUiOiJ1c2VyIiwiYXBwX3VzZXJfaWQiOiIxMDE0NTczNDcxOSIsInRva2VuX3VzZSI6ImlkIiwicGxhdGZvcm1hX2FjY291bnRfaWQiOiJMRUFOS0lUfmQxMi0xMjMiLCJhdXRoX3RpbWUiOjE2MzExMDAwMDAsImFwcF9hY2NvdW50X2lkIjoiMTAxMTMyODA4OTQiLCJleHAiOjE2MzU0NjAyMDQ5LCJhcHBfcm9sZXMiOiJ1c2VyIiwiaWF0IjoxNjM1NDU2NjA0fQ.6sHNeqqoU2GNwU6ZHO6DF4LjzLcdeeWELEvCrdtkBTE"
+
+    JWT_APP_DOMAIN_1 = "eyJraWQiOiJcLzhlRVowR0JEdEdUSjc5WkIrSHQ5cTRGSWhYN2tBTE10ZU1DcWJ6ZnRXVT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIzOTk3ZmM0MS1kMGVjLTRlYWYtODRkMi03YmMzZTIxZjU3MTUiLCJodHRwczpcL1wvaGFzdXJhLmlvXC9qd3RcL2NsYWltcyI6IntcIlgtSEFTVVJBLURFRkFVTFQtUk9MRVwiOiBcIm1hbmFnZVwiLCBcIlgtSEFTVVJBLUFMTE9XRUQtUk9MRVNcIjogW1wibWFuYWdlXCJdLCBcIlgtSEFTVVJBLVVTRVItSURcIjogXCIxMDE0NjIzODYwOFwiLCBcIlgtSEFTVVJBLU9SRy1JRFwiOiBcIkxFQU5LSVR-ZDA5LTEwMTEzMjgwODk0XCIsIFwiWC1IQVNVUkEtVEVOQU5ULUdST1VQLUlEXCI6IFwiXCIsIFwiWC1IQVNVUkEtUExBVEZPUk1BLUFQUC1URU5BTlQtSURcIjogXCJMRUFOS0lUfmQwOS0xMDExMzI4MDg5NFwiLCBcIlgtSEFTVVJBLVBMQU5WSUVXLVVTRVItSURcIjogXCJcIiwgXCJYLUhBU1VSQS1QTEFURk9STUEtQVBQLVVTRVItSURcIjogXCIxMDE0NjIzODYwOFwiLCBcIlgtSEFTVVJBLUFQUC1OQU1FXCI6IFwibGVhbmtpdFwifSIsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC51cy13ZXN0LTIuYW1hem9uYXdzLmNvbVwvdXMtd2VzdC0yX0VnUjRqeXFpWCIsImFwcF9kb21haW4iOiJkMDkubGVhbmtpdC5pbyIsImNvZ25pdG86dXNlcm5hbWUiOiJwbGF0Zm9ybWEtdXNlciIsImFwcF9jb250ZXh0X2lkIjoiMTAxNDYyNjk2MTYiLCJwbGF0Zm9ybWFfdXNlcl9pZCI6IjEwMTQ2MjM4NjA4IiwiYXBwX25hbWUiOiJsZWFua2l0IiwiYXBwX2NvbnRleHQiOiIiLCJhdWQiOiIxYThlbzNrM2RiNGIzaDk5NnBqMnRxYTUwaSIsInN5c3RlbSI6ImZhbHNlIiwiZXZlbnRfaWQiOiJlNDllMjNiMi1hYjNmLTQyYWItODNkNi1mZTlhZTQ4ODg5ZGUiLCJhcHBfdXNlcl9pZCI6IjEwMTQ2MjM4NjA4IiwicGxhdGZvcm1hX3JvbGUiOiJtYW5hZ2UiLCJ0b2tlbl91c2UiOiJpZCIsInBsYXRmb3JtYV9hY2NvdW50X2lkIjoiTEVBTktJVH5kMDktMTAxMTMyODA4OTQiLCJhdXRoX3RpbWUiOjE2Nzk5MDYwNDQsImFwcF9hY2NvdW50X2lkIjoiMTAxMTMyODA4OTQiLCJleHAiOjE2Nzk5MDk2NDMsImFwcF9yb2xlcyI6ImJvYXJkQWRtaW5pc3RyYXRvciIsImlhdCI6MTY3OTkwNjA0NH0.fJg6LkMLDMb_q3YuLzRmoNES-FhUYBPpTa7-IKL-4oC0Ub5IOXu5C9mhYcG4_yId-cGD7u5nmzTT6hS8UBH_wcgRlL52-iYogmyIr7k4fXiCRr5zFv7IwOj52LR95YTprPqrBT_gc5jTMOjQ3aSbbNBGEufzmp78I55kud4p4L0nc97XQWfn6pHCQF56jGjYORe6WNy_urTay_t1U51H39FbgsMlWF8yFVHHkTjwtPL-KTZMT_jUgX-1p6oX2bhUna4tZJX8yVsZ_qeu4DJ5iHsrOY7hOo3Pc7-s5uq5pwGbFadzYAeRG4-yxza3B-FLFQBsFsrqwQCHYM9bsp7P_Q"
+    JWT_APP_DOMAIN_2 = "eyJraWQiOiJcLzhlRVowR0JEdEdUSjc5WkIrSHQ5cTRGSWhYN2tBTE10ZU1DcWJ6ZnRXVT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIzOTk3ZmM0MS1kMGVjLTRlYWYtODRkMi03YmMzZTIxZjU3MTUiLCJwbGFudmlld19kZXBsb3ltZW50X2lkIjoiIiwicGxhbnZpZXdfY3VzdG9tZXJfaWQiOiI0NzgzM2FmOC1lYTJhLTQ0OTctOTg5MC00YTlkMTg5NjExMmUiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtd2VzdC0yLmFtYXpvbmF3cy5jb21cL3VzLXdlc3QtMl9FZ1I0anlxaVgiLCJhcHBfZG9tYWluIjoicGxhdGZvcm0tZGV2LWUxLmxlYW5raXQuaW8iLCJhcHBfY29udGV4dF9pZCI6IjEwMTI4Mjc2MzcxIiwicGxhdGZvcm1hX3VzZXJfaWQiOiIxMDEyODE1OTYxMCIsImFwcF9jb250ZXh0IjoiIiwicGxhbnZpZXdfdGVuYW50X2dyb3VwX2lkIjoiN2RiODVjZGUtOTVhYy00ZGYxLWEzZDEtMGU5ODYxODBmNmJhOnAiLCJhdXRoX3RpbWUiOjE2Nzk5MDY4NjIsImFwcF9hY2NvdW50X2lkIjoiMTAxMjgxMzczMjciLCJleHAiOjE2Nzk5MTA0NjEsImFwcF9yb2xlcyI6ImJvYXJkQWRtaW5pc3RyYXRvciIsImlhdCI6MTY3OTkwNjg2MiwicGxhbnZpZXdfdXNlcl9pZCI6IjEzMTI4Zjk3LWQ1OGEtNGFiNS05MGI1LTVjOTY5N2FhZjQxNyIsImh0dHBzOlwvXC9oYXN1cmEuaW9cL2p3dFwvY2xhaW1zIjoie1wiWC1IQVNVUkEtREVGQVVMVC1ST0xFXCI6IFwibWFuYWdlXCIsIFwiWC1IQVNVUkEtQUxMT1dFRC1ST0xFU1wiOiBbXCJtYW5hZ2VcIl0sIFwiWC1IQVNVUkEtVVNFUi1JRFwiOiBcIjEzMTI4Zjk3LWQ1OGEtNGFiNS05MGI1LTVjOTY5N2FhZjQxN1wiLCBcIlgtSEFTVVJBLU9SRy1JRFwiOiBcIjdkYjg1Y2RlLTk1YWMtNGRmMS1hM2QxLTBlOTg2MTgwZjZiYTpwXCIsIFwiWC1IQVNVUkEtVEVOQU5ULUdST1VQLUlEXCI6IFwiN2RiODVjZGUtOTVhYy00ZGYxLWEzZDEtMGU5ODYxODBmNmJhOnBcIiwgXCJYLUhBU1VSQS1QTEFURk9STUEtQVBQLVRFTkFOVC1JRFwiOiBcIkxFQU5LSVR-ZDAzLTEwMTI4MTM3MzI3XCIsIFwiWC1IQVNVUkEtUExBTlZJRVctVVNFUi1JRFwiOiBcIjEzMTI4Zjk3LWQ1OGEtNGFiNS05MGI1LTVjOTY5N2FhZjQxN1wiLCBcIlgtSEFTVVJBLVBMQVRGT1JNQS1BUFAtVVNFUi1JRFwiOiBcIjEwMTI4MTU5NjEwXCIsIFwiWC1IQVNVUkEtQVBQLU5BTUVcIjogXCJsZWFua2l0XCJ9IiwiY29nbml0bzp1c2VybmFtZSI6InBsYXRmb3JtYS11c2VyIiwiYXBwX25hbWUiOiJsZWFua2l0IiwiYXVkIjoiMWE4ZW8zazNkYjRiM2g5OTZwajJ0cWE1MGkiLCJzeXN0ZW0iOiJmYWxzZSIsImV2ZW50X2lkIjoiODRjOTI1NDEtMGIxNC00OWEwLTg4NTUtNTI2ZjI4MjJiZGMwIiwicGxhbnZpZXdfYWRtaW5fdXJsIjoiaHR0cHM6XC9cL3VzLmlkLnBsYW52aWV3bG9naW5kZXYubmV0XC8iLCJhcHBfdXNlcl9pZCI6IjEwMTI4MTU5NjEwIiwicGxhdGZvcm1hX3JvbGUiOiJtYW5hZ2UiLCJ0b2tlbl91c2UiOiJpZCIsInBsYXRmb3JtYV9hY2NvdW50X2lkIjoiTEVBTktJVH5kMDMtMTAxMjgxMzczMjciLCJwbGFudmlld19lbnZfc2VsZWN0b3IiOiJMRUFOS0lUfmQwMy0xMDEyODEzNzMyNyJ9.ngo7VnHkQxo0EmrJ3IeIC6FmY302LC8pe8GysdcXx-nZkRm4OI35b_OqUztm4FP1HIzm_Tqlf_RCzvQiwM5WyfSuNPHbLbPueuyMk8i9BWxuBXGClGsE-PiErt8rFof_0ftS4ZHX_nDCJ3m2pYWLc58_Y8H85MbEm5V2KJwAgBqN4t09J-6RqNQKNk9VXTOIqfu0QtU3rpoNcjf8jCyIzdNwNmpwfYtFZcNyLF6oIAPDQ2IGI_HbAn601E3txVQDjZfNfd4gaUN3jD5IAWwi77aMV9fFlunLVPoufB_e0XTkMTyw-xJRr7mGYqMBrdWAoGmXjImR_74HM25ZuY5p0w"
+    JWT_APP_DOMAIN_3 = "eyJraWQiOiJcLzhlRVowR0JEdEdUSjc5WkIrSHQ5cTRGSWhYN2tBTE10ZU1DcWJ6ZnRXVT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIzOTk3ZmM0MS1kMGVjLTRlYWYtODRkMi03YmMzZTIxZjU3MTUiLCJwbGFudmlld19kZXBsb3ltZW50X2lkIjoiIiwicGxhbnZpZXdfY3VzdG9tZXJfaWQiOiI0NzgzM2FmOC1lYTJhLTQ0OTctOTg5MC00YTlkMTg5NjExMmUiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtd2VzdC0yLmFtYXpvbmF3cy5jb21cL3VzLXdlc3QtMl9FZ1I0anlxaVgiLCJhcHBfZG9tYWluIjoiaHR0cHM6XC9cL2ZlYXR1cmU5LnB2Y2xvdWQuY29tXC9wbGFudmlldyIsImFwcF9jb250ZXh0X2lkIjoiIiwicGxhdGZvcm1hX3VzZXJfaWQiOiI2MTY0NUJDMy1FNzQyLTRBNDAtOTNBRi1BQTIyMERBMzJCMkQiLCJhcHBfY29udGV4dCI6IiIsInBsYW52aWV3X3RlbmFudF9ncm91cF9pZCI6IjdkYjg1Y2RlLTk1YWMtNGRmMS1hM2QxLTBlOTg2MTgwZjZiYTpwIiwiYXV0aF90aW1lIjoxNjc5OTczMzY3LCJhcHBfYWNjb3VudF9pZCI6InAtMHo2NnpuY3Ftcnxwcm1wc3FsX3N0cmF0ZWd5IiwiZXhwIjoxNjc5OTc2OTY3LCJhcHBfcm9sZXMiOiIiLCJpYXQiOjE2Nzk5NzMzNjcsInBsYW52aWV3X3VzZXJfaWQiOiIyYmRmNzY5YS1hNWQxLTRiZWYtODJiOS03NmFmZDRkYzQwYjIiLCJodHRwczpcL1wvaGFzdXJhLmlvXC9qd3RcL2NsYWltcyI6IntcIlgtSEFTVVJBLURFRkFVTFQtUk9MRVwiOiBcInVzZXJcIiwgXCJYLUhBU1VSQS1BTExPV0VELVJPTEVTXCI6IFtcInVzZXJcIl0sIFwiWC1IQVNVUkEtVVNFUi1JRFwiOiBcIjJiZGY3NjlhLWE1ZDEtNGJlZi04MmI5LTc2YWZkNGRjNDBiMlwiLCBcIlgtSEFTVVJBLU9SRy1JRFwiOiBcIjdkYjg1Y2RlLTk1YWMtNGRmMS1hM2QxLTBlOTg2MTgwZjZiYTpwXCIsIFwiWC1IQVNVUkEtVEVOQU5ULUdST1VQLUlEXCI6IFwiN2RiODVjZGUtOTVhYy00ZGYxLWEzZDEtMGU5ODYxODBmNmJhOnBcIiwgXCJYLUhBU1VSQS1QTEFURk9STUEtQVBQLVRFTkFOVC1JRFwiOiBcInAtMHo2NnpuY3Ftcnxwcm1wc3FsX3N0cmF0ZWd5XCIsIFwiWC1IQVNVUkEtUExBTlZJRVctVVNFUi1JRFwiOiBcIjJiZGY3NjlhLWE1ZDEtNGJlZi04MmI5LTc2YWZkNGRjNDBiMlwiLCBcIlgtSEFTVVJBLVBMQVRGT1JNQS1BUFAtVVNFUi1JRFwiOiBcIjYxNjQ1QkMzLUU3NDItNEE0MC05M0FGLUFBMjIwREEzMkIyRFwiLCBcIlgtSEFTVVJBLUFQUC1OQU1FXCI6IFwiZTFfcHJtXCJ9IiwiY29nbml0bzp1c2VybmFtZSI6InBsYXRmb3JtYS11c2VyIiwiYXBwX25hbWUiOiJlMV9wcm0iLCJhdWQiOiI1ZWdhdm5rdWhmNzJmMWw2ajJoZmxkYXYzOCIsInN5c3RlbSI6ImZhbHNlIiwiZXZlbnRfaWQiOiI5OGMyZDc5NS0yYzNmLTQzN2MtYjNjZC1hMTk4NjRlMGZlNzkiLCJwbGFudmlld19hZG1pbl91cmwiOiJodHRwczpcL1wvdXMuaWQucGxhbnZpZXdsb2dpbmRldi5uZXRcLyIsImFwcF91c2VyX2lkIjoiNjE2NDVCQzMtRTc0Mi00QTQwLTkzQUYtQUEyMjBEQTMyQjJEIiwicGxhdGZvcm1hX3JvbGUiOiJ1c2VyIiwidG9rZW5fdXNlIjoiaWQiLCJwbGF0Zm9ybWFfYWNjb3VudF9pZCI6InAtMHo2NnpuY3Ftcnxwcm1wc3FsX3N0cmF0ZWd5IiwicGxhbnZpZXdfZW52X3NlbGVjdG9yIjoiRTFfUFJNfnAtMHo2NnpuY3Ftcnxwcm1wc3FsX3N0cmF0ZWd5In0.Ko6EhTNf-IG2O7-Yd6BmHJdTQqv2RMrtYxWmsA8cJan77uPwYv0TykzsmBELEZwB9-0npsCwH97zzYtFr0wN0bgqyqFHS6hb0qaRgh_AA7iNS9Xe0-sWKMrf3bDUcD01Fr_GGao4WXnkMe8pGWDrJYp_ACS28xJW9ZKNHvD6mEuc8x4Neux09M5bBApFDuyy1y9ZfO1AbrCiKTWpp3BsY9GC1ByUCr1BElduMAoTv-IE4VCjAQm7Oz9tcbEPo79k3HW5iTAXTcRVTBniU_oNKsBuTh9ZWHmPnLk5dr7Udr781DoKcBHTixHwZdT6MNTAk6Xrbu1pXodwF_Qu0-6aog"
+
+    @pytest.mark.parametrize(
+        "jwt, expected_error",
+        [
+            pytest.param(BAD_HASURA_JWT, "missing an Org ID", id="bad-jwt-auth"),
+            pytest.param(None, "Invalid token", id="no-jwt-to-parse"),
+        ],
+    )
+    def test_errors_for_bad_jwt(self, jwt, expected_error):
+        headers = {"Authorization": f"Bearer {jwt}"}
+        jwt_parser = JWTParser(headers)
+        jwt_parser.validate()
+        assert expected_error in jwt_parser.errors[0].message
+
+    def test_no_error_for_no_tenant_id(self):
+        headers = {"Authorization": f"Bearer {self.JWT_WITHOUT_TENANT_ID}"}
+        jwt_parser = JWTParser(headers)
+        jwt_parser.validate()
+        assert len(jwt_parser.errors) == 0
+
+    def test_no_error_for_no_user_id(self):
+        headers = {"Authorization": f"Bearer {self.JWT_WITHOUT_USER_ID}"}
+        jwt_parser = JWTParser(headers)
+        jwt_parser.validate()
+        assert len(jwt_parser.errors) == 0
+
+    def test_error_for_no_org_user_id(self):
+        headers = {"Authorization": f"Bearer {self.JWT_WITHOUT_ANY_USER_ID}"}
+        jwt_parser = JWTParser(headers)
+        jwt_parser.validate()
+        assert "JWT is missing a User ID." in jwt_parser.errors[0].message
+
+    @pytest.mark.parametrize(
+        "jwt, expected_user_id, expected_org_id",
+        [
+            pytest.param(
+                PLANVIEW_TOKEN_SERVICE_JWT, USER_ID, ORG_ID, id="pts-jwt-auth"
+            ),
+            pytest.param(BAD_HASURA_JWT, None, None, id="bad-jwt"),
+        ],
+    )
+    def test_user_id_and_org_id_parsing(self, jwt, expected_user_id, expected_org_id):
+        """Ensure user id can be read from PTS JWT."""
+        headers = {"Authorization": f"Bearer {jwt}"}
+        jwt_parser = JWTParser(headers)
+        assert jwt_parser.user_id == expected_user_id
+        assert jwt_parser.hasura_org_id == expected_org_id
+
+    def test_app_domain_parsing_standalone(self):
+        """Ensure that we are parsing the domain name from JWT correctly."""
+
+        headers = {"Authorization": f"Bearer {self.JWT_APP_DOMAIN_1}"}
+        jwt_parser = JWTParser(headers)
+
+        assert jwt_parser.app_domain == "d09.leankit.io"
+
+    def test_app_domain_parsing_pvadmin(self):
+        """Ensure that we are parsing the domain name from JWT correctly."""
+
+        headers = {"Authorization": f"Bearer {self.JWT_APP_DOMAIN_2}"}
+        jwt_parser = JWTParser(headers)
+
+        assert jwt_parser.app_domain == "platform-dev-e1.leankit.io"
+
+    def test_app_domain_parsing_pvadmin_e1(self):
+        """Ensure that we are parsing the domain name from JWT correctly."""
+
+        headers = {"Authorization": f"Bearer {self.JWT_APP_DOMAIN_3}"}
+        jwt_parser = JWTParser(headers)
+
+        assert jwt_parser.app_domain == "feature9.pvcloud.com/planview"
+
+
+class TestPayloadParserBase:
+    payload = {
+        "sub": "3997fc41-d0ec-4eaf-84d2-7bc3e21f5715",
+        "planview_user_id": "61697808-4c92-4c68-a27c-521b4d654099",
+        "https://hasura.io/jwt/claims": '{"X-HASURA-DEFAULT-ROLE": "manage", "X-HASURA-ALLOWED-ROLES": ["manage"], "X-HASURA-USER-ID": "61697808-4c92-4c68-a27c-521b4d654099", "X-HASURA-ORG-ID": "0374a377-33d8-4c12-9219-d2e63b35340f:p", "X-HASURA-TENANT-GROUP-ID": "0374a377-33d8-4c12-9219-d2e63b35340f:p", "X-HASURA-PLATFORMA-APP-TENANT-ID": "", "X-HASURA-PLANVIEW-USER-ID": "61697808-4c92-4c68-a27c-521b4d654099", "X-HASURA-PLATFORMA-APP-USER-ID": ""}',
+        "planview_deployment_id": "",
+        "planview_customer_id": "ed5da794-ae2f-45ad-8be0-2044c0e96121",
+        "iss": "https://cognito-idp.us-west-2.amazonaws.com/us-west-2_EgR4jyqiX",
+        "cognito:username": "platforma-user",
+        "platforma_user_id": "",
+        "origin_jti": "ac45c9ce-709c-471f-ae2a-72da69122324",
+        "aud": "596ub3mhib1ae6shjunioeq0vj",
+        "system": "false",
+        "event_id": "17c1f62f-8c0b-4f62-96b9-2b615c281504",
+        "planview_admin_url": "https://us.id.planviewlogindev.net/",
+        "platforma_role": "manage",
+        "token_use": "id",
+        "planview_tenant_group_id": "0374a377-33d8-4c12-9219-d2e63b35340f:p",
+        "platforma_account_id": "",
+        "auth_time": 1684423121,
+        "planview_env_selector": "",
+        "exp": 1684426721,
+        "iat": 1684423121,
+        "jti": "ecf40f56-37b2-45cb-a081-9427533d6ec6",
+    }
+
+    def test_original_token_parsing(self):
+        payload_parser = PlanviewTokenServicePayloadParser(self.payload)
+        assert (
+            payload_parser.hasura_tenant_group_id_original
+            == "0374a377-33d8-4c12-9219-d2e63b35340f:p"
+        )

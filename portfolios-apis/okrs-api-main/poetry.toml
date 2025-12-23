@@ -1,0 +1,7 @@
+[virtualenvs]
+in-project = true
+
+[repositories]
+[repositories.platforma]
+url = "https://platforma-486329218230.d.codeartifact.us-west-2.amazonaws.com/pypi/platforma"
+

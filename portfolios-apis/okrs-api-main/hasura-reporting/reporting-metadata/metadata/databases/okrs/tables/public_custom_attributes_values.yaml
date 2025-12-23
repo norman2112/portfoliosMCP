@@ -1,0 +1,29 @@
+table:
+  name: custom_attributes_values
+  schema: public
+select_permissions:
+  - role: reporting
+    permission:
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - ca_config_id
+        - created_at
+        - created_by
+        - deleted_at_epoch
+        - id
+        - last_updated_by
+        - object_id
+        - object_type
+        - tenant_group_id_str
+        - tenant_id_str
+        - tooltip
+        - updated_at
+        - value
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+      allow_aggregations: true

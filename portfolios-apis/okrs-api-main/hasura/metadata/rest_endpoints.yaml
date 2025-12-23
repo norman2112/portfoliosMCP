@@ -1,0 +1,99 @@
+- comment: Fetch all key results
+  definition:
+    query:
+      collection_name: allowed-queries
+      query_name: FetchAllKeyResults
+  methods:
+    - GET
+  name: FetchAllKeyResults
+  url: v1/key-results
+- comment: Fetch keyresult by id
+  definition:
+    query:
+      collection_name: allowed-queries
+      query_name: KeyResultByPK
+  methods:
+    - GET
+  name: KeyResultByPK
+  url: v1/key-results/:id
+- comment: Fetch activity logs for key results
+  definition:
+    query:
+      collection_name: allowed-queries
+      query_name: FetchKeyResultActivityLogs
+  methods:
+    - GET
+  name: FetchKeyResultActivityLogs
+  url: v1/key-results/:key_result_id/activity-logs
+- comment: Fetch progress points by keyresult id
+  definition:
+    query:
+      collection_name: allowed-queries
+      query_name: ProgressPointsByKRId
+  methods:
+    - GET
+  name: ProgressPointsByKRId
+  url: v1/key-results/:key_result_id/progress-points
+- comment: Fetch all objectives
+  definition:
+    query:
+      collection_name: allowed-queries
+      query_name: FetchAllObjectives
+  methods:
+    - GET
+  name: FetchAllObjectives
+  url: v1/objectives
+- comment: Fetch objective by id
+  definition:
+    query:
+      collection_name: allowed-queries
+      query_name: ObjectiveByPK
+  methods:
+    - GET
+  name: ObjectiveByPK
+  url: v1/objectives/:id
+- comment: Fetch activity logs for objectives
+  definition:
+    query:
+      collection_name: allowed-queries
+      query_name: FetchObjectiveActivityLogs
+  methods:
+    - GET
+  name: FetchObjectiveActivityLogs
+  url: v1/objectives/:objective_id/activity-logs
+- comment: Fetch keyresults by objective id
+  definition:
+    query:
+      collection_name: allowed-queries
+      query_name: KeyResultsByObjectiveId
+  methods:
+    - GET
+  name: KeyResultsByObjectiveId
+  url: v1/objectives/:objective_id/key-results
+- comment: Fetch objectives by work item container id
+  definition:
+    query:
+      collection_name: allowed-queries
+      query_name: ObjectivesByWICId
+  methods:
+    - GET
+  name: ObjectivesByWICId
+  url: v1/work-item-containers/:work_item_container_id/objectives
+- comment: Fetch objective by id
+  definition:
+    query:
+      collection_name: allowed-queries
+      query_name: FetchObjectiveById
+  methods:
+    - GET
+  name: FetchObjectiveById
+  url: v2/objectives/:id
+- comment: Fetch objectives by work item container id
+  definition:
+    query:
+      collection_name: allowed-queries
+      query_name: FetchObjectivesByWicId
+  methods:
+    - GET
+  name: FetchObjectivesByWicId
+  url: v2/work-item-containers/:work_item_container_id/objectives

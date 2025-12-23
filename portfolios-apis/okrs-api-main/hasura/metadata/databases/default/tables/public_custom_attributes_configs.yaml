@@ -1,0 +1,29 @@
+table:
+  name: custom_attributes_configs
+  schema: public
+event_triggers:
+  - name: custom_attributes_configs
+    definition:
+      delete:
+        columns: '*'
+      enable_manual: true
+      insert:
+        columns: '*'
+      update:
+        columns:
+          - is_archived
+          - is_default
+          - is_deleted
+          - is_keyresult
+          - is_mandatory_keyresult
+          - is_mandatory_objective
+          - is_objective
+          - value
+          - ca_config_type
+          - label
+          - tooltip
+    retry_conf:
+      interval_sec: 10
+      num_retries: 0
+      timeout_sec: 60
+    webhook_from_env: HASURA_EVENTS_WEBHOOK_URL

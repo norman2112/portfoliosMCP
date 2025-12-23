@@ -1,0 +1,124 @@
+table:
+  name: settings
+  schema: public
+insert_permissions:
+  - role: manage
+    permission:
+      check: {}
+      set:
+        app_created_by: x-hasura-Platforma-App-User-Id
+        created_by: x-hasura-User-Id
+        tenant_group_id_str: x-hasura-Org-Id
+        tenant_id_str: x-hasura-Platforma-App-Tenant-Id
+      columns:
+        - level_config
+  - role: user
+    permission:
+      check: {}
+      set:
+        app_created_by: x-hasura-Platforma-App-User-Id
+        created_by: x-hasura-User-Id
+        tenant_group_id_str: x-hasura-Org-Id
+        tenant_id_str: x-hasura-Platforma-App-Tenant-Id
+      columns:
+        - level_config
+select_permissions:
+  - role: edit
+    permission:
+      columns:
+        - created_at
+        - id
+        - ih_setup_verified_at
+        - level_config
+        - roll_up_progress
+        - updated_at
+        - is_color_threshold_enabled
+        - color_threshold_config
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+  - role: manage
+    permission:
+      columns:
+        - color_threshold_config
+        - created_at
+        - id
+        - ih_setup_verified_at
+        - level_config
+        - roll_up_progress
+        - updated_at
+        - is_color_threshold_enabled
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+  - role: read
+    permission:
+      columns:
+        - created_at
+        - id
+        - ih_setup_verified_at
+        - level_config
+        - roll_up_progress
+        - updated_at
+        - is_color_threshold_enabled
+        - color_threshold_config
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+  - role: user
+    permission:
+      columns:
+        - color_threshold_config
+        - created_at
+        - id
+        - ih_setup_verified_at
+        - level_config
+        - roll_up_progress
+        - updated_at
+        - is_color_threshold_enabled
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+event_triggers:
+  - name: settings
+    definition:
+      enable_manual: true
+      insert:
+        columns: '*'
+      update:
+        columns:
+          - level_config
+          - roll_up_progress
+    retry_conf:
+      interval_sec: 10
+      num_retries: 0
+      timeout_sec: 60
+    webhook_from_env: HASURA_EVENTS_WEBHOOK_URL

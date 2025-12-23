@@ -1,0 +1,34 @@
+domain: platforma-staging.io
+
+hasura:
+  adminSecret: ref+awssecrets://staging/okr/hasura#HASURA_GRAPHQL_ADMIN_SECRET
+  jwtSecret: ref+awssecrets://staging/cdk/platforma/platforma-auth#hasuraJwtSecret
+
+postgresql:
+  password: ref+awssecrets://usw2-pf-staging/aurora/master-secret#password
+  user: ref+awssecrets://usw2-pf-staging/aurora/master-secret#username
+  host: ref+awssecrets://usw2-pf-staging/aurora/okrs#PGHOST
+  port: ref+awssecrets://usw2-pf-staging/aurora/okrs#PGPORT
+  database: ref+awssecrets://usw2-pf-staging/aurora/okrs#PGDATABASE
+  database_url: ref+awssecrets://usw2-pf-staging/aurora/okrs#DATABASE_URL
+
+aws:
+  region: us-west-2
+
+configmap:
+  SENTRY_DSN: https://e821c0f7a5df45b6aae68d9e23202795@o497265.ingest.sentry.io/5965148
+  CONNEXION_ENVIRONMENT: staging
+  ADMIN_IH_DOMAIN: us-west-2.pvintegrations-staging.net
+  IH_DOMAIN: us-west-2.pvintegrations-staging.net
+  LK_ENV: d09
+
+apiSecrets:
+  LK_JWT_SECRET: ref+awssecrets://staging/okr/api#LK_JWT_SECRET
+  IH_CLIENT_ID: ref+awssecrets://staging/okr/api#IH_CLIENT_ID
+  IH_CLIENT_SECRET: ref+awssecrets://staging/okr/api#IH_CLIENT_SECRET
+  IH_ADMIN_CLIENT_ID: ref+awssecrets://staging/okr/api#IH_ADMIN_CLIENT_ID
+  IH_ADMIN_CLIENT_SECRET: ref+awssecrets://staging/okr/api#IH_ADMIN_CLIENT_SECRET
+
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::938847957161:role/usw2-pf-staging-okrs-api

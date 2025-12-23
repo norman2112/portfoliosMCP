@@ -1,0 +1,128 @@
+interactions:
+- request:
+    body:
+      client_id: REDACTED
+      client_secret: REDACTED
+    headers:
+      Accept:
+      - application/json
+      Content-Type:
+      - application/x-www-form-urlencoded
+    method: POST
+    uri: https://platforma.pvintegrations-dev.net/inthub/api/v1/oauth2/token
+  response:
+    body:
+      string: '{"access_token":"REDACTED","expires_in":3600,"token_type":"Bearer"}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '905'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 18 May 2021 18:54:42 GMT
+      Via:
+      - 1.1 f3f8f59912971a0b44e99f8508a3eca0.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - ZrHfRd9MX8-JSbrK6UrAjoKrHid7jBFvM_tmFFBjyJJEVYmjPIfUkQ==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-60a40d71-1900f63e7163bbdf1041c752
+      X-Cache:
+      - Miss from cloudfront
+      x-amz-apigw-id:
+      - ficJzHZsPHcF4vw=
+      x-amzn-RequestId:
+      - 7fed44cb-6177-4f04-9f2d-782b9e3d04b4
+    status:
+      code: 200
+      message: OK
+    url: https://platforma.pvintegrations-dev.net/inthub/api/v1/oauth2/token
+- request:
+    body: null
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://platforma.pvintegrations-dev.net/inthub/admin/api/v1/deployments/find?systemCode=okrs&environmentId=okrs-env-us-west-2&systemTenantId=okrs-d08-bogusid123
+  response:
+    body:
+      string: '{"errors":[{"type":12,"message":"Tenant with systemCode: ''okrs'',
+        environmentId: ''okrs-env-us-west-2'', systemTenantId: ''okrs-d08-bogusid123''
+        was not found.","context":null,"cause":null}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '186'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 18 May 2021 18:54:50 GMT
+      Strict-Transport-Security:
+      - max-age=2592000
+      Via:
+      - 1.1 f3f8f59912971a0b44e99f8508a3eca0.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - wyEhqw7PIDngjfphucadOoZUNtrFoe3G33F29v6erC1oz8eLmLd1sw==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-60a40d72-71109e197c05dc4e401336a3;Sampled=0
+      X-Cache:
+      - Error from cloudfront
+      x-amz-apigw-id:
+      - ficJ3GWiPHcFQOQ=
+      x-amzn-RequestId:
+      - b0da09a8-618d-4f96-9c4a-d7bd7efb57bb
+    status:
+      code: 404
+      message: Not Found
+    url: https://platforma.pvintegrations-dev.net/inthub/admin/api/v1/deployments/find?systemCode=okrs&environmentId=okrs-env-us-west-2&systemTenantId=okrs-d08-bogusid123
+- request:
+    body: null
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://platforma.pvintegrations-dev.net/inthub/admin/api/v1/deployments/find?systemCode=lk&environmentId=d08&systemTenantId=bogusid123
+  response:
+    body:
+      string: '{"errors":[{"type":12,"message":"Tenant with systemCode: ''lk'', environmentId:
+        ''d08'', systemTenantId: ''bogusid123'' was not found.","context":null,"cause":null}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '160'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 18 May 2021 18:54:50 GMT
+      Strict-Transport-Security:
+      - max-age=2592000
+      Via:
+      - 1.1 f3f8f59912971a0b44e99f8508a3eca0.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - XZ2bDFt2BWF88V7t0evRTx84Oycq-SP3B8LWmLvYnlCMSE5XCJxl0g==
+      X-Amz-Cf-Pop:
+      - MSP50-C1
+      X-Amzn-Trace-Id:
+      - Root=1-60a40d7a-0f6cb5456341529206777699;Sampled=0
+      X-Cache:
+      - Error from cloudfront
+      x-amz-apigw-id:
+      - ficLKGHdvHcFimQ=
+      x-amzn-RequestId:
+      - 4a466810-4c92-45a6-a9f7-57ab685a6b8f
+    status:
+      code: 404
+      message: Not Found
+    url: https://platforma.pvintegrations-dev.net/inthub/admin/api/v1/deployments/find?systemCode=lk&environmentId=d08&systemTenantId=bogusid123
+version: 1

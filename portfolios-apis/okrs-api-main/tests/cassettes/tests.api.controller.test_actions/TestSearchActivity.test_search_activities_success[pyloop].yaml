@@ -1,0 +1,158 @@
+interactions:
+- request:
+    body: null
+    headers:
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://d08.leankit.io/io/okr/board/10121496436
+  response:
+    body:
+      string: "{\"users\":[{\"id\":\"10121496032\",\"username\":\"eheiberg@planview.com\",\"firstName\":\"Eric\",\"lastName\":\"Heiberg\",\"fullName\":\"Eric
+        Heiberg\",\"emailAddress\":\"eheiberg@planview.com\",\"gravatarLink\":null,\"avatar\":null,\"lastAccess\":\"2022-02-08T21:45:08.196Z\",\"dateFormat\":\"MM/dd/yyyy\",\"organizationId\":\"10100000101\",\"boardId\":\"10121496436\",\"wip\":0,\"roleTypeId\":5,\"settings\":{},\"boardRoles\":[]},{\"id\":\"10122163240\",\"username\":\"adsa@planview.com\",\"firstName\":\"Ajit\",\"lastName\":\"D'Sa\",\"fullName\":\"Ajit
+        D'Sa\",\"emailAddress\":\"adsa@planview.com\",\"gravatarLink\":null,\"avatar\":null,\"lastAccess\":\"2022-01-27T17:58:43.000Z\",\"dateFormat\":\"MM/dd/yyyy\",\"organizationId\":\"10100000101\",\"boardId\":\"10121496436\",\"wip\":0,\"roleTypeId\":1,\"settings\":{},\"boardRoles\":[]}],\"classesOfService\":[],\"tags\":[],\"customFields\":[],\"planningSeries\":[],\"id\":\"10121496436\",\"title\":\"OKRs
+        API Test\",\"description\":\"A scrum board we will use to test the API\",\"creationDate\":\"2020-07-23T18:58:39.690Z\",\"classOfServiceEnabled\":false,\"customIconFieldLabel\":\"Class
+        of Service\",\"organizationId\":\"10100000101\",\"version\":78,\"cardColorField\":1,\"isCardIdEnabled\":false,\"isHeaderEnabled\":false,\"isHyperlinkEnabled\":false,\"isPrefixEnabled\":false,\"prefix\":\"\",\"format\":\"\",\"isPrefixIncludedInHyperlink\":false,\"baseWipOnCardSize\":false,\"excludeCompletedAndArchiveViolations\":false,\"isDuplicateCardIdAllowed\":false,\"isAutoIncrementCardIdEnabled\":false,\"currentExternalCardId\":\"0\",\"isWelcome\":false,\"isShared\":false,\"isArchived\":false,\"sharedBoardRole\":\"0\",\"customBoardMoniker\":null,\"isPermalinkEnabled\":false,\"isExternalUrlEnabled\":false,\"allowUsersToDeleteCards\":false,\"allowPlanviewIntegration\":false,\"subscriptionId\":null,\"boardRole\":\"boardAdministrator\",\"effectiveBoardRole\":\"boardAdministrator\",\"cardTypes\":[{\"id\":\"10121496438\",\"name\":\"Defect\",\"colorHex\":\"#F69679\",\"isCardType\":true,\"isTaskType\":true},{\"id\":\"10121496439\",\"name\":\"User
+        Story\",\"colorHex\":\"#FFBB00\",\"isCardType\":true,\"isTaskType\":true},{\"id\":\"10121496440\",\"name\":\"Task\",\"colorHex\":\"#D3E0E4\",\"isCardType\":true,\"isTaskType\":true},{\"id\":\"10121496441\",\"name\":\"Epic\",\"colorHex\":\"#8CC63F\",\"isCardType\":true,\"isTaskType\":true}],\"laneClassTypes\":[{\"id\":0,\"name\":\"active\"},{\"id\":1,\"name\":\"backlog\"},{\"id\":2,\"name\":\"archive\"}],\"lanes\":[{\"id\":\"10121496446\",\"name\":\"Backlog\",\"description\":\"\",\"cardStatus\":\"notStarted\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":0,\"parentLaneId\":null,\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":7,\"wipLimit\":0,\"cardCount\":7,\"cardSize\":7,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"backlog\",\"laneType\":\"ready\",\"isCollapsed\":false},{\"id\":\"10121496447\",\"name\":\"Archive\",\"description\":\"\",\"cardStatus\":\"finished\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":0,\"parentLaneId\":null,\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":7,\"wipLimit\":0,\"cardCount\":0,\"cardSize\":0,\"archiveCardCount\":48,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"archive\",\"laneType\":\"ready\",\"isCollapsed\":true},{\"id\":\"10121496451\",\"name\":\"Dev
+        or Pair A\",\"description\":\"\",\"cardStatus\":\"started\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":0,\"parentLaneId\":\"10121496449\",\"activityId\":null,\"orientation\":\"horizontal\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":0,\"cardCount\":1,\"cardSize\":1,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"active\",\"laneType\":\"untyped\",\"isCollapsed\":false},{\"id\":\"10121496454\",\"name\":\"Product
+        Backlog\",\"description\":\"\",\"cardStatus\":\"notStarted\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":0,\"parentLaneId\":\"10121496446\",\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":true,\"columns\":3,\"wipLimit\":0,\"cardCount\":7,\"cardSize\":7,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"backlog\",\"laneType\":\"untyped\",\"isCollapsed\":false},{\"id\":\"10121496456\",\"name\":\"Proposed\",\"description\":\"\",\"cardStatus\":\"notStarted\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":0,\"parentLaneId\":\"10121496455\",\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":0,\"cardCount\":0,\"cardSize\":0,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"backlog\",\"laneType\":\"untyped\",\"isCollapsed\":false},{\"id\":\"10121496448\",\"name\":\"Current
+        Sprint Backlog\",\"description\":\"<p>At the beginning of the sprint, move
+        all cards from the Backlog's &quot;Committed&quot; lane into this lane.</p>\",\"cardStatus\":\"started\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":1,\"parentLaneId\":null,\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":0,\"cardCount\":2,\"cardSize\":2,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"active\",\"laneType\":\"ready\",\"isCollapsed\":false},{\"id\":\"10121496452\",\"name\":\"Dev
+        or Pair B\",\"description\":\"\",\"cardStatus\":\"started\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":1,\"parentLaneId\":\"10121496449\",\"activityId\":null,\"orientation\":\"horizontal\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":0,\"cardCount\":0,\"cardSize\":0,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"active\",\"laneType\":\"untyped\",\"isCollapsed\":false},{\"id\":\"10121496455\",\"name\":\"Next
+        Sprint Backlog\",\"description\":\"\",\"cardStatus\":\"notStarted\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":1,\"parentLaneId\":\"10121496446\",\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":4,\"wipLimit\":0,\"cardCount\":0,\"cardSize\":0,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"backlog\",\"laneType\":\"untyped\",\"isCollapsed\":false},{\"id\":\"10121496457\",\"name\":\"Committed\",\"description\":\"<p>Based
+        on the team's velocity and ability to commit, limit the WIP in this column
+        to the number of stories the team will commit to for the next sprint</p>\",\"cardStatus\":\"notStarted\",\"active\":true,\"cardLimit\":10,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":1,\"parentLaneId\":\"10121496455\",\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":10,\"cardCount\":0,\"cardSize\":0,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"backlog\",\"laneType\":\"untyped\",\"isCollapsed\":false},{\"id\":\"10121496449\",\"name\":\"In
+        Process\",\"description\":\"<p>Limit the number of stories in progress to
+        the number of developers or pairs + 1.\_</p>\\n<p>\_</p>\\n<p>If a developer
+        or Pair is blocked and cannot start a new story, they should check with the
+        other developers to see if they can help finish a story that is already in
+        Process.\_</p>\",\"cardStatus\":\"started\",\"active\":true,\"cardLimit\":4,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":2,\"parentLaneId\":null,\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":4,\"cardCount\":2,\"cardSize\":2,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"active\",\"laneType\":\"inProcess\",\"isCollapsed\":false},{\"id\":\"10121496453\",\"name\":\"Dev
+        or Pair C\",\"description\":\"\",\"cardStatus\":\"started\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":2,\"parentLaneId\":\"10121496449\",\"activityId\":null,\"orientation\":\"horizontal\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":0,\"cardCount\":1,\"cardSize\":1,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"active\",\"laneType\":\"untyped\",\"isCollapsed\":false},{\"id\":\"10121496450\",\"name\":\"Done\",\"description\":\"<p>After
+        the Sprint retrospective, move all cards from this lane into the Archive.\_</p>\\n<p>\_</p>\\n<p>This
+        simple Backlog-&gt; In Process-&gt; Done workflow is provided as an example.
+        You might want to provide extra lanes for any specialists or non-committed
+        resources, lanes for deployment and user acceptance, QA, etc.\_</p>\",\"cardStatus\":\"started\",\"active\":true,\"cardLimit\":0,\"creationDate\":\"2020-07-23T18:58:39.633Z\",\"index\":3,\"parentLaneId\":null,\"activityId\":null,\"orientation\":\"vertical\",\"isConnectionDoneLane\":false,\"isDefaultDropLane\":false,\"columns\":2,\"wipLimit\":0,\"cardCount\":0,\"cardSize\":0,\"archiveCardCount\":0,\"sortBy\":null,\"subscriptionId\":null,\"laneClassType\":\"active\",\"laneType\":\"completed\",\"isCollapsed\":false}],\"laneTypes\":[{\"id\":1,\"name\":\"ready\"},{\"id\":2,\"name\":\"inProcess\"},{\"id\":3,\"name\":\"completed\"},{\"id\":99,\"name\":\"untyped\"}],\"userSettings\":{},\"priorities\":[{\"id\":3,\"name\":\"critical\"},{\"id\":2,\"name\":\"high\"},{\"id\":1,\"name\":\"normal\"},{\"id\":0,\"name\":\"low\"}],\"layoutChecksum\":\"66b39d8764a071355dd9d6fa29af75ec\",\"defaultCardTypeId\":\"10121496438\",\"defaultTaskTypeId\":\"10121496438\"}"
+    headers:
+      Cache-Control:
+      - no-store, no-cache, must-revalidate, proxy-revalidate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '9041'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 08 Feb 2022 22:26:51 GMT
+      Expires:
+      - '0'
+      Pragma:
+      - no-cache
+      Surrogate-Control:
+      - no-store
+      X-RateLimit-Limit:
+      - '160'
+      X-RateLimit-Remaining:
+      - '157'
+      X-RateLimit-Reset:
+      - '1644359239'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload;
+      x-lk-app-name:
+      - core-board-service
+      x-lk-app-version:
+      - 9.70.0
+      x-request-correlation-id:
+      - 362184b0-892e-11ec-9f10-c236eeb3967f
+    status:
+      code: 200
+      message: OK
+    url: https://d08.leankit.io/io/okr/board/10121496436
+- request:
+    body: null
+    headers:
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://d08.leankit.io/io/okr/card?board=10121496436&search=Test
+  response:
+    body:
+      string: '{"cards":[{"assignedUsers":[],"id":"10125205006","index":6,"version":"1","title":"TEST
+        2 - Roadmaps are for driving","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":null,"actualStart":null,"createdOn":"2021-09-28T18:58:07Z","archivedOn":null,"updatedOn":"2021-09-28T18:58:07Z","movedOn":"2021-09-28T18:58:07Z","tags":[],"containingCardId":null,"color":"#F69679","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":78,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":"","id":"10121496454","index":0,"laneClassType":"backlog","laneType":"untyped","orientation":"vertical","title":"Product
+        Backlog","taskBoard":null},"type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10125162668","index":0,"version":"2","title":"TEST
+        - Roadmaps are for driving","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":null,"actualStart":"2021-09-21T22:39:12Z","createdOn":"2021-09-21T22:36:35Z","archivedOn":null,"updatedOn":"2021-09-21T22:39:12Z","movedOn":"2021-09-21T22:39:12Z","tags":[],"containingCardId":null,"color":"#F69679","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":78,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":"","id":"10121496453","index":2,"laneClassType":"active","laneType":"untyped","orientation":"horizontal","title":"Dev
+        or Pair C","taskBoard":null},"type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10122297099","index":12,"version":"2","title":"[Test]
+        Launch Project Pizza Party","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":"2020-11-23T19:55:07Z","actualStart":"2020-11-23T19:55:07Z","createdOn":"2020-11-23T14:34:07Z","archivedOn":"2020-11-23T19:55:07Z","updatedOn":"2020-11-23T19:55:07Z","movedOn":"2020-11-23T19:55:07Z","tags":[],"containingCardId":null,"color":"#F69679","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":78,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":"","id":"10121496447","index":0,"laneClassType":"archive","laneType":"ready","orientation":"vertical","title":"Archive","taskBoard":null},"type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10122297182","index":13,"version":"2","title":"[Test]
+        Launch Project Pizza Party","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":"2020-11-23T19:55:07Z","actualStart":"2020-11-23T19:55:07Z","createdOn":"2020-11-23T14:36:02Z","archivedOn":"2020-11-23T19:55:07Z","updatedOn":"2020-11-23T19:55:07Z","movedOn":"2020-11-23T19:55:07Z","tags":[],"containingCardId":null,"color":"#F69679","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":78,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":"","id":"10121496447","index":0,"laneClassType":"archive","laneType":"ready","orientation":"vertical","title":"Archive","taskBoard":null},"type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10122278582","index":0,"version":"1","title":"[Test]
+        Launch Project Pizza Party","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":null,"actualStart":null,"createdOn":"2020-11-20T17:05:23Z","archivedOn":null,"updatedOn":"2020-11-20T17:05:23Z","movedOn":"2020-11-20T17:05:23Z","tags":[],"containingCardId":null,"color":"#F69679","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":78,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":"","id":"10121496454","index":0,"laneClassType":"backlog","laneType":"untyped","orientation":"vertical","title":"Product
+        Backlog","taskBoard":null},"type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10122278580","index":11,"version":"2","title":"[Test]
+        Launch Project Pizza Party","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":"2020-11-20T16:45:16Z","actualStart":"2020-11-20T16:45:16Z","createdOn":"2020-11-20T16:28:48Z","archivedOn":"2020-11-20T16:45:16Z","updatedOn":"2020-11-20T16:45:16Z","movedOn":"2020-11-20T16:45:16Z","tags":[],"containingCardId":null,"color":"#F69679","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":78,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":"","id":"10121496447","index":0,"laneClassType":"archive","laneType":"ready","orientation":"vertical","title":"Archive","taskBoard":null},"type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10121528665","index":1,"version":"2","title":"Test
+        Platforma Card","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":"2020-11-20T16:26:44Z","actualStart":"2020-11-20T16:26:44Z","createdOn":"2020-08-02T17:00:41Z","archivedOn":"2020-11-20T16:26:44Z","updatedOn":"2020-11-20T16:26:44Z","movedOn":"2020-11-20T16:26:44Z","tags":[],"containingCardId":null,"color":"#F69679","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":78,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":"","id":"10121496447","index":0,"laneClassType":"archive","laneType":"ready","orientation":"vertical","title":"Archive","taskBoard":null},"type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10122267465","index":3,"version":"2","title":"Postman
+        Test create","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":"2020-11-20T16:26:44Z","actualStart":"2020-11-20T16:26:44Z","createdOn":"2020-11-19T18:32:30Z","archivedOn":"2020-11-20T16:26:44Z","updatedOn":"2020-11-20T16:26:44Z","movedOn":"2020-11-20T16:26:44Z","tags":[],"containingCardId":null,"color":"#F69679","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":78,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":"","id":"10121496447","index":0,"laneClassType":"archive","laneType":"ready","orientation":"vertical","title":"Archive","taskBoard":null},"type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10122267854","index":2,"version":"2","title":"Postman
+        Test create","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":"2020-11-20T16:26:44Z","actualStart":"2020-11-20T16:26:44Z","createdOn":"2020-11-19T18:30:34Z","archivedOn":"2020-11-20T16:26:44Z","updatedOn":"2020-11-20T16:26:44Z","movedOn":"2020-11-20T16:26:44Z","tags":[],"containingCardId":null,"color":"#F69679","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":78,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":"","id":"10121496447","index":0,"laneClassType":"archive","laneType":"ready","orientation":"vertical","title":"Archive","taskBoard":null},"type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10122267859","index":4,"version":"2","title":"Postman
+        Test create","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":"2020-11-20T16:26:44Z","actualStart":"2020-11-20T16:26:44Z","createdOn":"2020-11-19T18:39:10Z","archivedOn":"2020-11-20T16:26:44Z","updatedOn":"2020-11-20T16:26:44Z","movedOn":"2020-11-20T16:26:44Z","tags":[],"containingCardId":null,"color":"#F69679","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":78,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":"","id":"10121496447","index":0,"laneClassType":"archive","laneType":"ready","orientation":"vertical","title":"Archive","taskBoard":null},"type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10122267864","index":5,"version":"2","title":"Postman
+        Test create","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":"2020-11-20T16:26:44Z","actualStart":"2020-11-20T16:26:44Z","createdOn":"2020-11-19T18:58:15Z","archivedOn":"2020-11-20T16:26:44Z","updatedOn":"2020-11-20T16:26:44Z","movedOn":"2020-11-20T16:26:44Z","tags":[],"containingCardId":null,"color":"#F69679","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":78,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":"","id":"10121496447","index":0,"laneClassType":"archive","laneType":"ready","orientation":"vertical","title":"Archive","taskBoard":null},"type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10122268062","index":6,"version":"2","title":"Postman
+        Test create 12","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":"2020-11-20T16:26:44Z","actualStart":"2020-11-20T16:26:44Z","createdOn":"2020-11-19T18:59:56Z","archivedOn":"2020-11-20T16:26:44Z","updatedOn":"2020-11-20T16:26:44Z","movedOn":"2020-11-20T16:26:44Z","tags":[],"containingCardId":null,"color":"#F69679","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":78,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":"","id":"10121496447","index":0,"laneClassType":"archive","laneType":"ready","orientation":"vertical","title":"Archive","taskBoard":null},"type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10122278123","index":9,"version":"2","title":"[Test]
+        Initiate launch","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":"2020-11-20T16:26:44Z","actualStart":"2020-11-20T16:26:44Z","createdOn":"2020-11-20T16:21:04Z","archivedOn":"2020-11-20T16:26:44Z","updatedOn":"2020-11-20T16:26:44Z","movedOn":"2020-11-20T16:26:44Z","tags":[],"containingCardId":null,"color":"#F69679","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":78,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":"","id":"10121496447","index":0,"laneClassType":"archive","laneType":"ready","orientation":"vertical","title":"Archive","taskBoard":null},"type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"planningIncrement":null},{"assignedUsers":[],"id":"10122278393","index":10,"version":"2","title":"[Test]
+        Initiate launch 2","description":null,"priority":"normal","size":0,"plannedStart":null,"plannedFinish":null,"actualFinish":"2020-11-20T16:26:44Z","actualStart":"2020-11-20T16:26:44Z","createdOn":"2020-11-20T16:22:32Z","archivedOn":"2020-11-20T16:26:44Z","updatedOn":"2020-11-20T16:26:44Z","movedOn":"2020-11-20T16:26:44Z","tags":[],"containingCardId":null,"color":"#F69679","iconPath":null,"customIconLabel":"Class
+        of Service","customIcon":null,"blockedStatus":{"isBlocked":false,"reason":null,"date":null},"board":{"id":"10121496436","title":"OKRs
+        API Test","version":78,"isArchived":false},"customId":{"value":null,"prefix":null,"url":null},"externalLinks":[],"lane":{"cardLimit":0,"description":"","id":"10121496447","index":0,"laneClassType":"archive","laneType":"ready","orientation":"vertical","title":"Archive","taskBoard":null},"type":{"id":"10121496438","title":"Defect","cardColor":"#F69679"},"taskBoardStats":null,"planningIncrement":null}],"pageMeta":{"totalRecords":14,"offset":0,"limit":200,"startRow":1,"endRow":14}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '14422'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 08 Feb 2022 22:26:51 GMT
+      Etag:
+      - W/"3856-4vjYlt3Za2QGj8aE5W8SqsPCQIc"
+      X-RateLimit-Limit:
+      - '160'
+      X-RateLimit-Remaining:
+      - '156'
+      X-RateLimit-Reset:
+      - '1644359239'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload;
+      x-lk-app-description:
+      - LeanKit API
+      x-lk-app-name:
+      - '@banditsoftware/core-leankit-api'
+      x-lk-app-version:
+      - 51.5.0
+      x-powered-by:
+      - Express
+      x-request-correlation-id:
+      - 363c1190-892e-11ec-9f10-c236eeb3967f
+    status:
+      code: 200
+      message: OK
+    url: https://d08.leankit.io/io/okr/card?board=10121496436&search=Test
+version: 1

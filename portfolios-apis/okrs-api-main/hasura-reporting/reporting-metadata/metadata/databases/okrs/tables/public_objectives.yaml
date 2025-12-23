@@ -1,0 +1,58 @@
+table:
+  name: objectives
+  schema: public
+object_relationships:
+  - name: objective
+    using:
+      foreign_key_constraint_on: parent_objective_id
+  - name: work_item_container
+    using:
+      foreign_key_constraint_on: work_item_container_id
+array_relationships:
+  - name: key_results
+    using:
+      foreign_key_constraint_on:
+        column: objective_id
+        table:
+          name: key_results
+          schema: public
+  - name: objectives
+    using:
+      foreign_key_constraint_on:
+        column: parent_objective_id
+        table:
+          name: objectives
+          schema: public
+select_permissions:
+  - role: reporting
+    permission:
+      columns:
+        - deleted_at_epoch
+        - id
+        - parent_objective_id
+        - work_item_container_id
+        - app_created_by
+        - app_last_updated_by
+        - app_owned_by
+        - created_by
+        - description
+        - last_updated_by
+        - name
+        - owned_by
+        - tenant_group_id_str
+        - tenant_id_str
+        - level_depth
+        - progress_percentage
+        - rolled_up_progress_percentage
+        - achieved_at
+        - created_at
+        - ends_at
+        - starts_at
+        - updated_at
+      filter:
+        _and:
+          - deleted_at_epoch:
+              _eq: 0
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+      allow_aggregations: true

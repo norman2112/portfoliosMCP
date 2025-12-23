@@ -1,0 +1,67 @@
+name: Okrs Dev1 CD
+
+on:
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: okrs-api
+  NAMESPACE: okrs-dev1
+  IMAGE_TAG: ${{github.run_id}}-${{ github.sha }}
+  AWS_REGION: us-west-2
+  ENVIRONMENT: dev1
+  DEV_EKS_CLUSTER: fd-platform-usw2-dev-cluster
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    name: Build Image
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::486329218230:role/fd-github-role
+          aws-region: us-west-2
+
+      ### Composite action created by @atlas DevOps team in the pv-platforma/infra repository
+      - id: image-builder
+        uses: pv-platforma/infra/.github/composite-workflow/image-build@v6.0.2
+
+  dev1-development:
+    runs-on: ubuntu-latest
+    name: Deploy to Dev1 Development
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      ENVIRONMENT: dev1
+      AWS_REGION: us-west-2
+    needs:
+      - image
+    steps:
+      - name: Clone
+        uses: actions/checkout@v3
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::486329218230:role/fd-github-role
+          aws-region: us-west-2   
+
+      ### Composite action created by @atlas DevOps team in the pv-platforma/infra repository
+      - id: platforma-env
+        uses: pv-platforma/infra/.github/composite-workflow/platforma-env@v6.0.2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT_US_WEST_2 }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT_US_WEST_2 }}
+          ecr-aws-region: ${{ secrets.AWS_REGION_DEVELOPMENT_US_WEST_2 }}
+          kube-aws-region: ${{ secrets.AWS_REGION_DEVELOPMENT_US_WEST_2 }}
+
+          target_env: ${{ env.ENVIRONMENT }}
+          image_name: ${{ env.IMAGE_NAME }}
+          registry_name: ${{ secrets.ECR_PERF_REGISTRY }}
+          namespace: ${{ env.NAMESPACE }}
+          cluster_name: ${{ env.DEV_EKS_CLUSTER }}

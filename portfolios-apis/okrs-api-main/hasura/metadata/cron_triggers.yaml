@@ -1,0 +1,5 @@
+- name: delete_work_item_container_orphans
+  webhook: '{{HASURA_BASE_API_URL}}/cron/delete-work-item-container-orphans'
+  schedule: 0 3 * * 7
+  include_in_metadata: true
+  payload: {}

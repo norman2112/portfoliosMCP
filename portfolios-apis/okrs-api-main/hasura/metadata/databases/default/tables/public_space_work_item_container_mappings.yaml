@@ -1,0 +1,176 @@
+table:
+  name: space_work_item_container_mappings
+  schema: public
+object_relationships:
+  - name: space
+    using:
+      foreign_key_constraint_on: space_id
+  - name: work_item_container
+    using:
+      foreign_key_constraint_on: work_item_container_id
+insert_permissions:
+  - role: edit
+    permission:
+      check: {}
+      set:
+        app_created_by: x-hasura-Platforma-App-User-Id
+        created_by: x-hasura-User-Id
+        tenant_group_id_str: x-hasura-Org-Id
+        tenant_id_str: x-hasura-Platforma-App-Tenant-Id
+      columns:
+        - space_id
+        - work_item_container_id
+  - role: manage
+    permission:
+      check: {}
+      set:
+        app_created_by: x-hasura-Platforma-App-User-Id
+        created_by: x-hasura-User-Id
+        tenant_group_id_str: x-hasura-Org-Id
+        tenant_id_str: x-hasura-Platforma-App-Tenant-Id
+      columns:
+        - space_id
+        - work_item_container_id
+  - role: user
+    permission:
+      check: {}
+      set:
+        app_created_by: x-hasura-Platforma-App-User-Id
+        created_by: x-hasura-User-Id
+        tenant_group_id_str: x-hasura-Org-Id
+        tenant_id_str: x-hasura-Platforma-App-Tenant-Id
+      columns:
+        - space_id
+        - work_item_container_id
+select_permissions:
+  - role: edit
+    permission:
+      columns:
+        - id
+        - space_id
+        - work_item_container_id
+        - created_at
+        - updated_at
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - tenant_id_str:
+              _eq: X-Hasura-Platforma-App-Tenant-Id
+      allow_aggregations: true
+  - role: manage
+    permission:
+      columns:
+        - id
+        - space_id
+        - work_item_container_id
+        - created_at
+        - updated_at
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - tenant_id_str:
+              _eq: X-Hasura-Platforma-App-Tenant-Id
+      allow_aggregations: true
+  - role: read
+    permission:
+      columns:
+        - id
+        - space_id
+        - work_item_container_id
+        - created_at
+        - updated_at
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - tenant_id_str:
+              _eq: X-Hasura-Platforma-App-Tenant-Id
+      allow_aggregations: true
+  - role: user
+    permission:
+      columns:
+        - id
+        - space_id
+        - work_item_container_id
+        - created_at
+        - updated_at
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - tenant_id_str:
+              _eq: X-Hasura-Platforma-App-Tenant-Id
+      allow_aggregations: true
+update_permissions:
+  - role: edit
+    permission:
+      columns:
+        - space_id
+        - work_item_container_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - tenant_id_str:
+              _eq: X-Hasura-Platforma-App-Tenant-Id
+      check: null
+      set:
+        app_last_updated_by: x-hasura-Platforma-App-User-Id
+        last_updated_by: x-hasura-User-Id
+  - role: manage
+    permission:
+      columns:
+        - space_id
+        - work_item_container_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - tenant_id_str:
+              _eq: X-Hasura-Platforma-App-Tenant-Id
+      check: null
+      set:
+        app_last_updated_by: x-hasura-Platforma-App-User-Id
+        last_updated_by: x-hasura-User-Id
+  - role: user
+    permission:
+      columns:
+        - space_id
+        - work_item_container_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - tenant_id_str:
+              _eq: X-Hasura-Platforma-App-Tenant-Id
+      check: null
+      set:
+        app_last_updated_by: x-hasura-Platforma-App-User-Id
+        last_updated_by: x-hasura-User-Id
+delete_permissions:
+  - role: edit
+    permission:
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - tenant_id_str:
+              _eq: X-Hasura-Platforma-App-Tenant-Id
+  - role: manage
+    permission:
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - tenant_id_str:
+              _eq: X-Hasura-Platforma-App-Tenant-Id
+  - role: user
+    permission:
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - tenant_id_str:
+              _eq: X-Hasura-Platforma-App-Tenant-Id

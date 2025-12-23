@@ -1,0 +1,26 @@
+table:
+  name: activity_logs
+  schema: public
+select_permissions:
+  - role: reporting
+    permission:
+      columns:
+        - id
+        - key_result_id
+        - objective_id
+        - progress_point_id
+        - work_item_id
+        - action
+        - app_created_by
+        - app_last_updated_by
+        - created_by
+        - last_updated_by
+        - tenant_group_id_str
+        - tenant_id_str
+        - info
+        - created_at
+        - updated_at
+      filter:
+        tenant_group_id_str:
+          _eq: X-Hasura-Org-Id
+      allow_aggregations: true

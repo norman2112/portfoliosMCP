@@ -1,0 +1,108 @@
+table:
+  name: key_result_work_items_view
+  schema: public
+select_permissions:
+  - role: edit
+    permission:
+      columns:
+        - created_at
+        - external_id
+        - external_type
+        - id
+        - item_type
+        - key_result_id
+        - planned_finish
+        - planned_start
+        - state
+        - title
+        - updated_at
+        - work_item_container_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+      allow_aggregations: true
+  - role: manage
+    permission:
+      columns:
+        - created_at
+        - external_id
+        - external_type
+        - id
+        - item_type
+        - key_result_id
+        - planned_finish
+        - planned_start
+        - state
+        - title
+        - updated_at
+        - work_item_container_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+      allow_aggregations: true
+  - role: read
+    permission:
+      columns:
+        - created_at
+        - external_id
+        - external_type
+        - id
+        - item_type
+        - key_result_id
+        - planned_finish
+        - planned_start
+        - state
+        - title
+        - updated_at
+        - work_item_container_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+      allow_aggregations: true
+  - role: user
+    permission:
+      columns:
+        - created_at
+        - external_id
+        - external_type
+        - id
+        - item_type
+        - key_result_id
+        - planned_finish
+        - planned_start
+        - state
+        - title
+        - updated_at
+        - work_item_container_id
+      filter:
+        _or:
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+          - _and:
+              - tenant_id_str:
+                  _eq: X-Hasura-Platforma-App-Tenant-Id
+              - _not:
+                  tenant_id_str:
+                    _eq: ""
+      allow_aggregations: true

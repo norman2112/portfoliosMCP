@@ -1,0 +1,10 @@
+table:
+  name: space_work_item_container_mappings
+  schema: public
+object_relationships:
+  - name: space
+    using:
+      foreign_key_constraint_on: space_id
+  - name: work_item_container
+    using:
+      foreign_key_constraint_on: work_item_container_id

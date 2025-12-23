@@ -1,0 +1,43 @@
+table:
+  name: work_items
+  schema: public
+object_relationships:
+  - name: work_item_container
+    using:
+      foreign_key_constraint_on: work_item_container_id
+array_relationships:
+  - name: key_result_work_item_mappings
+    using:
+      foreign_key_constraint_on:
+        column: work_item_id
+        table:
+          name: key_result_work_item_mappings
+          schema: public
+select_permissions:
+  - role: reporting
+    permission:
+      columns:
+        - id
+        - work_item_container_id
+        - app_created_by
+        - app_last_updated_by
+        - app_name
+        - created_by
+        - external_id
+        - external_type
+        - item_type
+        - last_updated_by
+        - state
+        - tenant_group_id_str
+        - tenant_id_str
+        - title
+        - planned_finish
+        - planned_start
+        - ih_subscription_response
+        - latest_ih_message
+        - created_at
+        - updated_at
+      filter:
+        tenant_group_id_str:
+          _eq: X-Hasura-Org-Id
+      allow_aggregations: true

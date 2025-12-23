@@ -1,0 +1,13 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ih_sync_job
+spec:
+  template:
+    spec:
+      containers:
+      - name: ih_sync_job
+        image: 486329218230.dkr.ecr.us-west-2.amazonaws.com/okrs-api-jobs
+        command: ["python", "./ih_subscription_syncer.py"]
+      restartPolicy: Never
+  backoffLimit: 2

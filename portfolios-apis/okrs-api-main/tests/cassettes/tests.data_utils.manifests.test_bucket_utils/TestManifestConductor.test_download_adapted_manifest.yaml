@@ -1,0 +1,126 @@
+interactions:
+- request:
+    body: null
+    headers:
+      User-Agent:
+      - !!binary |
+        Qm90bzMvMS4yMC4yMyBQeXRob24vMy45LjYgRGFyd2luLzIwLjYuMCBCb3RvY29yZS8xLjIzLjIz
+      X-Amz-Content-SHA256:
+      - !!binary |
+        ZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3
+        ODUyYjg1NQ==
+      X-Amz-Date:
+      - !!binary |
+        MjAyMjAxMjZUMTkyODIxWg==
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://platforma-okrs-development.s3.us-west-2.amazonaws.com/?list-type=2&prefix=leankit%2FLEANKIT~d09-123456789%2F&encoding-type=url
+  response:
+    body:
+      string: '<?xml version="1.0" encoding="UTF-8"?>
+
+        <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>platforma-okrs-development</Name><Prefix>leankit/LEANKIT%7Ed09-123456789/</Prefix><KeyCount>1</KeyCount><MaxKeys>1000</MaxKeys><EncodingType>url</EncodingType><IsTruncated>false</IsTruncated><Contents><Key>leankit/LEANKIT%7Ed09-123456789/test-adapted-manifest.json</Key><LastModified>2022-01-26T19:19:05.000Z</LastModified><ETag>&quot;47e91ca3fe68fb53ac6e1924d9f14992&quot;</ETag><Size>116</Size><StorageClass>STANDARD</StorageClass></Contents></ListBucketResult>'
+    headers:
+      Content-Type:
+      - application/xml
+      Date:
+      - Wed, 26 Jan 2022 19:28:22 GMT
+      Server:
+      - AmazonS3
+      Transfer-Encoding:
+      - chunked
+      x-amz-bucket-region:
+      - us-west-2
+      x-amz-id-2:
+      - Xdu8YK//Itq2MHXKeOefWQBmYXPcfGVEDhIjbAMQfcdrv/3BgSyfq26ZcOZu5nalBgeNK6vQ1Ts=
+      x-amz-request-id:
+      - Z1TT3HEY68693FK3
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      User-Agent:
+      - !!binary |
+        Qm90bzMvMS4yMC4yMyBQeXRob24vMy45LjYgRGFyd2luLzIwLjYuMCBCb3RvY29yZS8xLjIzLjIz
+      X-Amz-Content-SHA256:
+      - !!binary |
+        ZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3
+        ODUyYjg1NQ==
+      X-Amz-Date:
+      - !!binary |
+        MjAyMjAxMjZUMTkyODIxWg==
+      authorization:
+      - REDACTED
+    method: HEAD
+    uri: https://platforma-okrs-development.s3.us-west-2.amazonaws.com/leankit/LEANKIT~d09-123456789/test-adapted-manifest.json
+  response:
+    body:
+      string: ''
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '116'
+      Content-Type:
+      - binary/octet-stream
+      Date:
+      - Wed, 26 Jan 2022 19:28:22 GMT
+      ETag:
+      - '"47e91ca3fe68fb53ac6e1924d9f14992"'
+      Last-Modified:
+      - Wed, 26 Jan 2022 19:19:05 GMT
+      Server:
+      - AmazonS3
+      x-amz-id-2:
+      - v0nXE+YwNB7wRxY1RxuTxexrSiLfFPO1hBJtu92Q27xioFoPN4V9iuD8e2iHPZfVd7bkzf9XGgY=
+      x-amz-request-id:
+      - Z1TQ2R25VRY0XTT0
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      User-Agent:
+      - !!binary |
+        Qm90bzMvMS4yMC4yMyBQeXRob24vMy45LjYgRGFyd2luLzIwLjYuMCBCb3RvY29yZS8xLjIzLjIz
+      X-Amz-Content-SHA256:
+      - !!binary |
+        ZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3
+        ODUyYjg1NQ==
+      X-Amz-Date:
+      - !!binary |
+        MjAyMjAxMjZUMTkyODIxWg==
+      authorization:
+      - REDACTED
+    method: GET
+    uri: https://platforma-okrs-development.s3.us-west-2.amazonaws.com/leankit/LEANKIT~d09-123456789/test-adapted-manifest.json
+  response:
+    body:
+      string: '"/Users/eheiberg/dev/platforma-home/okrs-api/tests/data_utils/manifests/test_bucket_utils.py/manifest_test_data.csv"'
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '116'
+      Content-Type:
+      - binary/octet-stream
+      Date:
+      - Wed, 26 Jan 2022 19:28:22 GMT
+      ETag:
+      - '"47e91ca3fe68fb53ac6e1924d9f14992"'
+      Last-Modified:
+      - Wed, 26 Jan 2022 19:19:05 GMT
+      Server:
+      - AmazonS3
+      x-amz-id-2:
+      - uFkxZRRyIsdkPfFKV563dBMSXNHO0nDquQCLkbaHCy3wDsPT5QQ9knqJSDI3d/03KCII0x7zfEo=
+      x-amz-request-id:
+      - Z1TVFQTF3BFE3BCY
+    status:
+      code: 200
+      message: OK
+version: 1

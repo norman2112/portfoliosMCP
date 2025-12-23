@@ -1,0 +1,80 @@
+table:
+  name: work_item_container_roles
+  schema: public
+object_relationships:
+  - name: work_item_container
+    using:
+      foreign_key_constraint_on: work_item_container_id
+select_permissions:
+  - role: edit
+    permission:
+      columns:
+        - app_created_by
+        - app_role
+        - id
+        - okr_role
+        - work_item_container_id
+      filter:
+        _or:
+          - created_by:
+              _eq: X-Hasura-User-Id
+          - _and:
+              - app_created_by:
+                  _eq: X-Hasura-Platforma-App-User-Id
+              - _not:
+                  app_created_by:
+                    _eq: ""
+  - role: manage
+    permission:
+      columns:
+        - app_created_by
+        - app_role
+        - id
+        - okr_role
+        - work_item_container_id
+      filter:
+        _or:
+          - created_by:
+              _eq: X-Hasura-User-Id
+          - _and:
+              - app_created_by:
+                  _eq: X-Hasura-Platforma-App-User-Id
+              - _not:
+                  app_created_by:
+                    _eq: ""
+  - role: read
+    permission:
+      columns:
+        - app_created_by
+        - app_role
+        - id
+        - okr_role
+        - work_item_container_id
+      filter:
+        _or:
+          - created_by:
+              _eq: X-Hasura-User-Id
+          - _and:
+              - app_created_by:
+                  _eq: X-Hasura-Platforma-App-User-Id
+              - _not:
+                  app_created_by:
+                    _eq: ""
+  - role: user
+    permission:
+      columns:
+        - app_created_by
+        - app_role
+        - id
+        - okr_role
+        - work_item_container_id
+      filter:
+        _or:
+          - created_by:
+              _eq: X-Hasura-User-Id
+          - _and:
+              - app_created_by:
+                  _eq: X-Hasura-Platforma-App-User-Id
+              - _not:
+                  app_created_by:
+                    _eq: ""

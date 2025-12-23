@@ -1,0 +1,42 @@
+table:
+  name: targets
+  schema: public
+object_relationships:
+  - name: key_result
+    using:
+      foreign_key_constraint_on: key_result_id
+array_relationships:
+  - name: progress_points
+    using:
+      manual_configuration:
+        column_mapping:
+          id: target_id
+        insertion_order: null
+        remote_table:
+          name: progress_points
+          schema: public
+select_permissions:
+  - role: reporting
+    permission:
+      columns:
+        - app_created_by
+        - app_last_updated_by
+        - created_at
+        - created_by
+        - ends_at
+        - id
+        - is_deleted
+        - key_result_id
+        - last_updated_by
+        - starts_at
+        - tenant_group_id_str
+        - tenant_id_str
+        - updated_at
+        - value
+      filter:
+        _and:
+          - is_deleted:
+              _eq: false
+          - tenant_group_id_str:
+              _eq: X-Hasura-Org-Id
+      allow_aggregations: true

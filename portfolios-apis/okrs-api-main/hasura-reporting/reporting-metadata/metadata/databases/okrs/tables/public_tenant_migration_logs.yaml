@@ -1,0 +1,3 @@
+table:
+  name: tenant_migration_logs
+  schema: public

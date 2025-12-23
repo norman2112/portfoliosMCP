@@ -1,0 +1,19 @@
+replicaCount: 1
+
+hasura:
+  adminSecret: hasurasecret
+
+DATABASE_URL: postgresql://postgres:postgres@postgresql.okr.svc.cluster.local:$(POSTGRESQL_SERVICE_PORT)/postgres
+
+configmap:
+  CONNEXION_ENVIRONMENT: minikube
+
+image:
+  repository: platforma/okrs-api
+
+env:
+  LK_JWT_SECRET: "Not a real secret."
+
+okr:
+  hasuraEndpoint: http://hasura.okr.svc.cluster.local
+  hasuraAdminSecret: hasurasecret

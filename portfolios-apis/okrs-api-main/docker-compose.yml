@@ -1,0 +1,77 @@
+version: '3'
+
+services:
+  okrs-db:
+    container_name: okrs-db
+    image: postgres
+    environment:
+      - POSTGRES_DB=okrs
+      - POSTGRES_USER=okruser
+      - POSTGRES_PASSWORD=changeMe
+    ports:
+      - "5431:5432"
+    restart: always
+    volumes:
+      - okrs-pgdata:/var/lib/postgresql/data
+  okrs-graphql:
+    container_name: okrs-graphql
+    build:
+      dockerfile: Dockerfile-hasura-local
+      context: .
+    ports:
+      - "8081:8080"
+    depends_on:
+      - okrs-db
+    restart: always
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgresql://okruser:changeMe@okrs-db:5432/okrs
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      ## enable debugging mode. It is recommended to disable this in production
+      HASURA_GRAPHQL_DEV_MODE: "true"
+      HASURA_GRAPHQL_JWT_SECRET: "{\"type\": \"RS256\", \"jwk_url\": \"https://cognito-idp.us-west-2.amazonaws.com/us-west-2_EgR4jyqiX/.well-known/jwks.json\", \"claims_format\": \"stringified_json\"}"
+      ## Uncomment this line to use a locally generated token in a local dev environment
+      # HASURA_GRAPHQL_JWT_SECRET: "{\"type\": \"HS256\", \"key\":\"~~dev_hasura_graphql_jwt_secret~~\", \"claims_format\": \"stringified_json\"}"
+      HASURA_GRAPHQL_ADMIN_SECRET: "hasurasecret"
+      HASURA_BASE_API_URL: "http://okrs-api:8000/api"
+      HASURA_EVENTS_WEBHOOK_URL: "http://okrs-api:8000/api/events"
+      DATAPIPELINE_ENDPOINT: ""
+      WAIT_HOSTS: "okrs-db:5432"
+  okrs-api-local-base:
+    container_name: okrs-api-local-base
+    image: okrs-api-local-base
+    build:
+      dockerfile: Dockerfile
+      context: .
+    entrypoint: ''
+    command: /bin/sh
+  okrs-api:
+    container_name: okrs-api
+    build:
+      dockerfile: Dockerfile-local
+      context: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - okrs-graphql
+      - okrs-api-local-base
+    environment:
+      DATABASE_URL: postgresql://okruser:changeMe@okrs-db:5432/okrs
+      HASURA_GRAPHQL_ENDPOINT: http://okrs-graphql:8080
+      CONNEXION_ENVIRONMENT: docker
+      HASURA_GRAPHQL_ADMIN_SECRET: "hasurasecret"
+      IH_DOMAIN: ${IH_DOMAIN}
+      IH_CLIENT_ID: ${IH_CLIENT_ID}
+      IH_CLIENT_SECRET: ${IH_CLIENT_SECRET}
+      IH_ADMIN_CLIENT_ID: ${IH_ADMIN_CLIENT_ID}
+      IH_ADMIN_CLIENT_SECRET: ${IH_ADMIN_CLIENT_SECRET}
+      PLANVIEW_TOKEN_SERVICE_CLIENT_ID: ${PLANVIEW_TOKEN_SERVICE_CLIENT_ID}
+      PLANVIEW_TOKEN_SERVICE_CLIENT_SECRET: ${PLANVIEW_TOKEN_SERVICE_CLIENT_SECRET}
+#      AWS_PROFILE: ${AWS_PROFILE}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      WAIT_HOSTS: "okrs-graphql:8080"
+    volumes:
+      - ./okrs_api:/usr/local/lib/python3.9/site-packages/okrs_api
+      - ./openapi:/usr/src/app/openapi
+volumes:
+  okrs-pgdata: {}
