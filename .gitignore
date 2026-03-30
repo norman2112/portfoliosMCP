@@ -29,6 +29,11 @@ env/
 # Environment variables
 .env
 .env.local
+.env.*
+!.env.example
+
+# Local Claude Desktop config (copy from claude_desktop_config_example.json)
+claude_desktop_config.json
 
 # IDE
 .vscode/
@@ -37,6 +42,7 @@ env/
 *.swo
 *~
 .DS_Store
+**/.DS_Store
 
 # Testing
 .pytest_cache/
