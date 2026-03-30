@@ -95,6 +95,8 @@ where python
 ```
 # Press Win+R, type this, hit Enter:
 %APPDATA%\Claude
+This can also be reached by going to Claude > Settings > Developer > Config
+You are looking for the below file: 
 
 # Open claude_desktop_config.json in Notepad
 # If the file doesn't exist, create it
