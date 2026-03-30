@@ -9,10 +9,81 @@ from typing import Any
 from fastmcp import Context
 
 from ..exceptions import PlanviewConnectionError, PlanviewNotFoundError, PlanviewValidationError
+from ..performance import log_performance
 from ..soap_client import get_soap_client_for_service, _handle_soap_result
 from ..utils.soap_helpers import filter_and_sort_fields
 
 logger = logging.getLogger(__name__)
+
+# Optional account/line field names for response filtering (PascalCase as from API)
+DEFAULT_ACCOUNT_FIELDS = (
+    "AccountKey",
+    "AccountDescription",
+    "AccountParentDescription",
+    "Unit",
+    "CurrencyKey",
+)
+DEFAULT_PERIOD_KEYS_FIELD = "PeriodKey"
+
+
+def _filter_financial_plan_response(
+    result: dict[str, Any],
+    *,
+    include_entries: bool = True,
+    summary: bool = False,
+    fields: list[str] | None = None,
+) -> dict[str, Any]:
+    """Reduce response size by stripping entries and/or returning only structure or selected fields."""
+    if not result or not isinstance(result.get("data"), dict):
+        return result
+    data = result["data"]
+    if summary:
+        # Minimal: account keys and period keys only
+        lines = data.get("Lines") or data.get("lines") or {}
+        line_dtos = lines.get("FinancialPlanLineDto") or lines.get("financialPlanLineDto") or []
+        account_keys = []
+        period_keys_set = set()
+        for line in line_dtos:
+            if not isinstance(line, dict):
+                continue
+            ak = line.get("AccountKey") or line.get("accountKey")
+            if ak:
+                account_keys.append(ak)
+            for entry in line.get("Entries") or line.get("entries") or []:
+                if not isinstance(entry, dict):
+                    continue
+                pk = entry.get("PeriodKey") or entry.get("periodKey")
+                if pk:
+                    period_keys_set.add(pk)
+        return {
+            "success": result.get("success", True),
+            "data": {
+                "EntityKey": data.get("EntityKey"),
+                "VersionKey": data.get("VersionKey"),
+                "Source": data.get("Source"),
+                "Accounts": data.get("Accounts"),
+                "Periods": data.get("Periods"),
+                "account_keys": account_keys,
+                "period_keys": sorted(period_keys_set),
+            },
+            "warnings": result.get("warnings", []),
+        }
+    out_data = dict(data)
+    lines = out_data.get("Lines") or out_data.get("lines")
+    if lines and not include_entries:
+        line_dtos = lines.get("FinancialPlanLineDto") or lines.get("financialPlanLineDto") or []
+        for line in line_dtos:
+            if isinstance(line, dict):
+                line.pop("Entries", None)
+                line.pop("entries", None)
+        if "FinancialPlanLineDto" in lines:
+            lines["FinancialPlanLineDto"] = line_dtos
+        elif "financialPlanLineDto" in lines:
+            lines["financialPlanLineDto"] = line_dtos
+    if fields is not None and fields:
+        allowed = set(f.lower() for f in fields)
+        out_data = {k: v for k, v in out_data.items() if k.lower() in allowed}
+    return {"success": result.get("success", True), "data": out_data, "warnings": result.get("warnings", [])}
 
 # Service name and port for FinancialPlanService
 # The WSDL defines service "FinancialPlanService" with interface "IFinancialPlanService2"
@@ -101,6 +172,7 @@ def _validate_financial_plan_line(line_data: dict[str, Any]) -> None:
             raise PlanviewValidationError("Value field is required for each entry")
 
 
+@log_performance
 async def upsert_financial_plan(
     ctx: Context,
     plan_data: dict[str, Any],
@@ -459,12 +531,16 @@ async def upsert_financial_plan(
         raise
 
 
+@log_performance
 async def discover_financial_plan_info(
     ctx: Context,
     entity_key: str,
     version_key: str = "key://14/1",
     reference_entity_key: str | None = None,
     skip_target_read: bool = False,
+    include_entries: bool = False,
+    summary: bool = False,
+    fields: list[str] | None = None,
 ) -> dict[str, Any] | None:
     """Discover financial plan information with smart fallback.
     
@@ -473,7 +549,8 @@ async def discover_financial_plan_info(
     financial plan to discover available accounts and periods.
     
     Optimized to check config data first (instant), and skip slow target reads
-    for new projects when skip_target_read=True.
+    for new projects when skip_target_read=True. Use include_entries=False
+    (default for this tool) to avoid large EntryDto arrays and reduce payload size.
     
     Args:
         ctx: FastMCP context
@@ -483,6 +560,9 @@ async def discover_financial_plan_info(
             Defaults to None - if not provided and target read fails, returns config data.
         skip_target_read: If True, skip reading target project's plan (much faster for new projects).
             Defaults to False for backward compatibility.
+        include_entries: If False, strip EntryDto arrays from each line (default False for smaller response).
+        summary: If True, return only account_keys and period_keys (minimal response).
+        fields: If set, return only these top-level data fields.
         
     Returns:
         Dict with financial plan data including accounts and periods, or None if unavailable.
@@ -516,7 +596,10 @@ async def discover_financial_plan_info(
         if reference_entity_key:
             try:
                 logger.info(f"Reading reference project {reference_entity_key} for account discovery")
-                result = await read_financial_plan(ctx, reference_entity_key, version_key)
+                result = await read_financial_plan(
+                    ctx, reference_entity_key, version_key,
+                    include_entries=include_entries, summary=summary, fields=fields,
+                )
                 logger.info("Successfully read reference project financial plan")
                 return result
             except Exception as ref_error:
@@ -531,18 +614,23 @@ async def discover_financial_plan_info(
             
             if accounts or periods:
                 logger.info("Returning config-based financial plan info (fast path)")
-                # Return a structure similar to read_financial_plan for compatibility
-                return {
+                config_result = {
                     "success": True,
                     "data": {
                         "EntityKey": entity_key,
                         "VersionKey": version_key,
-                        "Accounts": accounts,  # Config accounts
-                        "Periods": periods,    # Config periods
-                        "Source": "config",    # Indicate this is from config, not API read
+                        "Accounts": accounts,
+                        "Periods": periods,
+                        "Source": "config",
                     },
                     "warnings": [],
                 }
+                return _filter_financial_plan_response(
+                    config_result,
+                    include_entries=include_entries,
+                    summary=summary,
+                    fields=fields,
+                )
         except Exception as config_error:
             logger.debug(f"Could not get config data: {config_error}")
         
@@ -554,7 +642,10 @@ async def discover_financial_plan_info(
     
     # Standard path: Try reading the target project first
     try:
-        result = await read_financial_plan(ctx, entity_key, version_key)
+        result = await read_financial_plan(
+            ctx, entity_key, version_key,
+            include_entries=include_entries, summary=summary, fields=fields,
+        )
         logger.info(f"Successfully read financial plan for {entity_key}")
         return result
     except Exception as e:
@@ -567,7 +658,10 @@ async def discover_financial_plan_info(
                     f"Falling back to reference project {reference_entity_key} "
                     f"for account discovery"
                 )
-                result = await read_financial_plan(ctx, reference_entity_key, version_key)
+                result = await read_financial_plan(
+                    ctx, reference_entity_key, version_key,
+                    include_entries=include_entries, summary=summary, fields=fields,
+                )
                 logger.info(f"Successfully read reference project financial plan")
                 return result
             except Exception as ref_error:
@@ -605,10 +699,14 @@ async def discover_financial_plan_info(
         return None
 
 
+@log_performance
 async def read_financial_plan(
     ctx: Context,
     entity_key: str,
     version_key: str,
+    include_entries: bool = False,
+    summary: bool = False,
+    fields: list[str] | None = None,
 ) -> dict[str, Any]:
     """Read a financial plan for a project using SOAP FinancialPlanService.
 
@@ -620,12 +718,15 @@ async def read_financial_plan(
         ctx: FastMCP context
         entity_key: Project entity key (e.g., "key://2/$Plan/17288")
         version_key: Financial plan version key (e.g., "key://14/1" for Actual/Forecast)
+        include_entries: If True, include EntryDto arrays for each line. Defaults to False.
+        summary: If True, return only account_keys and period_keys (minimal response).
+        fields: If set, return only these top-level data fields (e.g. ["EntityKey", "VersionKey", "Lines"]).
 
     Returns:
         Dict with financial plan data including:
         - EntityKey: Project entity key
         - VersionKey: Version key
-        - Lines: Array of FinancialPlanLineDto objects with account details
+        - Lines: Array of FinancialPlanLineDto objects with account details (unless summary=True)
         - ModelDescription: Financial model name
         - VersionDescription: Version name
 
@@ -730,7 +831,12 @@ async def read_financial_plan(
                 },
             )
 
-            return processed_result
+            return _filter_financial_plan_response(
+                processed_result,
+                include_entries=include_entries,
+                summary=summary,
+                fields=fields,
+            )
 
     except (PlanviewValidationError, PlanviewNotFoundError) as e:
         # Enhance error messages with actionable guidance for common cases
@@ -774,33 +880,365 @@ async def read_financial_plan(
             exc_info=True,
         )
         raise
-        
+
+
+@log_performance
+async def load_financial_plan_from_reference(
+    ctx: Context,
+    target_project_id: str,
+    reference_project_id: str,
+    version_key: str = "key://14/1",
+    scale_factor: float = 1.0,
+    confirm: bool = False,
+) -> dict[str, Any]:
+    """Load a financial plan onto a project by copying the account structure and values
+from a reference project. Defaults to dry-run mode (confirm=False) which shows
+a preview without writing anything. Set confirm=True to execute.
+
+This is a heavy operation — always preview first unless you're sure.
+    """
+
+    start_time = time()
+
+    from .projects import get_project
+
+    if not isinstance(target_project_id, str) or not target_project_id.strip():
+        raise PlanviewValidationError("target_project_id must be a non-empty string")
+    if not isinstance(reference_project_id, str) or not reference_project_id.strip():
+        raise PlanviewValidationError("reference_project_id must be a non-empty string")
+    if not isinstance(version_key, str) or not version_key.strip():
+        raise PlanviewValidationError("version_key must be a non-empty string")
+    try:
+        scale_factor = float(scale_factor)
     except Exception as e:
-        duration_ms = int((time() - start_time) * 1000)
-        
-        # Add context to error message
-        error_context = (
-            f"Failed to read financial plan for EntityKey={entity_key}, "
-            f"VersionKey={version_key}. "
+        raise PlanviewValidationError(f"scale_factor must be a float: {str(e)}") from e
+
+    if not isinstance(confirm, bool):
+        raise PlanviewValidationError("confirm must be a boolean")
+
+    target_entity_key = f"key://2/$Plan/{target_project_id}"
+    reference_entity_key = f"key://2/$Plan/{reference_project_id}"
+
+    def _parse_date(d: Any) -> Any:
+        if d is None:
+            return None
+        if isinstance(d, str):
+            # Expect ISO like YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
+            s = d.strip()
+            if len(s) >= 10:
+                s = s[:10]
+            try:
+                from datetime import date
+                from datetime import datetime
+
+                return datetime.fromisoformat(s).date()
+            except Exception:
+                return None
+        return None
+
+    def _month_count(start_d: Any, end_d: Any, fallback: int) -> int:
+        if not start_d or not end_d:
+            return fallback
+        return (end_d.year - start_d.year) * 12 + (end_d.month - start_d.month) + 1
+
+    def _extract_period_keys(periods_obj: Any) -> list[str]:
+        """
+        Periods is a SOAP DTO that can show up as:
+        - list[dict] (each dict includes PeriodKey)
+        - list[str] of period keys
+        - dict containing nested DTO arrays
+        """
+
+        def _extract_from_list(lst: list[Any]) -> list[str]:
+            out: list[str] = []
+            for p in lst:
+                if isinstance(p, dict):
+                    pk = (
+                        p.get("PeriodKey")
+                        or p.get("periodKey")
+                        or p.get("Key")
+                        or p.get("key")
+                    )
+                    if pk:
+                        out.append(str(pk))
+                else:
+                    if p is not None:
+                        out.append(str(p))
+            return out
+
+        if isinstance(periods_obj, list):
+            return _extract_from_list(periods_obj)
+        if isinstance(periods_obj, dict):
+            # Try common container field names.
+            for k in [
+                "FinancialPlanPeriodDto",
+                "financialPlanPeriodDto",
+                "PeriodDto",
+                "Periods",
+                "periodDtos",
+                "periods",
+            ]:
+                if k in periods_obj and isinstance(periods_obj[k], list):
+                    return _extract_from_list(periods_obj[k])
+            # Fall back to scalar/dict keys.
+            if "PeriodKey" in periods_obj and periods_obj.get("PeriodKey"):
+                return [str(periods_obj["PeriodKey"])]
+        if isinstance(periods_obj, str):
+            return [periods_obj]
+        return []
+
+    # Read schedule dates (for month-offset preview messaging and truncation).
+    target_project = await get_project(ctx, target_project_id, attributes=["scheduleStart", "scheduleFinish"])
+    ref_project = await get_project(ctx, reference_project_id, attributes=["scheduleStart", "scheduleFinish"])
+    def _data_obj(resp: Any) -> dict[str, Any]:
+        if not isinstance(resp, dict):
+            return {}
+        data = resp.get("data")
+        if isinstance(data, list) and data:
+            first = data[0]
+            return first if isinstance(first, dict) else {}
+        if isinstance(data, dict):
+            return data
+        return {}
+
+    target_obj = _data_obj(target_project)
+    ref_obj = _data_obj(ref_project)
+    target_start = _parse_date(target_obj.get("scheduleStart"))
+    target_finish = _parse_date(target_obj.get("scheduleFinish"))
+    ref_start = _parse_date(ref_obj.get("scheduleStart"))
+    ref_finish = _parse_date(ref_obj.get("scheduleFinish"))
+
+    # 1) Read reference financial plan with entries.
+    reference_plan = await read_financial_plan(
+        ctx,
+        reference_entity_key,
+        version_key,
+        include_entries=True,
+        summary=False,
+        fields=["Lines", "Periods"],
+    )
+
+    # Normalize reference lines.
+    ref_data = reference_plan.get("data", {})
+    ref_lines_container = ref_data.get("Lines") or ref_data.get("lines") or {}
+    ref_line_dtos = (
+        ref_lines_container.get("FinancialPlanLineDto")
+        or ref_lines_container.get("financialPlanLineDto")
+        or []
+    )
+    if not isinstance(ref_line_dtos, list):
+        ref_line_dtos = []
+
+    ref_period_keys = _extract_period_keys(ref_data.get("Periods") or ref_data.get("periods"))
+    if not ref_period_keys and isinstance(ref_line_dtos, list):
+        # Fallback: derive period keys in first-seen order from reference entries.
+        seen_p: set[str] = set()
+        inferred: list[str] = []
+        for line in ref_line_dtos:
+            if not isinstance(line, dict):
+                continue
+            entries = line.get("Entries") or line.get("entries") or []
+            if not isinstance(entries, list):
+                continue
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+                pk = entry.get("PeriodKey") or entry.get("periodKey")
+                if pk is None:
+                    continue
+                pk_str = str(pk)
+                if pk_str not in seen_p:
+                    seen_p.add(pk_str)
+                    inferred.append(pk_str)
+        ref_period_keys = inferred
+
+    # 2) Read target periods (we only need periods list for remapping).
+    try:
+        target_plan = await read_financial_plan(
+            ctx,
+            target_entity_key,
+            version_key,
+            include_entries=False,
+            summary=False,
+            fields=["Periods"],
         )
-        
-        error_msg = str(e)
-        if "structure code" in error_msg.lower():
-            error_context += (
-                "The EntityKey appears invalid. Verify the structure code is correct. "
-                f"Expected format: key://2/$Plan/<structure_code>"
+        target_period_keys = _extract_period_keys(target_plan.get("data", {}).get("Periods") or target_plan.get("data", {}).get("periods"))
+    except Exception:
+        # If target plan doesn't exist yet, fall back to discovery using reference.
+        fallback_info = await discover_financial_plan_info(
+            ctx,
+            entity_key=target_entity_key,
+            version_key=version_key,
+            reference_entity_key=reference_entity_key,
+            skip_target_read=True,
+            include_entries=False,
+            summary=False,
+            fields=["Periods"],
+        )
+        target_period_keys = []
+        if fallback_info and isinstance(fallback_info.get("data"), dict):
+            target_period_keys = _extract_period_keys(
+                fallback_info["data"].get("Periods")
+                or fallback_info["data"].get("periods")
             )
-        
-        logger.error(
-            error_context + f" Error: {error_msg}",
-            extra={
-                "tool_name": "read_financial_plan",
-                "entity_key": entity_key,
-                "version_key": version_key,
-                "duration_ms": duration_ms,
-                "error_type": type(e).__name__,
-            },
-            exc_info=True,
+
+    if not target_period_keys:
+        # Last resort: assume the same period keys as reference.
+        target_period_keys = list(ref_period_keys)
+
+    # Determine month mapping bounds.
+    mapping_count = min(len(ref_period_keys), len(target_period_keys))
+    ref_month_count = _month_count(ref_start, ref_finish, fallback=len(ref_period_keys))
+    target_month_count = _month_count(target_start, target_finish, fallback=len(target_period_keys))
+    mapping_count = min(mapping_count, ref_month_count, target_month_count)
+
+    ref_period_keys = ref_period_keys[:mapping_count]
+    target_period_keys = target_period_keys[:mapping_count]
+
+    ref_index_by_key = {pk: i for i, pk in enumerate(ref_period_keys)}
+    target_key_by_index = {i: pk for i, pk in enumerate(target_period_keys)}
+
+    def _scaled_value(v: Any) -> Any:
+        if v is None:
+            return None
+        try:
+            # SOAP values are usually numeric already.
+            return float(v) * scale_factor
+        except Exception:
+            return v
+
+    # 3) Remap lines/entries.
+    remapped_lines: list[dict[str, Any]] = []
+
+    total_budget = 0.0
+    total_entries = 0
+
+    account_descriptions: list[str] = []
+    seen_desc: set[str] = set()
+
+    for line in ref_line_dtos:
+        if not isinstance(line, dict):
+            continue
+
+        account_key = line.get("AccountKey")
+        unit = line.get("Unit")
+        currency_key = line.get("CurrencyKey") or "key://1/USD"
+        if not account_key or not unit:
+            continue
+        account_desc = line.get("AccountDescription") or line.get("AccountParentDescription")
+        if account_desc and isinstance(account_desc, str) and account_desc not in seen_desc:
+            seen_desc.add(account_desc)
+            account_descriptions.append(account_desc)
+
+        entries = line.get("Entries") or line.get("entries") or []
+        if not isinstance(entries, list) or not entries:
+            continue
+
+        new_entries: list[dict[str, Any]] = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            ref_pk = entry.get("PeriodKey") or entry.get("periodKey")
+            if not ref_pk:
+                continue
+            ref_pk_str = str(ref_pk)
+            idx = ref_index_by_key.get(ref_pk_str)
+            if idx is None:
+                continue
+            tgt_period_key = target_key_by_index.get(idx)
+            if not tgt_period_key:
+                continue
+
+            val = entry.get("Value") or entry.get("value")
+            scaled_val = _scaled_value(val)
+            if scaled_val is not None:
+                try:
+                    total_budget += float(scaled_val)
+                except Exception:
+                    pass
+            new_entries.append({"PeriodKey": tgt_period_key, "Value": scaled_val})
+            total_entries += 1
+
+        if not new_entries:
+            continue
+
+        remapped_lines.append(
+            {
+                "AccountKey": account_key,
+                "Unit": unit,
+                "CurrencyKey": currency_key,
+                "Entries": new_entries,
+            }
         )
-        raise
+
+    total_lines = len(remapped_lines)
+    total_periods = len(target_period_keys)
+
+    # Date range messaging (best-effort from schedule).
+    date_range_str = ""
+    if target_start and target_finish:
+        date_range_str = f"{target_start.isoformat()} to {target_finish.isoformat()}"
+    elif target_period_keys:
+        date_range_str = f"{target_period_keys[0]} to {target_period_keys[-1]}"
+
+    ready_message = (
+        f"Ready to load {total_lines} account lines totaling ${total_budget:,.2f} "
+        f"across {total_periods} periods"
+    )
+    if date_range_str:
+        ready_message += f" ({date_range_str})"
+    ready_message += f" onto project {target_project_id}. "
+    ready_message += "Call again with confirm=True to execute."
+
+    if not confirm:
+        duration_ms = int((time() - start_time) * 1000)
+        return {
+            "success": True,
+            "confirm": False,
+            "preview": {
+                "target_project_id": target_project_id,
+                "reference_project_id": reference_project_id,
+                "version_key": version_key,
+                "scale_factor": scale_factor,
+                "account_lines": total_lines,
+                "account_descriptions": account_descriptions,
+                "total_budget": total_budget,
+                "period_count": total_periods,
+                "date_range": date_range_str,
+                "total_entries": total_entries,
+            },
+            "message": ready_message,
+            "duration_ms": duration_ms,
+        }
+
+    # 4) Execute: upsert onto target project.
+    plan_payload = {
+        "EntityKey": target_entity_key,
+        "VersionKey": version_key,
+        "Lines": remapped_lines,
+    }
+
+    upsert_result = await upsert_financial_plan(ctx, plan_payload)
+    duration_ms = int((time() - start_time) * 1000)
+
+    # Provide the same summary back to the caller for convenience.
+    return {
+        "success": True,
+        "confirm": True,
+        "upsert_result": upsert_result,
+        "summary": {
+            "target_project_id": target_project_id,
+            "reference_project_id": reference_project_id,
+            "version_key": version_key,
+            "scale_factor": scale_factor,
+            "account_lines": total_lines,
+            "account_descriptions": account_descriptions,
+            "total_budget": total_budget,
+            "period_count": total_periods,
+            "date_range": date_range_str,
+            "total_entries": total_entries,
+        },
+        "message": ready_message,
+        "duration_ms": duration_ms,
+    }
 

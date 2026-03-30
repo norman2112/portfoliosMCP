@@ -225,13 +225,6 @@ class TaskCreateRequest(BaseModel):
     options: WorkOptionsDto | None = None
 
 
-class TaskUpdateRequest(BaseModel):
-    """Input model for updating a task."""
-
-    task: TaskDto2
-    options: WorkOptionsDto | None = None
-
-
 class TaskResponse(BaseModel):
     """Typed response for task data."""
 

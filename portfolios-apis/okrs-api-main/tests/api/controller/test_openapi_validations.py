@@ -14,7 +14,7 @@ class TestOpenApiValidations:
         [
             pytest.param("", False, id="blank-string"),
             pytest.param("bogus-domain", False, id="bogus-domain"),
-            pytest.param("specialdomain.leankit.com", True, id="good-domain"),
+            pytest.param("your-instance.leankit.com", True, id="good-domain"),
         ],
     )
     async def test_domain_pattern(self, connexion_client, domain, expected_success):

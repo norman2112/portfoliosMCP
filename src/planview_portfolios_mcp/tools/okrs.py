@@ -12,6 +12,7 @@ from ..client import make_request
 from ..config import settings
 from ..exceptions import PlanviewValidationError
 from ..oauth import get_okr_oauth_token
+from ..performance import log_performance
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +31,6 @@ def _get_okr_base_url() -> str:
     return "https://api-us.okrs.planview.com/api/rest"
 
 
-from contextlib import asynccontextmanager
-
 @asynccontextmanager
 async def _get_okr_client():
     """Get an HTTP client configured for OKRs API.
@@ -46,7 +45,10 @@ async def _get_okr_client():
     
     # Try OAuth credentials first (automatic refresh)
     okr_token = None
-    if settings.planview_okr_client_id and settings.planview_okr_client_secret:
+    has_client_id = bool(settings.planview_okr_client_id)
+    has_client_secret = bool(settings.planview_okr_client_secret)
+    
+    if has_client_id and has_client_secret:
         try:
             okr_token = await get_okr_oauth_token()
             logger.debug("Using OKR OAuth token (auto-refreshing)")
@@ -60,11 +62,24 @@ async def _get_okr_client():
         okr_token = settings.planview_okr_bearer_token
     
     if not okr_token:
-        raise PlanviewValidationError(
-            "OKRs API authentication required. Either set PLANVIEW_OKR_CLIENT_ID and "
-            "PLANVIEW_OKR_CLIENT_SECRET (recommended for auto-refresh) or "
-            "PLANVIEW_OKR_BEARER_TOKEN in your .env file or environment variables."
+        # Provide detailed error message about what's missing
+        missing_parts = []
+        if not has_client_id:
+            missing_parts.append("PLANVIEW_OKR_CLIENT_ID")
+        if not has_client_secret:
+            missing_parts.append("PLANVIEW_OKR_CLIENT_SECRET")
+        if not settings.planview_okr_bearer_token:
+            missing_parts.append("PLANVIEW_OKR_BEARER_TOKEN")
+        
+        error_msg = (
+            "OKRs API authentication required. "
+            f"Missing: {', '.join(missing_parts)}. "
+            "Please set PLANVIEW_OKR_CLIENT_ID and PLANVIEW_OKR_CLIENT_SECRET "
+            "(recommended for auto-refresh) or PLANVIEW_OKR_BEARER_TOKEN "
+            "in your Claude Desktop config JSON file under the 'env' section, "
+            "or in a .env file, or as environment variables."
         )
+        raise PlanviewValidationError(error_msg)
     
     auth_header = f"Bearer {okr_token}"
     
@@ -82,6 +97,7 @@ async def _get_okr_client():
         await client.aclose()
 
 
+@log_performance
 async def list_objectives(
     ctx: Context,
     ids: str | None = None,
@@ -178,6 +194,7 @@ async def list_objectives(
         raise
 
 
+@log_performance
 async def get_key_results_for_objective(
     ctx: Context,
     objective_id: int,
@@ -260,6 +277,7 @@ async def get_key_results_for_objective(
         raise
 
 
+@log_performance
 async def list_all_objectives_with_key_results(
     ctx: Context,
     limit: int = 500,

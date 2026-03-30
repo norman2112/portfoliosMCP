@@ -18,21 +18,11 @@ from .config import settings
 logger = logging.getLogger(__name__)
 
 # Instance-specific account configurations
-# Map instance URL patterns to account keys
+# Map instance keys to account keys (auto-detected from PLANVIEW_API_URL host)
 # Use environment variables or config files to override per instance
 INSTANCE_ACCOUNTS: dict[str, dict[str, str]] = {
     # Default/fallback configuration
     "default": {
-        "benefits": "key://2/$Account/2689",
-        "capex_hardware": "key://2/$Account/3555",
-        "capex_software": "key://2/$Account/3651",
-        "capex_professional_services": "key://2/$Account/3652",
-        "capex_other": "key://2/$Account/3653",
-        "expense_hardware": "key://2/$Account/3513",
-        "labor": "key://2/$Account/11086",
-    },
-    # scdemo520.pvcloud.com specific
-    "scdemo520": {
         "benefits": "key://2/$Account/2689",
         "capex_hardware": "key://2/$Account/3555",
         "capex_software": "key://2/$Account/3651",
@@ -46,9 +36,6 @@ INSTANCE_ACCOUNTS: dict[str, dict[str, str]] = {
 # Instance-specific period configurations
 INSTANCE_PERIODS: dict[str, dict[str, str]] = {
     "default": {
-        "dec_2025": "key://16/170",
-    },
-    "scdemo520": {
         "dec_2025": "key://16/170",
     },
 }
@@ -69,12 +56,12 @@ def _get_instance_key() -> str:
     """Get the instance key from API URL.
     
     Returns:
-        Instance identifier (e.g., 'scdemo520') or 'default'
+        Instance identifier (for example, 'your-instance') or 'default'
     """
     api_url = settings.planview_api_url or ""
     
     # Extract instance identifier from URL
-    # e.g., https://scdemo520.pvcloud.com/polaris -> scdemo520
+    # e.g., https://your-instance.pvcloud.com/polaris -> your-instance
     for instance_key in INSTANCE_ACCOUNTS.keys():
         if instance_key == "default":
             continue
@@ -85,7 +72,7 @@ def _get_instance_key() -> str:
     if "pvcloud.com" in api_url:
         # Try to extract subdomain
         try:
-            # https://scdemo520.pvcloud.com -> scdemo520
+            # https://your-instance.pvcloud.com -> your-instance
             parts = api_url.split("//")[1].split(".")[0]
             if parts and parts not in ["https:", "http:"]:
                 return parts

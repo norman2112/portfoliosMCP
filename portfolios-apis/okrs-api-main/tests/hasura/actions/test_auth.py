@@ -89,7 +89,7 @@ class TestJWTParser:
         headers = {"Authorization": f"Bearer {self.JWT_APP_DOMAIN_3}"}
         jwt_parser = JWTParser(headers)
 
-        assert jwt_parser.app_domain == "feature9.pvcloud.com/planview"
+        assert jwt_parser.app_domain == "your-instance.pvcloud.com/planview"
 
 
 class TestPayloadParserBase:

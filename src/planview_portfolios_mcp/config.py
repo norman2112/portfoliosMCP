@@ -15,12 +15,14 @@ class PlanviewSettings(BaseSettings):
 
     # Planview API Configuration
     planview_api_url: str = "https://api.planview.com"
-    planview_api_key: str = ""  # Deprecated: Use OAuth instead
     planview_tenant_id: str = ""
     
     # OKRs API Configuration
     # OKRs API URL (optional, defaults to https://api-us.okrs.planview.com/api/rest)
     planview_okr_api_url: str | None = None
+    # OKRs OAuth Token URL (optional, defaults to https://us.id.planview.com/io/v1/oauth2/token)
+    # For EU environment, use: https://eu.id.planview.com/io/v1/oauth2/token
+    planview_okr_oauth_url: str | None = None
     # OKRs API Bearer Token (optional - if not provided, will use OAuth credentials to auto-refresh)
     planview_okr_bearer_token: str = ""
     # OKRs OAuth credentials (for automatic token refresh - preferred over static bearer token)
@@ -48,6 +50,17 @@ class PlanviewSettings(BaseSettings):
     log_level: str = "INFO"
     log_format: str = "json"  # "json" or "text"
     log_file: str | None = None
+
+    # Performance monitoring (opt-in)
+    mcp_performance_logging: bool = False
+    mcp_request_timeout_seconds: int = 30
+    mcp_soap_timeout_seconds: int = 60
+    mcp_strip_null_values: bool = True
+    mcp_verbose_responses: bool = False
+
+    # Caching
+    mcp_cache_enabled: bool = True
+    mcp_cache_ttl_seconds: int = 3600
 
 
 # Global settings instance

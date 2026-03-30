@@ -10,7 +10,13 @@ from fastmcp import Context
 
 from ..exceptions import PlanviewConnectionError, PlanviewValidationError
 from ..models import TaskDto2, WorkOptionsDto
-from ..soap_client import get_soap_client, make_soap_request, _handle_soap_result
+from ..performance import log_performance
+from ..soap_client import (
+    _handle_soap_result,
+    _parse_opensuite_result,
+    get_soap_client,
+    make_soap_request,
+)
 from ..utils.soap_helpers import filter_and_sort_fields
 
 logger = logging.getLogger(__name__)
@@ -19,6 +25,10 @@ logger = logging.getLogger(__name__)
 # The WSDL defines service "TaskService" with port "BasicHttpBinding_ITaskService3"
 TASK_SERVICE_NAME = "TaskService"
 TASK_SERVICE_PORT = "BasicHttpBinding_ITaskService3"
+
+TASK_DTO2_NS = (
+    "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto2/2012/08}TaskDto2"
+)
 
 
 def _validate_task_fields(task_data: dict[str, Any]) -> None:
@@ -45,6 +55,7 @@ def _validate_task_fields(task_data: dict[str, Any]) -> None:
         raise PlanviewValidationError("FatherKey field is required")
 
 
+@log_performance
 async def create_task(
     ctx: Context,
     task_data: dict[str, Any],
@@ -143,6 +154,9 @@ async def create_task(
         if task_payload.get("IsMilestone") is True:
             task_payload["Duration"] = 0
             logger.debug("Set Duration to 0 for milestone task")
+            # Planview requirement: milestones must have manual progress entry enabled.
+            if "EnterProgress" not in task_payload:
+                task_payload["EnterProgress"] = True
 
         # Convert datetime objects to ISO 8601 strings for zeep compatibility
         for key, value in task_payload.items():
@@ -256,6 +270,7 @@ async def create_task(
         raise
 
 
+@log_performance
 async def batch_create_tasks(
     ctx: Context,
     tasks: list[dict[str, Any]],
@@ -276,12 +291,15 @@ async def batch_create_tasks(
         options: Optional WorkOptionsDto dictionary (applies to all tasks)
         
     Returns:
-        Dict with:
-        - success: True if operation succeeded
-        - data: List of created task data (may have null fields - normal SOAP behavior)
-        - successes: List of successfully created tasks
-        - failures: List of failed tasks (if any)
-        - warnings: List of non-fatal warnings
+        Dict with per-task results (SOAP may partially succeed):
+        - success: True only if all tasks succeeded
+        - created: List of per-task entries in the same order as `tasks`:
+            - description: task description (if available)
+            - key: created task key (for succeeded tasks) or null (for failed tasks)
+            - status: "success" | "failed"
+            - error: present only for failed tasks
+        - summary: {total, succeeded, failed}
+        - warnings: optional list of warning messages
         
     Raises:
         PlanviewValidationError: If task data is invalid
@@ -308,8 +326,8 @@ async def batch_create_tasks(
     Notes:
         - All tasks are created in a single SOAP call, making this much faster
           than individual create_task() calls
-        - If some tasks fail, they'll be in the failures array but other tasks
-          will still be created
+        - If some tasks fail, this tool still returns the successful ones so callers
+          can avoid retrying the already-created tasks (which would create duplicates)
         - Response fields may be null - this is normal SOAP API behavior
         - Use read_task() to verify individual tasks if needed
         - Recommended to use external Key (ekey://) to prevent duplicates
@@ -355,6 +373,9 @@ async def batch_create_tasks(
             if task_payload.get("IsMilestone") is True:
                 task_payload["Duration"] = 0
                 logger.info(f"Task {i}: Set Duration to 0 for milestone")
+                # Planview requirement: milestones must have manual progress entry enabled.
+                if "EnterProgress" not in task_payload:
+                    task_payload["EnterProgress"] = True
             
             # Convert datetime objects to ISO 8601 strings
             from datetime import datetime
@@ -408,35 +429,119 @@ async def batch_create_tasks(
                 dtos_param = final_task_dtos
             
             result_direct = await asyncio.to_thread(create_op, dtos=dtos_param)
-            result = _handle_soap_result(result_direct)
-            
-            # Enhanced result parsing for batch operations
+            parsed = _parse_opensuite_result(result_direct)
+
             duration_ms = int((time() - start_time) * 1000)
-            
-            # Extract successes and failures from the result
-            batch_result = {
-                "success": result.get("success", True),
-                "data": result.get("data", {}),
-                "warnings": result.get("warnings", []),
-            }
-            
-            # If result has multiple successes (from _handle_soap_result parsing),
-            # include them in the response
-            if "successes" in result:
-                batch_result["successes"] = result["successes"]
-            if "failures" in result:
-                batch_result["failures"] = result["failures"]
-            
+
+            def _ci_get(d: dict[str, Any], name: str) -> Any:
+                for k, v in d.items():
+                    if isinstance(k, str) and k.lower() == name.lower():
+                        return v
+                return None
+
+            def _dto_get_any(dto: dict[str, Any], names: list[str]) -> Any:
+                for n in names:
+                    val = _ci_get(dto, n)
+                    if val is not None:
+                        return val
+                return None
+
+            # Map successes/failures to original task index (SOAP SourceIndex).
+            success_by_idx: dict[int, dict[str, Any]] = {}
+            failure_by_idx: dict[int, dict[str, Any]] = {}
+
+            for s in parsed.get("successes", []) or []:
+                idx = s.get("source_index")
+                if idx is None:
+                    continue
+                try:
+                    success_by_idx[int(idx)] = s
+                except Exception:
+                    continue
+
+            for f in parsed.get("failures", []) or []:
+                idx = f.get("source_index")
+                if idx is None:
+                    continue
+                try:
+                    failure_by_idx[int(idx)] = f
+                except Exception:
+                    continue
+
+            warnings_list = [
+                w.get("error_message")
+                for w in (parsed.get("warnings", []) or [])
+                if w.get("error_message")
+            ]
+            if parsed.get("general_error_message"):
+                warnings_list.append(parsed.get("general_error_message"))
+
+            created: list[dict[str, Any]] = []
+            succeeded = 0
+            failed = 0
+
+            for i, task_data in enumerate(tasks):
+                task_desc = _ci_get(task_data, "Description")
+                task_key = _ci_get(task_data, "Key")
+
+                if i in success_by_idx:
+                    succ = success_by_idx[i]
+                    dto = succ.get("dto") or {}
+                    key = _dto_get_any(dto, ["Key", "EntityKey"]) or task_key
+                    desc = _dto_get_any(dto, ["Description", "EntityDescription"]) or task_desc
+                    created.append(
+                        {
+                            "description": desc,
+                            "key": key,
+                            "status": "success",
+                        }
+                    )
+                    succeeded += 1
+                elif i in failure_by_idx:
+                    fail = failure_by_idx[i]
+                    dto = fail.get("dto") or {}
+                    desc = _dto_get_any(dto, ["Description", "EntityDescription"]) or task_desc
+                    created.append(
+                        {
+                            "description": desc,
+                            "key": None,
+                            "status": "failed",
+                            "error": fail.get("error_message") or "Unknown failure",
+                        }
+                    )
+                    failed += 1
+                else:
+                    created.append(
+                        {
+                            "description": task_desc,
+                            "key": None,
+                            "status": "failed",
+                            "error": "SOAP did not provide success/failure entry for this task",
+                        }
+                    )
+                    failed += 1
+
             logger.info(
-                f"Successfully batch created {len(final_task_dtos)} tasks",
+                "Batch create completed (partial allowed)",
                 extra={
                     "tool_name": "batch_create_tasks",
                     "task_count": len(final_task_dtos),
                     "duration_ms": duration_ms,
+                    "succeeded": succeeded,
+                    "failed": failed,
                 },
             )
-            
-            return batch_result
+
+            return {
+                "success": failed == 0,
+                "created": created,
+                "summary": {
+                    "total": len(tasks),
+                    "succeeded": succeeded,
+                    "failed": failed,
+                },
+                "warnings": warnings_list,
+            }
             
     except PlanviewValidationError:
         raise
@@ -455,6 +560,7 @@ async def batch_create_tasks(
         raise
 
 
+@log_performance
 async def read_task(ctx: Context, task_key: str) -> dict[str, Any]:
     """Read a task by key using SOAP TaskService.
 
@@ -495,7 +601,13 @@ async def read_task(ctx: Context, task_key: str) -> dict[str, Any]:
             # Read operation expects: keys (list of strings)
             request_params = {"keys": [validated_key]}
 
-            result = await make_soap_request(client, TASK_SERVICE_NAME, "Read", **request_params)
+            result = await make_soap_request(
+                client,
+                TASK_SERVICE_NAME,
+                "Read",
+                port_name=TASK_SERVICE_PORT,
+                **request_params,
+            )
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(
@@ -524,501 +636,135 @@ async def read_task(ctx: Context, task_key: str) -> dict[str, Any]:
         raise
 
 
-async def update_task(
+@log_performance
+async def batch_delete_tasks(
     ctx: Context,
-    task_key: str,
-    task_data: dict[str, Any],
-    options: dict[str, Any] | None = None,
+    task_keys: list[str],
 ) -> dict[str, Any]:
-    """Update an existing task using SOAP TaskService.
+    """Delete multiple tasks in bulk using the SOAP TaskService.
 
-    Updates a task in Planview Portfolios using the SOAP API.
-
-    Args:
-        ctx: FastMCP context
-        task_key: Task key URI in key://, search://, or ekey:// format
-        task_data: Partial task data dictionary with TaskDto2 fields to update.
-            All fields are optional for updates.
-        options: Optional WorkOptionsDto dictionary (same as create_task)
-
-    Returns:
-        Dict with updated task data
-
-    Raises:
-        PlanviewValidationError: If task_key or task_data is invalid
-        PlanviewNotFoundError: If task is not found
-        PlanviewAuthError: If authentication fails
-        PlanviewError: For other errors
+    Planview SOAP operations are not guaranteed atomic. This tool therefore
+    returns per-key success/failure information so callers can safely retry
+    only the failed keys (without re-deleting ones that already succeeded).
     """
+
     start_time = time()
     logger.info(
-        "Updating task",
-        extra={"tool_name": "update_task", "task_key": task_key},
+        "Batch deleting tasks",
+        extra={"tool_name": "batch_delete_tasks", "task_count": len(task_keys)},
     )
 
-    try:
-        # Validate key format
-        from ..models import validate_task_key
+    if not task_keys:
+        raise PlanviewValidationError("task_keys list cannot be empty")
+    if not isinstance(task_keys, list):
+        raise PlanviewValidationError("task_keys must be a list")
 
+    from ..models import validate_task_key
+
+    validated_keys: list[str] = []
+    for i, task_key in enumerate(task_keys):
+        if not isinstance(task_key, str):
+            raise PlanviewValidationError(
+                f"task_keys[{i}] must be a string. Got: {type(task_key).__name__}"
+            )
         try:
-            validated_key = validate_task_key(task_key)
+            validated_keys.append(validate_task_key(task_key))
         except ValueError as e:
-            raise PlanviewValidationError(f"Invalid task key format: {str(e)}") from e
+            raise PlanviewValidationError(
+                f"task_keys[{i}] has invalid task key format: {str(e)}"
+            ) from e
 
-        # Validate task data
-        if not isinstance(task_data, dict):
-            raise PlanviewValidationError("task_data must be a dictionary")
+    # Choose a conservative chunk size for SOAP payloads.
+    chunk_size = 50
 
-        # Convert to TaskDto2 model (allows partial updates)
+    deleted: list[dict[str, Any]] = []
+    failed: list[dict[str, Any]] = []
+
+    async with get_soap_client() as client:
+        # Get the service
         try:
-            # For updates, we need to include the key in the DTO
-            task_data_with_key = {**task_data, "Key": validated_key}
-            task_dto = TaskDto2.model_validate(task_data_with_key)
-        except Exception as e:
-            raise PlanviewValidationError(f"Invalid task data: {str(e)}") from e
+            service = client.bind(TASK_SERVICE_NAME, port_name=TASK_SERVICE_PORT)
+        except (AttributeError, ValueError, KeyError, TypeError):
+            service = client.service
 
-        # Convert to dict for zeep (use PascalCase for SOAP)
-        # Note: DTO fields must be in alphabetical order per Planview docs
-        task_dict = task_dto.model_dump(by_alias=True, exclude_none=True)
-        # Sort dict keys alphabetically to match Planview requirement
-        task_dict = dict(sorted(task_dict.items()))
+        delete_op = getattr(service, "Delete")
 
-        # Map to TaskDto (2010 schema)
-        mapped: dict[str, Any] = {}
-        key_val = task_dict.get("Key")
-        father_key_val = task_dict.get("FatherKey")
-        if key_val:
-            if str(key_val).startswith(("ekey://", "search://")):
-                mapped["ExternalKey"] = key_val
-            else:
-                mapped["InternalKey"] = key_val
-        if father_key_val:
-            if str(father_key_val).startswith(("ekey://", "search://")):
-                mapped["FatherExternalKey"] = father_key_val
-            else:
-                mapped["FatherInternalKey"] = father_key_val
-        if "ScheduleStartDate" in task_dict:
-            mapped["StartDate"] = task_dict["ScheduleStartDate"]
-        if "ScheduleFinishDate" in task_dict:
-            mapped["FinishDate"] = task_dict["ScheduleFinishDate"]
-        if "ActualStartDate" in task_dict:
-            mapped["ActualStart"] = task_dict["ActualStartDate"]
-        if "ActualFinishDate" in task_dict:
-            mapped["ActualFinish"] = task_dict["ActualFinishDate"]
-        for src, dest in [
-            ("Description", "Description"),
-            ("Duration", "Duration"),
-            ("EnterProgress", "EnterProgress"),
-            ("IsDeliverable", "IsDeliverable"),
-            ("IsMilestone", "IsMilestone"),
-            ("IsTicketable", "IsTicketable"),
-            ("PercentComplete", "PercentComplete"),
-            ("Place", "Place"),
-            ("Notes", "Notes"),
-            ("Status", "Status"),
-            ("CalendarKey", "Calendar"),
-            ("ShortName", "ShortName"),
-        ]:
-            if src in task_dict:
-                mapped[dest] = task_dict[src]
+        for offset in range(0, len(validated_keys), chunk_size):
+            chunk_keys = validated_keys[offset : offset + chunk_size]
 
-        # Use mapped dict going forward (drop original keys not supported by TaskDto)
-        task_dict = dict(sorted(mapped.items()))
+            result_direct = await asyncio.to_thread(delete_op, keys=chunk_keys)
+            parsed = _parse_opensuite_result(result_direct)
 
-        # Prepare options
-        options_dict = None
-        if options:
-            try:
-                options_dto = WorkOptionsDto.model_validate(options)
-                options_dict = options_dto.model_dump(by_alias=True)
-            except Exception as e:
-                raise PlanviewValidationError(f"Invalid options data: {str(e)}") from e
+            # If we got a general error and no per-item statuses, fail the whole chunk.
+            if parsed.get("general_error_message") and not parsed.get("successes") and not parsed.get("failures"):
+                for k in chunk_keys:
+                    failed.append({"key": k, "error": parsed["general_error_message"]})
+                continue
 
-        # Make SOAP request
-        async with get_soap_client() as client:
-            # Get StructureKey type for key fields
-            structure_key_factory = None
-            try:
-                structure_key_factory = client.get_type(
-                    "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/StructureKey/2010/01/01}StructureKey"
-                )
-            except Exception:
-                pass
+            success_by_idx: dict[int, dict[str, Any]] = {}
+            failure_by_idx: dict[int, dict[str, Any]] = {}
 
-            def create_structure_key(key_uri: str):
-                """Create StructureKey object or dict from key URI."""
-                if structure_key_factory:
-                    for prop_name in ["Key", "Uri", "Value", "KeyUri"]:
-                        try:
-                            return structure_key_factory(**{prop_name: key_uri})
-                        except Exception:
-                            continue
-                    try:
-                        return structure_key_factory(key_uri)
-                    except Exception:
-                        pass
-                return {"Key": key_uri}
-
-            # Convert key fields to StructureKey objects/dicts
-            if "InternalKey" in task_dict:
-                task_dict["InternalKey"] = create_structure_key(task_dict["InternalKey"])
-            if "FatherInternalKey" in task_dict:
-                task_dict["FatherInternalKey"] = create_structure_key(
-                    task_dict["FatherInternalKey"]
-                )
-            if "ExternalKey" in task_dict:
-                task_dict["ExternalKey"] = create_structure_key(task_dict["ExternalKey"])
-            if "FatherExternalKey" in task_dict:
-                task_dict["FatherExternalKey"] = create_structure_key(
-                    task_dict["FatherExternalKey"]
-                )
-
-            # Use TaskDto (2010/01/01 namespace) as required by the service
-            try:
-                task_dto_factory = client.get_type(
-                    "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto/2010/01/01}TaskDto"
-                )
-            except Exception as e:
-                raise PlanviewValidationError(f"TaskDto type not found in WSDL: {e}") from e
-
-            try:
-                task_dto_obj = task_dto_factory(**task_dict)
-            except Exception as e:
-                raise PlanviewValidationError(f"Failed to create TaskDto object: {e}") from e
-
-            dtos_param = [task_dto_obj]
-            kwargs = {"dtos": dtos_param}
-            if options_dict:
-                kwargs["options"] = options_dict
-
-            result = await make_soap_request(
-                client,
-                TASK_SERVICE_NAME,
-                "Update",
-                port_name=TASK_SERVICE_PORT,
-                **kwargs,
-            )
-
-            duration_ms = int((time() - start_time) * 1000)
-            logger.info(
-                "Successfully updated task",
-                extra={
-                    "tool_name": "update_task",
-                    "task_key": task_key,
-                    "duration_ms": duration_ms,
-                },
-            )
-
-            return result
-
-    except Exception as e:
-        duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to update task: {str(e)}",
-            extra={
-                "tool_name": "update_task",
-                "task_key": task_key,
-                "duration_ms": duration_ms,
-                "error_type": type(e).__name__,
-            },
-            exc_info=True,
-        )
-        raise
-
-
-async def batch_update_tasks(
-    ctx: Context,
-    tasks: list[dict[str, Any]],
-    options: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Batch update multiple tasks in a single SOAP call.
-    
-    Much faster than calling update_task() multiple times. Updates all tasks
-    in a single SOAP request, significantly reducing latency for bulk updates.
-    
-    Args:
-        ctx: FastMCP context
-        tasks: List of task update dictionaries. Each dict must contain:
-            - task_key: Task key URI (required) - identifies which task to update
-            - task_data: Dict with TaskDto2 fields to update (optional fields only)
-        options: Optional WorkOptionsDto dictionary (applies to all tasks)
-        
-    Returns:
-        Dict with:
-        - success: True if operation succeeded
-        - data: List of updated task data (may have null fields - normal SOAP behavior)
-        - successes: List of successfully updated tasks
-        - failures: List of failed tasks (if any)
-        - warnings: List of non-fatal warnings
-        
-    Raises:
-        PlanviewValidationError: If task data is invalid
-        PlanviewAuthError: If authentication fails
-        PlanviewError: For other errors
-        
-    Example:
-        tasks = [
-            {
-                "task_key": "key://2/$Plan/17346",
-                "task_data": {
-                    "PercentComplete": 50,
-                    "Notes": "In progress"
-                }
-            },
-            {
-                "task_key": "key://2/$Plan/17347",
-                "task_data": {
-                    "PercentComplete": 100,
-                    "Notes": "Completed"
-                }
-            }
-        ]
-        result = await batch_update_tasks(ctx, tasks)
-        
-    Notes:
-        - All tasks are updated in a single SOAP call, making this much faster
-          than individual update_task() calls
-        - If some tasks fail, they'll be in the failures array but other tasks
-          will still be updated
-        - Response fields may be null - this is normal SOAP API behavior
-        - Use read_task() to verify individual tasks if needed
-    """
-    start_time = time()
-    logger.info(
-        "Batch updating tasks",
-        extra={"tool_name": "batch_update_tasks", "task_count": len(tasks)},
-    )
-    
-    if not tasks:
-        raise PlanviewValidationError("tasks list cannot be empty")
-    
-    if not isinstance(tasks, list):
-        raise PlanviewValidationError("tasks must be a list")
-    
-    try:
-        from ..models import validate_task_key
-        
-        # Prepare options
-        options_dict = None
-        if options:
-            try:
-                options_dto = WorkOptionsDto.model_validate(options)
-                options_dict = options_dto.model_dump(by_alias=True, exclude_none=True)
-            except Exception as e:
-                raise PlanviewValidationError(f"Invalid options: {str(e)}") from e
-        
-        # Build list of TaskDto objects for batch update
-        task_dto_objects = []
-        task_keys = []  # Track keys for logging
-        
-        for i, task_update in enumerate(tasks):
-            if not isinstance(task_update, dict):
-                raise PlanviewValidationError(
-                    f"Task {i} must be a dictionary. Got: {type(task_update).__name__}"
-                )
-            
-            task_key = task_update.get("task_key") or task_update.get("taskKey")
-            if not task_key:
-                raise PlanviewValidationError(
-                    f"Task {i} missing required 'task_key' field"
-                )
-            
-            task_data = task_update.get("task_data") or task_update.get("taskData") or {}
-            if not isinstance(task_data, dict):
-                raise PlanviewValidationError(
-                    f"Task {i} 'task_data' must be a dictionary. Got: {type(task_data).__name__}"
-                )
-            
-            # Validate key format
-            try:
-                validated_key = validate_task_key(task_key)
-            except ValueError as e:
-                raise PlanviewValidationError(
-                    f"Task {i} has invalid task_key format: {str(e)}"
-                ) from e
-            
-            # Merge key into task_data for DTO creation
-            task_data_with_key = {**task_data, "Key": validated_key}
-            
-            # Convert to TaskDto2 model (allows partial updates)
-            try:
-                task_dto = TaskDto2.model_validate(task_data_with_key)
-            except Exception as e:
-                raise PlanviewValidationError(
-                    f"Task {i} has invalid task_data: {str(e)}"
-                ) from e
-            
-            # Convert to dict for zeep (PascalCase, sorted alphabetically)
-            task_dict = task_dto.model_dump(by_alias=True, exclude_none=True)
-            task_dict = dict(sorted(task_dict.items()))
-            
-            # Map to TaskDto (2010 schema) - same logic as update_task
-            mapped: dict[str, Any] = {}
-            key_val = task_dict.get("Key")
-            father_key_val = task_dict.get("FatherKey")
-            if key_val:
-                if str(key_val).startswith(("ekey://", "search://")):
-                    mapped["ExternalKey"] = key_val
-                else:
-                    mapped["InternalKey"] = key_val
-            if father_key_val:
-                if str(father_key_val).startswith(("ekey://", "search://")):
-                    mapped["FatherExternalKey"] = father_key_val
-                else:
-                    mapped["FatherInternalKey"] = father_key_val
-            if "ScheduleStartDate" in task_dict:
-                mapped["StartDate"] = task_dict["ScheduleStartDate"]
-            if "ScheduleFinishDate" in task_dict:
-                mapped["FinishDate"] = task_dict["ScheduleFinishDate"]
-            if "ActualStartDate" in task_dict:
-                mapped["ActualStart"] = task_dict["ActualStartDate"]
-            if "ActualFinishDate" in task_dict:
-                mapped["ActualFinish"] = task_dict["ActualFinishDate"]
-            for src, dest in [
-                ("Description", "Description"),
-                ("Duration", "Duration"),
-                ("EnterProgress", "EnterProgress"),
-                ("IsDeliverable", "IsDeliverable"),
-                ("IsMilestone", "IsMilestone"),
-                ("IsTicketable", "IsTicketable"),
-                ("PercentComplete", "PercentComplete"),
-                ("Place", "Place"),
-                ("Notes", "Notes"),
-                ("Status", "Status"),
-                ("CalendarKey", "Calendar"),
-                ("ShortName", "ShortName"),
-            ]:
-                if src in task_dict:
-                    mapped[dest] = task_dict[src]
-            
-            task_dict = dict(sorted(mapped.items()))
-            task_keys.append(validated_key)
-            
-            # Store the mapped dict for later processing with client (before StructureKey conversion)
-            task_dto_objects.append(task_dict)
-        
-        # Make batch SOAP request with all tasks
-        async with get_soap_client() as client:
-            # Get StructureKey type for key fields
-            structure_key_factory = None
-            try:
-                structure_key_factory = client.get_type(
-                    "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/StructureKey/2010/01/01}StructureKey"
-                )
-            except Exception:
-                pass
-            
-            def create_structure_key(key_uri: str):
-                """Create StructureKey object or dict from key URI."""
-                if structure_key_factory:
-                    for prop_name in ["Key", "Uri", "Value", "KeyUri"]:
-                        try:
-                            return structure_key_factory(**{prop_name: key_uri})
-                        except Exception:
-                            continue
-                    try:
-                        return structure_key_factory(key_uri)
-                    except Exception:
-                        pass
-                return {"Key": key_uri}
-            
-            # Get TaskDto factory
-            try:
-                task_dto_factory = client.get_type(
-                    "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto/2010/01/01}TaskDto"
-                )
-            except Exception as e:
-                raise PlanviewConnectionError(f"TaskDto type not found in WSDL: {e}") from e
-            
-            # Process all tasks and create DTO objects
-            final_task_dtos = []
-            for i, task_dict in enumerate(task_dto_objects):
-                # Make a copy to avoid modifying the original
-                task_dict_copy = dict(task_dict)
-                
-                # Convert key fields to StructureKey objects/dicts
-                if "InternalKey" in task_dict_copy:
-                    task_dict_copy["InternalKey"] = create_structure_key(task_dict_copy["InternalKey"])
-                if "FatherInternalKey" in task_dict_copy:
-                    task_dict_copy["FatherInternalKey"] = create_structure_key(
-                        task_dict_copy["FatherInternalKey"]
-                    )
-                if "ExternalKey" in task_dict_copy:
-                    task_dict_copy["ExternalKey"] = create_structure_key(task_dict_copy["ExternalKey"])
-                if "FatherExternalKey" in task_dict_copy:
-                    task_dict_copy["FatherExternalKey"] = create_structure_key(
-                        task_dict_copy["FatherExternalKey"]
-                    )
-                
+            for s in parsed.get("successes", []) or []:
+                idx = s.get("source_index")
+                if idx is None:
+                    continue
                 try:
-                    task_dto_obj = task_dto_factory(**task_dict_copy)
-                    final_task_dtos.append(task_dto_obj)
-                except Exception as e:
-                    raise PlanviewValidationError(
-                        f"Task {i} failed to create TaskDto object: {e}"
-                    ) from e
-            
-            dtos_param = final_task_dtos
-            kwargs = {"dtos": dtos_param}
-            if options_dict:
-                kwargs["options"] = options_dict
-            
-            logger.info(f"Batch updating {len(final_task_dtos)} tasks in single SOAP call")
-            
-            result = await make_soap_request(
-                client,
-                TASK_SERVICE_NAME,
-                "Update",
-                port_name=TASK_SERVICE_PORT,
-                **kwargs,
-            )
-            
-            # Enhanced result parsing for batch operations
-            # The result may contain multiple successes/failures
-            duration_ms = int((time() - start_time) * 1000)
-            
-            # Extract successes and failures from the result
-            batch_result = {
-                "success": result.get("success", True),
-                "data": result.get("data", {}),
-                "warnings": result.get("warnings", []),
-            }
-            
-            # If result has multiple successes (from _handle_soap_result parsing),
-            # include them in the response
-            if "successes" in result:
-                batch_result["successes"] = result["successes"]
-            if "failures" in result:
-                batch_result["failures"] = result["failures"]
-            
-            logger.info(
-                f"Successfully batch updated {len(final_task_dtos)} tasks",
-                extra={
-                    "tool_name": "batch_update_tasks",
-                    "task_count": len(final_task_dtos),
-                    "duration_ms": duration_ms,
-                },
-            )
-            
-            return batch_result
-            
-    except PlanviewValidationError:
-        raise
-    except Exception as e:
-        duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to batch update tasks: {str(e)}",
-            extra={
-                "tool_name": "batch_update_tasks",
-                "task_count": len(tasks) if tasks else 0,
-                "duration_ms": duration_ms,
-                "error_type": type(e).__name__,
-            },
-            exc_info=True,
-        )
-        raise
+                    success_by_idx[int(idx)] = s
+                except Exception:
+                    continue
+
+            for f in parsed.get("failures", []) or []:
+                idx = f.get("source_index")
+                if idx is None:
+                    continue
+                try:
+                    failure_by_idx[int(idx)] = f
+                except Exception:
+                    continue
+
+            for local_idx, key in enumerate(chunk_keys):
+                if local_idx in success_by_idx:
+                    deleted.append({"key": key, "status": "success"})
+                elif local_idx in failure_by_idx:
+                    err = failure_by_idx[local_idx].get("error_message") or "Unknown failure"
+                    failed.append({"key": key, "status": "failed", "error": err})
+                else:
+                    failed.append(
+                        {
+                            "key": key,
+                            "status": "failed",
+                            "error": "SOAP did not provide success/failure entry for this key",
+                        }
+                    )
+
+    total = len(task_keys)
+    succeeded = len(deleted)
+    failed_count = len(failed)
+
+    duration_ms = int((time() - start_time) * 1000)
+    logger.info(
+        "Batch delete completed",
+        extra={
+            "tool_name": "batch_delete_tasks",
+            "task_count": total,
+            "duration_ms": duration_ms,
+            "succeeded": succeeded,
+            "failed": failed_count,
+        },
+    )
+
+    return {
+        "deleted": deleted,
+        "failed": failed,
+        "summary": {
+            "total": total,
+            "succeeded": succeeded,
+            "failed": failed_count,
+        },
+    }
 
 
+@log_performance
 async def delete_task(ctx: Context, task_key: str) -> dict[str, Any]:
     """Delete a task using SOAP TaskService.
 
@@ -1058,7 +804,13 @@ async def delete_task(ctx: Context, task_key: str) -> dict[str, Any]:
             # Delete operation expects: keys (list of strings)
             request_params = {"keys": [validated_key]}
 
-            result = await make_soap_request(client, TASK_SERVICE_NAME, "Delete", **request_params)
+            result = await make_soap_request(
+                client,
+                TASK_SERVICE_NAME,
+                "Delete",
+                port_name=TASK_SERVICE_PORT,
+                **request_params,
+            )
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(

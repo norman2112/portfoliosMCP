@@ -27,6 +27,7 @@ from .exceptions import (
     PlanviewTimeoutError,
     PlanviewValidationError,
 )
+
 from .oauth import get_oauth_token
 
 logger = logging.getLogger(__name__)
@@ -74,8 +75,9 @@ class PlanviewSOAPClient:
                 }
             )
 
-            # Create transport with pre-configured session
-            transport = Transport(session=session, timeout=settings.soap_timeout)
+            # Use MCP timeout if set, else soap_timeout (fail-fast on slow SOAP)
+            soap_timeout_sec = getattr(settings, "mcp_soap_timeout_seconds", None) or settings.soap_timeout
+            transport = Transport(session=session, timeout=soap_timeout_sec)
 
             # Create zeep client settings
             zeep_settings = Settings(
@@ -149,7 +151,8 @@ async def get_soap_client() -> AsyncContextManager[Client]:
     """
     try:
         client = await _soap_client._get_client()
-        yield client
+    except PlanviewAuthError:
+        raise
     except TransportError as e:
         if "401" in str(e) or "403" in str(e):
             raise PlanviewAuthError(f"SOAP authentication failed: {str(e)}") from e
@@ -160,47 +163,88 @@ async def get_soap_client() -> AsyncContextManager[Client]:
     except Exception as e:
         raise PlanviewConnectionError(f"Failed to create SOAP client: {str(e)}") from e
 
+    try:
+        yield client
+    except TransportError as e:
+        if "401" in str(e) or "403" in str(e):
+            raise PlanviewAuthError(f"SOAP authentication failed: {str(e)}") from e
+        elif "404" in str(e):
+            raise PlanviewNotFoundError(f"SOAP service not found: {str(e)}") from e
+        else:
+            raise PlanviewConnectionError(f"SOAP transport error: {str(e)}") from e
+
 
 async def close_soap_client():
     """Close shared SOAP client (call on shutdown)."""
     await _soap_client.close()
+    _close_cached_service_clients()
+
+
+# Cache for per-service SOAP clients (avoid re-fetching WSDL every call)
+_service_client_cache: dict[str, Client] = {}
+_service_client_lock = asyncio.Lock()
+
+
+def _close_cached_service_clients() -> None:
+    """Close all cached per-service clients (call on shutdown)."""
+    global _service_client_cache
+    for path, client in list(_service_client_cache.items()):
+        try:
+            if hasattr(client, "transport") and hasattr(client.transport, "session"):
+                session = client.transport.session
+                if isinstance(session, requests.Session):
+                    session.close()
+        except Exception:
+            pass
+    _service_client_cache.clear()
 
 
 @asynccontextmanager
 async def get_soap_client_for_service(service_path: str) -> AsyncContextManager[Client]:
-    """Get SOAP client for a specific service path.
+    """Get SOAP client for a specific service path (cached per path).
     
-    This is useful for services that use different WSDL URLs than the default TaskService.
+    First call for a given path fetches WSDL and creates the client; subsequent
+    calls reuse the cached client so discover + upsert don't each pay ~15s.
     
     Args:
         service_path: Service path (e.g., "/planview/services/FinancialPlanService.svc")
         
     Yields:
         zeep Client instance for the specified service
-        
-    Example:
-        async with get_soap_client_for_service("/planview/services/FinancialPlanService.svc") as client:
-            # Use client for FinancialPlanService operations
-            pass
     """
-    # Get OAuth token
+    path_key = (service_path or "").strip().rstrip("/") or "/"
+    async with _service_client_lock:
+        client = _service_client_cache.get(path_key)
+        if client is not None:
+            # Refresh auth header on cached client
+            try:
+                token = await get_oauth_token()
+                auth_header = f"Bearer {token}"
+                if (
+                    hasattr(client, "transport")
+                    and hasattr(client.transport, "session")
+                    and isinstance(client.transport.session, requests.Session)
+                ):
+                    client.transport.session.headers.update(
+                        {"Authorization": auth_header, "X-Tenant-Id": settings.planview_tenant_id}
+                    )
+            except Exception:
+                pass
+            yield client
+            return
+
+    # Cache miss: create and cache
     if not settings.planview_client_id or not settings.planview_client_secret:
         raise PlanviewAuthError(
             "OAuth credentials are required (PLANVIEW_CLIENT_ID/PLANVIEW_CLIENT_SECRET)."
         )
-    
     token = await get_oauth_token()
     auth_header = f"Bearer {token}"
-    
-    # Remove /polaris from base URL if present (SOAP services are at /planview, not /polaris)
     base_url = settings.planview_api_url.rstrip("/")
     if base_url.endswith("/polaris"):
-        base_url = base_url[:-7]  # Remove "/polaris"
-    
-    service_path_clean = service_path.lstrip("/")
+        base_url = base_url[:-7]
+    service_path_clean = (service_path or "").strip().lstrip("/")
     wsdl_url = f"{base_url}/{service_path_clean}?wsdl"
-    
-    # Create requests.Session with auth headers
     session = requests.Session()
     session.headers.update(
         {
@@ -210,35 +254,27 @@ async def get_soap_client_for_service(service_path: str) -> AsyncContextManager[
             "SOAPAction": "",
         }
     )
-    
-    # Create transport with pre-configured session
-    transport = Transport(session=session, timeout=settings.soap_timeout)
-    
-    # Create zeep client settings
-    zeep_settings = Settings(
-        strict=False,  # Allow extra fields
-        xml_huge_tree=True,  # Handle large XML responses
-    )
-    
+    soap_timeout_sec = getattr(settings, "mcp_soap_timeout_seconds", None) or settings.soap_timeout
+    transport = Transport(session=session, timeout=soap_timeout_sec)
+    zeep_settings = Settings(strict=False, xml_huge_tree=True)
     logger.debug(f"Creating SOAP client for WSDL: {wsdl_url}")
-    
     try:
-        # Create client (synchronous operation)
-        client = Client(wsdl=wsdl_url, transport=transport, settings=zeep_settings)
-        yield client
+        new_client = Client(wsdl=wsdl_url, transport=transport, settings=zeep_settings)
     except TransportError as e:
         if "401" in str(e) or "403" in str(e):
             raise PlanviewAuthError(f"SOAP authentication failed: {str(e)}") from e
-        elif "404" in str(e):
+        if "404" in str(e):
             raise PlanviewNotFoundError(f"SOAP service not found: {str(e)}") from e
-        else:
-            raise PlanviewConnectionError(f"SOAP transport error: {str(e)}") from e
+        raise PlanviewConnectionError(f"SOAP transport error: {str(e)}") from e
     except Exception as e:
         raise PlanviewConnectionError(f"Failed to create SOAP client: {str(e)}") from e
-    finally:
-        # Clean up transport session
-        if hasattr(transport, 'session') and hasattr(transport.session, 'close'):
-            transport.session.close()
+    async with _service_client_lock:
+        _service_client_cache[path_key] = new_client
+    try:
+        yield new_client
+    except Exception:
+        # On error, don't evict cache - next call can retry with same client
+        raise
 
 
 def _convert_zeep_object_to_dict(obj: Any) -> dict[str, Any]:

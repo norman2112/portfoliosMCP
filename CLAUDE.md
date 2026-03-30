@@ -160,10 +160,11 @@ The implementation includes robust error handling:
 - `allocate_resource` → `POST /allocations`
 
 **SOAP API Tools:**
-- `create_task` → `ITaskService3.Create` (SOAP operation)
+- `create_task` / `batch_create_tasks` → `ITaskService3.Create` (SOAP operation)
 - `read_task` → `ITaskService3.Read` (SOAP operation)
-- `update_task` → `ITaskService3.Update` (SOAP operation)
-- `delete_task` → `ITaskService3.Delete` (SOAP operation)
+- `delete_task` / `batch_delete_tasks` → `ITaskService3.Delete` (SOAP operation)
+
+Task **updates** are not exposed (`ITaskService3.Update`): zeep does not serialize the WSDL’s `dtos` input reliably. Workaround: delete and recreate the task (or use the Planview UI).
 
 Note: Actual Planview API endpoints use `/public-api/v1/` prefix. The `PLANVIEW_API_URL` should be the base URL including the `/polaris` path but without the `/public-api/v1/` prefix (e.g., `https://scdemo504.pvcloud.com/polaris`).
 
@@ -253,4 +254,4 @@ When creating tests:
 - zeep handles XML serialization and SOAP envelope construction
 - Use Pydantic models from `models.py` for input validation (convert to dict with `model_dump(by_alias=True)`)
 - Service name: `ITaskService3` (defined as constant in tools)
-- Operations: Create, Read, Update, Delete (method names match SOAP operation names)
+- Operations exposed as tools: Create, Read, Delete (Update is omitted for the reason above; method names otherwise match SOAP operation names)

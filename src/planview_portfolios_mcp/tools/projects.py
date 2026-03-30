@@ -8,7 +8,9 @@ from typing import Any
 from fastmcp import Context
 
 from ..client import get_client, make_request
-from ..exceptions import PlanviewValidationError
+from ..exceptions import PlanviewError, PlanviewValidationError
+from ..performance import log_performance
+from field_reference import FIELD_CATEGORIES, build_tool_description_appendix, get_fields_by_category
 
 logger = logging.getLogger(__name__)
 
@@ -70,76 +72,75 @@ def _format_attributes(attributes: list[str] | str | None) -> dict[str, str]:
     return {"attributes": ",".join(attributes)}
 
 
+@log_performance
 async def list_projects(
     ctx: Context,
-    portfolio_id: str | None = None,
-    status: str | None = None,
+    filter: str | None = None,
     limit: int | None = None,
     attributes: list[str] | str | None = None,
 ) -> dict[str, Any]:
-    """List projects using the work endpoint with filters.
-    
-    Projects are accessed through the work endpoint. This function builds a filter
-    query to list projects based on the provided criteria.
-    
+    """List projects from the Portfolios API.
+
+    Tries GET `/public-api/v1/projects` first (supported on some instances).
+    If that endpoint returns HTTP 405, falls back to GET `/public-api/v1/work`.
+    If `/projects` returns 405, the tool falls back to GET `/public-api/v1/work`,
+    which requires a `filter` on many instances — call with a filter when listing
+    fails without one (e.g. `project.Id .eq 3817`).
+
     Args:
         ctx: FastMCP context
-        portfolio_id: Optional portfolio ID filter (e.g., "project.PortfolioId .eq 123")
-        status: Optional status filter
-        limit: Optional limit on number of results
-        attributes: Optional list of attributes to return
-        
+        filter: Optional filter string for the work API when fallback is used.
+            If omitted and `/projects` is not available (405), a clear error is raised.
+        limit: Optional limit on number of results.
+        attributes: Optional additional attributes to return.
+
     Returns:
-        Response from work endpoint containing project data
-        
-    Note:
-        The Planview API uses the work endpoint for listing projects. Projects are
-        work items at the Primary Planning Level (PPL). Use filter syntax like:
-        "project.Id .eq 1906" or "project.PortfolioId .eq 123"
+        API response JSON containing project objects.
     """
     start_time = time()
     logger.info(
         "Listing projects",
         extra={
             "tool_name": "list_projects",
-            "portfolio_id": portfolio_id,
-            "status": status,
+            "filter": filter,
             "limit": limit,
         },
     )
 
-    # Build filter string for work endpoint
-    filter_parts = []
-    if portfolio_id:
-        # Try to handle both structure code and filter string formats
-        if " ." in portfolio_id or ".eq" in portfolio_id.lower():
-            filter_parts.append(portfolio_id)
-        else:
-            filter_parts.append(f"project.PortfolioId .eq {portfolio_id}")
-    
-    if status:
-        if " ." in status or ".eq" in status.lower():
-            filter_parts.append(status)
-        else:
-            filter_parts.append(f"project.Status .eq {status}")
-    
-    # Default filter to get projects (work items at PPL)
-    if not filter_parts:
-        filter_parts.append("project.Id .ne null")  # Get all projects
-    
-    filter_str = " AND ".join(filter_parts)
-    
-    params: dict[str, Any] = {"filter": filter_str}
+    params: dict[str, Any] = {}
+    if filter is not None:
+        params["filter"] = filter
     if limit is not None:
         params["limit"] = limit
     params.update(_format_attributes(attributes))
 
     try:
         async with get_client() as client:
-            response = await make_request(
-                client, "GET", "/public-api/v1/work", params=params
-            )
-            work_data = response.json()
+            projects_data: dict[str, Any]
+            path_used = "/public-api/v1/projects"
+            try:
+                response = await make_request(
+                    client, "GET", "/public-api/v1/projects", params=params
+                )
+                projects_data = response.json()
+            except PlanviewError as e:
+                # Some Planview instances do not support collection GET on /projects.
+                if "HTTP 405" not in str(e):
+                    raise
+
+                if filter is None or not str(filter).strip():
+                    raise PlanviewValidationError(
+                        "This instance does not support GET /public-api/v1/projects for listing "
+                        "without a filter. Use list_projects(filter='project.Id .eq <id>') or "
+                        "list_work(filter='...'), or get_project(project_id) for a single project."
+                    ) from e
+
+                fallback_params = dict(params)
+                response = await make_request(
+                    client, "GET", "/public-api/v1/work", params=fallback_params
+                )
+                projects_data = response.json()
+                path_used = "/public-api/v1/work (fallback)"
 
             duration_ms = int((time() - start_time) * 1000)
             logger.info(
@@ -147,9 +148,10 @@ async def list_projects(
                 extra={
                     "tool_name": "list_projects",
                     "duration_ms": duration_ms,
+                    "path_used": path_used,
                 },
             )
-            return work_data
+            return projects_data
 
     except Exception as e:
         duration_ms = int((time() - start_time) * 1000)
@@ -165,6 +167,7 @@ async def list_projects(
         raise
 
 
+@log_performance
 async def get_project(
     ctx: Context, project_id: str, attributes: list[str] | str | None = None
 ) -> dict[str, Any]:
@@ -213,6 +216,7 @@ async def get_project(
         raise
 
 
+@log_performance
 async def get_project_attributes(ctx: Context) -> dict[str, Any]:
     """List available project attributes."""
     start_time = time()
@@ -255,7 +259,9 @@ async def _create_default_tasks(
     project_start_date: str | None = None,
     project_finish_date: str | None = None,
 ) -> list[dict[str, Any]]:
-    """Create 5 default sample tasks for a new project.
+    """Create 5 default sample tasks in a single batch SOAP call.
+    
+    Uses batch_create_tasks for one round-trip instead of 5x create_task.
     
     Args:
         ctx: FastMCP context
@@ -264,104 +270,74 @@ async def _create_default_tasks(
         project_finish_date: Project finish date (ISO format)
         
     Returns:
-        List of created task results
+        List of { task_number, description, result } for create_project response
     """
     try:
-        # Import here to avoid circular dependency
-        from .tasks import create_task
-        
+        from .tasks import batch_create_tasks
+
         father_key = f"key://2/$Plan/{project_structure_code}"
-        
-        # Calculate task dates if project dates provided
-        start_date = None
-        finish_date = None
+
         if project_start_date and project_finish_date:
             try:
                 start_dt = datetime.fromisoformat(project_start_date.replace("Z", "+00:00"))
                 finish_dt = datetime.fromisoformat(project_finish_date.replace("Z", "+00:00"))
                 duration_days = (finish_dt - start_dt).days
-                task_duration_days = max(1, duration_days // 5)  # Divide into 5 tasks
-                
-                # Generate dates for each task
-                def get_task_dates(task_num: int) -> tuple[str, str]:
+                task_duration_days = max(1, duration_days // 5)
+
+                def get_task_dates(task_num: int) -> tuple[str | None, str | None]:
                     task_start = start_dt + timedelta(days=task_num * task_duration_days)
                     task_finish = min(task_start + timedelta(days=task_duration_days), finish_dt)
                     return (
-                        task_start.isoformat(timespec='seconds').replace("+00:00", "Z"),
-                        task_finish.isoformat(timespec='seconds').replace("+00:00", "Z")
+                        task_start.isoformat(timespec="seconds").replace("+00:00", "Z"),
+                        task_finish.isoformat(timespec="seconds").replace("+00:00", "Z"),
                     )
             except Exception:
                 get_task_dates = lambda n: (None, None)
         else:
             get_task_dates = lambda n: (None, None)
-        
-        # Default task templates
-        default_tasks = [
-            {
-                "Description": "Project Setup and Planning",
-                "ScheduleStartDate": get_task_dates(0)[0],
-                "ScheduleFinishDate": get_task_dates(0)[1],
-            },
-            {
-                "Description": "Requirements Gathering and Analysis",
-                "ScheduleStartDate": get_task_dates(1)[0],
-                "ScheduleFinishDate": get_task_dates(1)[1],
-            },
-            {
-                "Description": "Design and Architecture",
-                "ScheduleStartDate": get_task_dates(2)[0],
-                "ScheduleFinishDate": get_task_dates(2)[1],
-            },
-            {
-                "Description": "Development and Implementation",
-                "ScheduleStartDate": get_task_dates(3)[0],
-                "ScheduleFinishDate": get_task_dates(3)[1],
-            },
-            {
-                "Description": "Testing and Deployment",
-                "ScheduleStartDate": get_task_dates(4)[0],
-                "ScheduleFinishDate": get_task_dates(4)[1],
-            },
+
+        descriptions = [
+            "Project Setup and Planning",
+            "Requirements Gathering and Analysis",
+            "Design and Architecture",
+            "Development and Implementation",
+            "Testing and Deployment",
         ]
-        
+        tasks = []
+        for i, desc in enumerate(descriptions):
+            start_d, finish_d = get_task_dates(i)
+            task_data: dict[str, Any] = {"Description": desc, "FatherKey": father_key}
+            if start_d:
+                task_data["ScheduleStartDate"] = start_d
+            if finish_d:
+                task_data["ScheduleFinishDate"] = finish_d
+            tasks.append(task_data)
+
+        batch_result = await batch_create_tasks(ctx, tasks=tasks)
+        successes = batch_result.get("successes") or []
+        if not isinstance(successes, list):
+            successes = []
+
         created_tasks = []
-        for i, task_template in enumerate(default_tasks):
-            # Filter out None dates
-            task_data = {
-                "Description": task_template["Description"],
-                "FatherKey": father_key,
-            }
-            
-            if task_template.get("ScheduleStartDate"):
-                task_data["ScheduleStartDate"] = task_template["ScheduleStartDate"]
-            if task_template.get("ScheduleFinishDate"):
-                task_data["ScheduleFinishDate"] = task_template["ScheduleFinishDate"]
-            
-            try:
-                task_result = await create_task(ctx, task_data=task_data)
-                created_tasks.append({
-                    "task_number": i + 1,
-                    "description": task_template["Description"],
-                    "result": task_result,
-                })
-                logger.info(
-                    f"Created default task {i + 1}/5: {task_template['Description']}",
-                    extra={"project_structure_code": project_structure_code}
-                )
-            except Exception as e:
-                logger.warning(
-                    f"Failed to create default task {i + 1}: {e}",
-                    extra={"project_structure_code": project_structure_code},
-                    exc_info=True,
-                )
-                # Continue with other tasks even if one fails
-                continue
-        
+        for i, desc in enumerate(descriptions):
+            item = successes[i] if i < len(successes) else None
+            key = "N/A"
+            if isinstance(item, dict):
+                dto = item.get("dto") or item
+                if isinstance(dto, dict):
+                    key = dto.get("Key") or dto.get("key") or key
+            created_tasks.append({
+                "task_number": i + 1,
+                "description": desc,
+                "result": {"data": {"Key": key}},
+            })
+
         logger.info(
-            f"Created {len(created_tasks)}/5 default tasks for project {project_structure_code}"
+            f"Created {len(created_tasks)}/5 default tasks for project {project_structure_code} (batch)",
+            extra={"project_structure_code": project_structure_code},
         )
         return created_tasks
-        
+
     except Exception as e:
         logger.error(
             f"Error creating default tasks: {e}",
@@ -371,6 +347,7 @@ async def _create_default_tasks(
         return []
 
 
+@log_performance
 async def create_project(
     ctx: Context,
     data: dict[str, Any],
@@ -419,7 +396,7 @@ async def create_project(
         }
         
     Notes:
-        - See Swagger docs at https://scdemo504.pvcloud.com/polaris/swagger/index.html
+        - See your instance's Swagger docs at {PLANVIEW_API_URL}/swagger/index.html
           for full schema details and additional optional fields like shortName, attributes, etc.
         - Warnings are non-fatal: Warnings like "InvalidStructureCode" or "InvalidDefaultValues"
           indicate Planview configuration issues (e.g., default region code not configured)
@@ -547,13 +524,13 @@ async def create_project(
         raise
 
 
+@log_performance
 async def update_project(
     ctx: Context,
     project_id: str,
     updates: dict[str, Any],
     attributes: list[str] | str | None = None,
 ) -> dict[str, Any]:
-    """Update an existing project (partial payload)."""
     start_time = time()
     logger.info(
         "Updating project",
@@ -567,25 +544,67 @@ async def update_project(
 
     try:
         async with get_client() as client:
-            response = await make_request(
-                client,
-                "PATCH",
-                f"/public-api/v1/projects/{project_id}",
-                params=params,
-                json=updates,
-            )
-            updated_project = response.json()
+            try:
+                response = await make_request(
+                    client,
+                    "PATCH",
+                    f"/public-api/v1/projects/{project_id}",
+                    params=params,
+                    json=updates,
+                )
+                updated_project = response.json()
 
-            duration_ms = int((time() - start_time) * 1000)
-            logger.info(
-                "Successfully updated project",
-                extra={
-                    "tool_name": "update_project",
-                    "project_id": project_id,
-                    "duration_ms": duration_ms,
-                },
-            )
-            return updated_project
+                duration_ms = int((time() - start_time) * 1000)
+                logger.info(
+                    "Successfully updated project",
+                    extra={
+                        "tool_name": "update_project",
+                        "project_id": project_id,
+                        "duration_ms": duration_ms,
+                    },
+                )
+                return updated_project
+            except PlanviewValidationError as e:
+                # 400s on PATCH frequently mean lifecycle-controlled/read-only fields.
+                if len(updates) > 1:
+                    blocked_fields: dict[str, str] = {}
+                    succeeded_fields: set[str] = set()
+
+                    for field_id, value in updates.items():
+                        try:
+                            await make_request(
+                                client,
+                                "PATCH",
+                                f"/public-api/v1/projects/{project_id}",
+                                params=params,
+                                json={field_id: value},
+                            )
+                            succeeded_fields.add(field_id)
+                        except PlanviewValidationError as fe:
+                            blocked_fields[field_id] = str(fe)
+
+                    if (
+                        len(blocked_fields) == 1
+                        and len(succeeded_fields) == (len(updates) - 1)
+                    ):
+                        field_id = next(iter(blocked_fields.keys()))
+                        raise PlanviewValidationError(
+                            f"Field '{field_id}' may be lifecycle-controlled and cannot be updated via API. "
+                            f"Planview error: {blocked_fields[field_id]}"
+                        ) from e
+
+                    potential = (
+                        ", ".join(blocked_fields.keys()) if blocked_fields else "unknown"
+                    )
+                    raise PlanviewValidationError(
+                        f"Project update failed for project '{project_id}'. "
+                        f"Planview error: {str(e)}. Potential blocked fields: {potential}."
+                    ) from e
+
+                # Single-field update (or isolation not possible): surface Planview error.
+                raise PlanviewValidationError(
+                    f"Project update failed for project '{project_id}'. Planview error: {str(e)}"
+                ) from e
 
     except Exception as e:
         duration_ms = int((time() - start_time) * 1000)
@@ -600,3 +619,280 @@ async def update_project(
             exc_info=True,
         )
         raise
+
+
+@log_performance
+async def get_project_wbs(
+    ctx: Context,
+    project_id: str,
+    include_milestones: bool = True,
+    max_depth: int | None = None,
+) -> dict[str, Any]:
+    """Get a project's WBS as a nested, lean tree.
+
+    Calls `list_work` with `project.Id .eq {project_id}` and rebuilds the parent/child
+    structure into a sorted tree.
+
+    Node shape (lean): `structureCode`, `description`, `depth`, `place`, `isMilestone`,
+    `hasChildren`, `scheduleStart`, `scheduleFinish`, `status`, `constraintDate`,
+    `constraintType`, and `children`.
+    """
+
+    from .work import list_work as list_work_tool
+
+    # Ask list_work to strip each node down to the fields we need for the tree.
+    work_fields = [
+        "isMilestone",
+        "hasChildren",
+        "scheduleStart",
+        "scheduleFinish",
+        "status",
+        "constraintDate",
+        "constraintType",
+    ]
+
+    payload = await list_work_tool(
+        ctx,
+        filter=f"project.Id .eq {project_id}",
+        fields=work_fields,
+    )
+
+    items = payload.get("data", [])
+    if not isinstance(items, list):
+        items = []
+
+    # Build {structureCode: node}. Nodes are intentionally lean.
+    lookup: dict[str, dict[str, Any]] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        code = item.get("structureCode")
+        if code is None:
+            continue
+        code_str = str(code)
+        lookup[code_str] = {
+            "structureCode": code_str,
+            "description": item.get("description"),
+            "depth": item.get("depth"),
+            "place": item.get("place"),
+            "isMilestone": bool(item.get("isMilestone")),
+            "hasChildren": bool(item.get("hasChildren")),
+            "scheduleStart": item.get("scheduleStart"),
+            "scheduleFinish": item.get("scheduleFinish"),
+            "status": item.get("status"),
+            "constraintDate": item.get("constraintDate"),
+            "constraintType": item.get("constraintType"),
+            "children": [],
+        }
+
+    root_code = str(project_id)
+    root = lookup.get(root_code)
+    if root is None:
+        return {"error": f"Project {project_id} not found in work items"}
+
+    # Link each item to its parent by parent.structureCode when possible.
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        code = item.get("structureCode")
+        if code is None:
+            continue
+        code_str = str(code)
+        if code_str == root_code:
+            continue  # root stays top-level
+
+        parent = item.get("parent")
+        if not isinstance(parent, dict):
+            continue
+        parent_code = parent.get("structureCode")
+        if parent_code is None:
+            continue
+        parent_code_str = str(parent_code)
+        parent_node = lookup.get(parent_code_str)
+        if parent_node is None:
+            continue
+
+        child_node = lookup.get(code_str)
+        if child_node is None:
+            continue
+
+        parent_node["children"].append(child_node)
+
+    def _place_val(node: dict[str, Any]) -> int:
+        try:
+            return int(node.get("place") or 0)
+        except Exception:
+            return 0
+
+    # Optionally remove milestone nodes (and promote their children).
+    def _prune_milestones(node: dict[str, Any]) -> None:
+        if include_milestones:
+            # Still recurse to sort later.
+            for child in node.get("children", []):
+                _prune_milestones(child)
+            return
+
+        pruned_children: list[dict[str, Any]] = []
+        for child in node.get("children", []):
+            _prune_milestones(child)
+            if child.get("isMilestone"):
+                # Promote grandchildren.
+                pruned_children.extend(child.get("children", []))
+            else:
+                pruned_children.append(child)
+        node["children"] = pruned_children
+
+    # Apply milestone pruning then sorting.
+    _prune_milestones(root)
+
+    def _sort_tree(node: dict[str, Any]) -> None:
+        node["children"].sort(key=_place_val)
+        for child in node["children"]:
+            _sort_tree(child)
+
+    _sort_tree(root)
+
+    # Apply max_depth relative to root (node depth_from_root==0 is the project root).
+    if max_depth is not None:
+        if max_depth < 0:
+            max_depth = 0
+
+        def _trim_by_depth(node: dict[str, Any], depth_from_root: int) -> None:
+            if depth_from_root >= max_depth:
+                node["children"] = []
+                return
+            for child in node.get("children", []):
+                _trim_by_depth(child, depth_from_root + 1)
+
+        _trim_by_depth(root, 0)
+
+        # Re-sort since trimming can empty children lists.
+        _sort_tree(root)
+
+    # Stats based on the node flags.
+    def _count(node: dict[str, Any], depth_from_root: int) -> tuple[int, int, int, int, int]:
+        total = 1
+        milestones = 1 if node.get("isMilestone") else 0
+        phases = 0
+        tasks = 0
+
+        if not milestones:
+            if node.get("hasChildren"):
+                phases = 1
+            else:
+                tasks = 1
+
+        deepest = depth_from_root
+        for child in node.get("children", []):
+            ct, cp, ctask, cm, cd = _count(child, depth_from_root + 1)
+            total += ct
+            phases += cp
+            tasks += ctask
+            milestones += cm
+            deepest = max(deepest, cd)
+
+        return total, phases, tasks, milestones, deepest
+
+    total_nodes, phases, tasks, milestones, deepest = _count(root, 0)
+
+    return {
+        "project": root,
+        "stats": {
+            "total_nodes": total_nodes,
+            "phases": phases,
+            "tasks": tasks,
+            "milestones": milestones,
+            "max_depth": deepest,
+        },
+    }
+
+
+async def list_field_reference(
+    ctx: Context,
+    category: str | None = None,
+) -> dict[str, Any]:
+    """List available writable project fields organized by category.
+
+    Use this tool to discover which field IDs to pass to `update_project` or
+    `create_project`.
+
+    Args:
+        ctx: FastMCP context
+        category: Optional category filter. If not provided, returns all categories.
+            Valid categories:
+            core_identity, dates, progress, status_assessments, investment_scoring,
+            strategic_classification, wsjf_safe, risk, business_case_text,
+            lifecycle_roles, financial_metrics, agileplace_integration, swot
+    """
+
+    valid_categories = list(FIELD_CATEGORIES.keys())
+    if category:
+        fields = get_fields_by_category(category)
+        if not fields:
+            return {
+                "error": f"Unknown category '{category}'. Valid: {valid_categories}"
+            }
+
+        cat_info = FIELD_CATEGORIES[category].get("_description", "")  # type: ignore[union-attr]
+        return {
+            "category": category,
+            "description": cat_info,
+            "fields": {
+                fid: {"title": t, "type": ft, "default": d, "ppl_only": p}
+                for fid, (t, ft, d, p) in fields.items()
+            },
+        }
+
+    # Return all categories with field counts
+    result: dict[str, Any] = {}
+    for cat_name, cat_fields in FIELD_CATEGORIES.items():
+        desc = cat_fields.get("_description", "")  # type: ignore[union-attr]
+        fields = {k: v for k, v in cat_fields.items() if not k.startswith("_")}
+        result[cat_name] = {
+            "description": desc,
+            "field_count": len(fields),
+            "fields": {
+                fid: {"title": t, "type": ft, "default": d, "ppl_only": p}
+                for fid, (t, ft, d, p) in fields.items()
+            },
+        }
+    return result
+
+
+# --- Tool description augmentation (static curated field reference) ---
+_CREATE_PROJECT_NOTE = (
+    "\n\nNote: On create, you MUST provide 'description' (project name) and "
+    "'parent' (structureCode of parent work item).\n"
+    "Optional: scheduleStart, scheduleFinish (default to today and +6 months).\n"
+    "For available writable fields, call `list_field_reference()` to browse by category:\n"
+    "core_identity, dates, progress, status_assessments, investment_scoring,\n"
+    "strategic_classification, wsjf_safe, risk, business_case_text,\n"
+    "lifecycle_roles, financial_metrics, agileplace_integration, swot\n"
+)
+
+_UPDATE_PROJECT_DESCRIPTION_BASE = (
+    "Update an existing project (partial payload).\n\n"
+    "Send only the fields you want to change. Field IDs are case-sensitive.\n"
+    "Planview business rules may override some values (e.g., dates get calendar-aligned).\n\n"
+    "IMPORTANT CONSTRAINTS:\n"
+    "- Duration is calculated from start/finish — don't send it directly\n"
+    "- Lifecycle-controlled Work Status cannot be overridden via API\n"
+    "- StructureCode fields: send {\"structureCode\": \"CODE\"} or "
+    "{\"structureCode\": \"CODE\", \"description\": \"LABEL\"}\n"
+    "- Fields marked PPL-only only work at Primary Planning Level (projects), not sub-tasks\n"
+)
+
+_FIELDS_POINTER = (
+    "\nFor available writable fields, call `list_field_reference()` to browse by category:\n"
+    "core_identity, dates, progress, status_assessments, investment_scoring,\n"
+    "strategic_classification, wsjf_safe, risk, business_case_text,\n"
+    "lifecycle_roles, financial_metrics, agileplace_integration, swot\n"
+)
+
+try:
+    # Keep tool constraints small; callers can fetch the curated field list via `list_field_reference()`.
+    create_project.__doc__ = (create_project.__doc__ or "").rstrip() + _CREATE_PROJECT_NOTE
+    update_project.__doc__ = _UPDATE_PROJECT_DESCRIPTION_BASE + _FIELDS_POINTER
+except Exception:
+    # If doc augmentation fails for any reason, keep the original docstrings.
+    logger.exception("Failed to augment project tool descriptions with field reference")

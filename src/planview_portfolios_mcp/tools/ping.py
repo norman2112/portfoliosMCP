@@ -7,10 +7,12 @@ from typing import Any
 from fastmcp import Context
 
 from ..client import get_client, make_request
+from ..performance import log_performance
 
 logger = logging.getLogger(__name__)
 
 
+@log_performance
 async def oauth_ping(ctx: Context) -> Any:
     """Call secured ping to verify credentials."""
     start_time = time()

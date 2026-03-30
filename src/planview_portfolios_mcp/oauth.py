@@ -94,7 +94,7 @@ class OAuthTokenManager:
                 data = response.json()
 
                 access_token = data.get("access_token")
-                expires_in = data.get("expires_in", 3600)  # Default to 60 minutes
+                expires_in = int(data.get("expires_in", 3600))  # Default to 60 minutes
                 token_type = data.get("token_type", "bearer")
 
                 if not access_token:
@@ -203,18 +203,62 @@ class OKROAuthTokenManager:
                 "Set PLANVIEW_OKR_CLIENT_ID and PLANVIEW_OKR_CLIENT_SECRET environment variables."
             )
         
-        # OKR OAuth endpoint
-        token_url = "https://us.id.planview.com/io/v1/oauth2/token"
+        # OKR OAuth endpoint - use configured URL or derive from API URL
+        if settings.planview_okr_oauth_url:
+            token_url = settings.planview_okr_oauth_url
+        else:
+            # Derive OAuth endpoint from API URL if provided, otherwise default to US
+            if settings.planview_okr_api_url:
+                # Extract region from API URL (e.g., api-us.okrs.planview.com -> us.id.planview.com)
+                import re
+                match = re.search(r'api-([a-z]+)\.okrs\.planview\.com', settings.planview_okr_api_url)
+                if match:
+                    region = match.group(1)
+                    token_url = f"https://{region}.id.planview.com/io/v1/oauth2/token"
+                else:
+                    # Default to US if pattern doesn't match
+                    token_url = "https://us.id.planview.com/io/v1/oauth2/token"
+            else:
+                # Default to US environment
+                token_url = "https://us.id.planview.com/io/v1/oauth2/token"
         
         try:
             async with httpx.AsyncClient(timeout=settings.api_timeout) as client:
-                # Use application/x-www-form-urlencoded per OKR API
-                form_data = {
-                    "grant_type": "client_credentials",
-                    "client_id": settings.planview_okr_client_id,
-                    "client_secret": settings.planview_okr_client_secret,
+                # Try multipart/form-data first (like Portfolios API - handles special chars better)
+                form = {
+                    "grant_type": (None, "client_credentials"),
+                    "client_id": (None, settings.planview_okr_client_id),
+                    "client_secret": (None, settings.planview_okr_client_secret),
                 }
-                response = await client.post(token_url, data=form_data)
+                response = await client.post(token_url, files=form)
+                
+                # If multipart fails, try form-data (application/x-www-form-urlencoded)
+                if response.status_code in (400, 403):
+                    logger.debug("Multipart auth failed, trying form-data")
+                    form_data = {
+                        "grant_type": "client_credentials",
+                        "client_id": settings.planview_okr_client_id,
+                        "client_secret": settings.planview_okr_client_secret,
+                    }
+                    response = await client.post(token_url, data=form_data)
+                
+                # If form-data also fails, try Basic Auth as fallback
+                if response.status_code in (400, 403):
+                    logger.debug("Form-data auth failed, trying Basic Auth")
+                    import base64
+                    credentials = f"{settings.planview_okr_client_id}:{settings.planview_okr_client_secret}"
+                    encoded_credentials = base64.b64encode(credentials.encode()).decode()
+                    
+                    headers = {
+                        "Authorization": f"Basic {encoded_credentials}",
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    }
+                    
+                    form_data_basic = {
+                        "grant_type": "client_credentials",
+                    }
+                    
+                    response = await client.post(token_url, data=form_data_basic, headers=headers)
                 
                 if response.status_code == 401:
                     raise PlanviewAuthError(
@@ -225,7 +269,7 @@ class OKROAuthTokenManager:
                 data = response.json()
                 
                 access_token = data.get("access_token")
-                expires_in = data.get("expires_in", 3600)  # Default to 60 minutes
+                expires_in = int(data.get("expires_in", 3600))  # Default to 60 minutes
                 token_type = data.get("token_type", "bearer")
                 
                 if not access_token:

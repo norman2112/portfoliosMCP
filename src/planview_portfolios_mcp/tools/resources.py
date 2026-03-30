@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from ..client import get_client, make_request
 from ..exceptions import PlanviewValidationError
+from ..performance import log_performance
 from ..models import (
     AllocationResponse,
     ListResourcesParams,
@@ -19,6 +20,7 @@ from ..models import (
 logger = logging.getLogger(__name__)
 
 
+@log_performance
 async def list_resources(
     ctx: Context,
     department: str | None = None,
@@ -106,6 +108,7 @@ async def list_resources(
         raise
 
 
+@log_performance
 async def get_resource(ctx: Context, resource_id: str) -> dict[str, Any]:
     """Get detailed information about a specific resource.
 
@@ -168,6 +171,7 @@ async def get_resource(ctx: Context, resource_id: str) -> dict[str, Any]:
         raise
 
 
+@log_performance
 async def allocate_resource(
     ctx: Context,
     resource_id: str,
