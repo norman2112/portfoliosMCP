@@ -19,15 +19,126 @@ This server is designed to run **alongside** the Planview-hosted Beta MCP (`Plan
 
 All tool descriptions include `[LOCAL — ...]` routing hints so Claude knows which server to use without guessing.
 
+## Before You Start
+
+You will need four things from your Planview admin **before** starting setup:
+
+| Credential | Where to find it |
+|---|---|
+| **API URL** | Your Planview instance URL + `/polaris` (e.g., `https://scdemo508.pvcloud.com/polaris`) — **use lowercase** |
+| **Client ID** | Administration → Settings → OAuth2 credentials |
+| **Client Secret** | Shown once at OAuth credential creation — copy it immediately |
+| **Tenant ID** | Ask your Planview admin or find it in the admin panel |
+
+> ⚠️ **Have all four values ready before proceeding.** The Client Secret is only shown once at creation. The Tenant ID is not obvious — ask your admin (e.g., JD) if you don't know it.
+
+---
+
+## Setup — Windows
+
+### 1. Install Python 3.10+
+
+Download from [python.org](https://www.python.org/downloads/).
+
+> ⚠️ **Check "Add Python to PATH"** during install. If you skip this, nothing below will work.
+
+Verify it installed correctly — **close and reopen** your terminal, then:
+
+```
+python --version
+pip --version
+```
+
+Both should return version numbers. If you get "not recognized," Python isn't on PATH.
+
+### 2. Download and extract the repo
+
+Download the zip from GitHub and extract it to a simple path like `C:\portfoliosMCP`. 
+
+> ⚠️ **Avoid OneDrive, Desktop, or paths with spaces.** They cause escaping nightmares in JSON config files. `C:\portfoliosMCP` is ideal.
+
+> ⚠️ **Watch for nested folders.** GitHub zips extract to `portfoliosMCP-main\portfoliosMCP-main`. Make sure your `pyproject.toml` is at the root of wherever you land — if it's one level deeper, `cd` into that folder.
+
+### 3. Create the virtual environment and install
+
+Open Command Prompt:
+
+```
+cd C:\portfoliosMCP
+python -m venv venv
+venv\Scripts\activate
+pip install -e .
+```
+
+> `pip install -e .` installs the local package into the venv. `pip install -r requirements.txt` alone is **not enough** — the server won't start without the editable install.
+
+### 4. Find your Python path
+
+```
+where python
+```
+
+Example output: `C:\portfoliosMCP\venv\Scripts\python.exe`
+
+You'll need this for the next step.
+
+### 5. Open the Claude Desktop config file
+
+Press `Win+R`, type this, hit Enter:
+
+```
+%APPDATA%\Claude
+```
+
+Or: Claude Desktop → Settings → Developer → Config
+
+Open `claude_desktop_config.json` in Notepad. If the file doesn't exist, create it.
+
+### 6. Paste the config
+
+```json
+{
+  "mcpServers": {
+    "planview-portfolios-actions": {
+      "command": "C:\\portfoliosMCP\\venv\\Scripts\\python.exe",
+      "args": ["-m", "planview_portfolios_mcp"],
+      "env": {
+        "PLANVIEW_API_URL": "https://your-instance.pvcloud.com/polaris",
+        "PLANVIEW_CLIENT_ID": "your_client_id",
+        "PLANVIEW_CLIENT_SECRET": "your_client_secret",
+        "PLANVIEW_TENANT_ID": "your_tenant_id",
+        "USE_OAUTH": "true"
+      }
+    }
+  }
+}
+```
+
+Replace the path with your output from step 4, and fill in all four credential values.
+
+> ⚠️ **Windows JSON path rule:** All backslashes must be doubled. `C:\portfoliosMCP` becomes `C:\\portfoliosMCP`. Single backslashes will cause a "Bad escaped character" JSON parse error.
+
+> ⚠️ **API URL must be lowercase.** `https://scdemo508.pvcloud.com/polaris` — not `SCDEMO508`. Mixed case can cause OAuth 400 errors.
+
+### 7. Restart Claude Desktop
+
+Full quit (`File → Exit` or system tray), not just close the window. Reopen.
+
+### 8. Test it
+
+Ask Claude: `"Use oauth_ping to check my Planview connection"`
+
+---
+
 ## Setup — macOS
 
-**1. Install Python 3.10+ if you don't have it:**
+### 1. Install Python 3.10+
 
 ```bash
 brew install python3
 ```
 
-**2. Clone and install:**
+### 2. Clone and install
 
 ```bash
 git clone https://github.com/norman2112/portfoliosMCP.git
@@ -37,14 +148,14 @@ source venv/bin/activate
 pip install -e .
 ```
 
-**3. Find your Python path (you'll need this):**
+### 3. Find your Python path
 
 ```bash
 which python3
 # Example output: /Users/yourname/portfoliosMCP/venv/bin/python3
 ```
 
-**4. Open the Claude Desktop config file:**
+### 4. Open the Claude Desktop config file
 
 ```bash
 # Press Cmd+Shift+G in Finder and paste this path:
@@ -56,7 +167,7 @@ open ~/Library/Application\ Support/Claude/claude_desktop_config.json
 
 If the file doesn't exist, create it.
 
-**5. Paste this, replacing the placeholders:**
+### 5. Paste the config
 
 ```json
 {
@@ -76,74 +187,13 @@ If the file doesn't exist, create it.
 }
 ```
 
-> Replace `/Users/yourname/portfoliosMCP/venv/bin/python3` with the output from step 3.
+> Replace `/Users/yourname/portfoliosMCP/venv/bin/python3` with the output from step 3. Fill in all four credential values.
 
-**6. Quit Claude Desktop (Cmd+Q) and reopen it.**
+### 6. Quit Claude Desktop (Cmd+Q) and reopen it.
 
-**7. Test it — ask Claude:** `"Use oauth_ping to check my Planview connection"`
+### 7. Test it
 
----
-
-## Setup — Windows
-
-**1. Install Python 3.10+ if you don't have it:**
-
-Download from [python.org](https://www.python.org/downloads/). Check **"Add Python to PATH"** during install.
-
-**2. Clone and install (open Command Prompt or PowerShell):**
-
-```
-git clone https://github.com/norman2112/portfoliosMCP.git
-cd portfoliosMCP
-python -m venv venv
-venv\Scripts\activate
-pip install -e .
-```
-
-**3. Find your Python path (you'll need this):**
-
-```
-where python
-# Example output: C:\Users\yourname\portfoliosMCP\venv\Scripts\python.exe
-```
-
-**4. Open the Claude Desktop config file:**
-
-```
-# Press Win+R, type this, hit Enter:
-%APPDATA%\Claude
-This can also be reached by going to Claude > Settings > Developer > Config
-You are looking for the below file:
-
-# Open claude_desktop_config.json in Notepad
-# If the file doesn't exist, create it
-```
-
-**5. Paste this, replacing the placeholders:**
-
-```json
-{
-  "mcpServers": {
-    "planview-portfolios-actions": {
-      "command": "C:\\Users\\yourname\\portfoliosMCP\\venv\\Scripts\\python.exe",
-      "args": ["-m", "planview_portfolios_mcp"],
-      "env": {
-        "PLANVIEW_API_URL": "https://your-instance.pvcloud.com/polaris",
-        "PLANVIEW_CLIENT_ID": "your_client_id",
-        "PLANVIEW_CLIENT_SECRET": "your_client_secret",
-        "PLANVIEW_TENANT_ID": "your_tenant_id",
-        "USE_OAUTH": "true"
-      }
-    }
-  }
-}
-```
-
-> Replace `C:\\Users\\yourname\\portfoliosMCP\\venv\\Scripts\\python.exe` with the output from step 3. Use `\\` (double backslashes) in paths.
-
-**6. Close Claude Desktop completely and reopen it.**
-
-**7. Test it — ask Claude:** `"Use oauth_ping to check my Planview connection"`
+Ask Claude: `"Use oauth_ping to check my Planview connection"`
 
 ---
 
@@ -151,10 +201,13 @@ You are looking for the below file:
 
 | Problem | Fix |
 |---------|-----|
-| Tools don't appear | Restart Claude Desktop (full quit, not just close window) |
-| "Module not found" | Make sure you ran `pip install -e .` and the config points to the venv Python |
-| Auth errors | Check `PLANVIEW_API_URL` ends with `/polaris` (no trailing slash) |
+| `python` / `pip` not recognized (Windows) | Python isn't on PATH. Reinstall and check "Add Python to PATH" |
+| "Bad escaped character in JSON" (Windows) | Use `\\` double backslashes in all paths in the JSON config |
+| "No module named planview_portfolios_mcp" | You ran `pip install -r requirements.txt` but not `pip install -e .` — run the latter |
+| Nested folder after unzip | GitHub zips create `portfoliosMCP-main/portfoliosMCP-main`. Make sure `pyproject.toml` is at your root |
+| OAuth 400 error | Check all four credentials. Make sure API URL is **lowercase** and ends with `/polaris` (no trailing slash) |
 | 401 Unauthorized | Verify Client ID, Secret, and Tenant ID — no extra spaces when pasting |
+| Tools don't appear in Claude | Restart Claude Desktop (full quit, not just close window) |
 | JSON syntax error | Validate your config at [jsonlint.com](https://jsonlint.com) |
 
 ## Getting Your Planview Credentials
@@ -243,7 +296,7 @@ These sections list **every MCP tool this server registers** (24 total). Older d
 
 | Variable | Description |
 | --- | --- |
-| `PLANVIEW_API_URL` | Base URL including `/polaris` path |
+| `PLANVIEW_API_URL` | Base URL including `/polaris` path (lowercase) |
 | `PLANVIEW_CLIENT_ID` | OAuth Client ID |
 | `PLANVIEW_CLIENT_SECRET` | OAuth Client Secret |
 | `PLANVIEW_TENANT_ID` | Organization Tenant ID |
