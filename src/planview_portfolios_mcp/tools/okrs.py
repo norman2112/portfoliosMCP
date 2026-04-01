@@ -6,8 +6,6 @@ from time import time
 from typing import Any
 
 import httpx
-from fastmcp import Context
-
 from ..client import make_request
 from ..config import settings
 from ..exceptions import PlanviewValidationError
@@ -99,15 +97,15 @@ async def _get_okr_client():
 
 @log_performance
 async def list_objectives(
-    ctx: Context,
     ids: str | None = None,
     limit: int = 10,
     offset: int = 0,
 ) -> dict[str, Any]:
-    """List all objectives from the OKRs API.
+    """[LOCAL — OKR objectives list. No Beta MCP equivalent exists for OKRs.]
+    
+    List all objectives from the OKRs API.
     
     Args:
-        ctx: FastMCP context
         ids: Optional comma-separated list of objective IDs to filter by
         limit: Number of results to return (default: 10, max: 500)
         offset: Offset for pagination (default: 0)
@@ -196,13 +194,13 @@ async def list_objectives(
 
 @log_performance
 async def get_key_results_for_objective(
-    ctx: Context,
     objective_id: int,
 ) -> dict[str, Any]:
-    """Get all key results for a specific objective.
+    """[LOCAL — OKR key results for a single objective. No Beta MCP equivalent exists for OKRs.]
+    
+    Get all key results for a specific objective.
     
     Args:
-        ctx: FastMCP context
         objective_id: The ID of the objective
         
     Returns:
@@ -279,17 +277,17 @@ async def get_key_results_for_objective(
 
 @log_performance
 async def list_all_objectives_with_key_results(
-    ctx: Context,
     limit: int = 500,
     include_key_results: bool = True,
 ) -> dict[str, Any]:
-    """List all objectives with their key results.
+    """[LOCAL — OKR objectives with key results. No Beta MCP equivalent exists.]
+    
+    List all objectives with their key results.
     
     This is a convenience function that fetches all objectives and optionally
     includes their key results in the response.
     
     Args:
-        ctx: FastMCP context
         limit: Maximum number of objectives per page (default: 500, max: 500)
         include_key_results: If True, fetch key results for each objective (default: True)
         
@@ -318,7 +316,7 @@ async def list_all_objectives_with_key_results(
     )
     
     # Get first page of objectives
-    first_page = await list_objectives(ctx, limit=limit, offset=0)
+    first_page = await list_objectives(limit=limit, offset=0)
     fetch_objectives = first_page.get("fetch_objectives", {})
     total_records = fetch_objectives.get("total_records", 0)
     objectives = fetch_objectives.get("objectives", [])
@@ -329,7 +327,7 @@ async def list_all_objectives_with_key_results(
         remaining_pages = []
         current_offset = limit
         while current_offset < total_records:
-            page = await list_objectives(ctx, limit=limit, offset=current_offset)
+            page = await list_objectives(limit=limit, offset=current_offset)
             page_objectives = page.get("fetch_objectives", {}).get("objectives", [])
             if not page_objectives:
                 break
@@ -345,7 +343,7 @@ async def list_all_objectives_with_key_results(
             objective_id = objective.get("id")
             if objective_id:
                 try:
-                    key_results_data = await get_key_results_for_objective(ctx, objective_id)
+                    key_results_data = await get_key_results_for_objective(objective_id)
                     objective["key_results"] = key_results_data.get("key_results", [])
                 except Exception as e:
                     logger.warning(

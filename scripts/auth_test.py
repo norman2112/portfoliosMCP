@@ -16,7 +16,7 @@ if not config_path.exists():
 with open(config_path) as f:
     config = json.load(f)
 
-env = config.get("mcpServers", {}).get("planview-portfolios", {}).get("env", {})
+env = config.get("mcpServers", {}).get("planview-portfolios-actions", {}).get("env", {})
 for k, v in env.items():
     os.environ[k] = str(v)
 

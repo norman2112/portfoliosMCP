@@ -43,7 +43,7 @@ class PlanviewSettings(BaseSettings):
     soap_service_path: str = "/planview/services/TaskService.svc"
 
     # Server settings
-    server_name: str = "planview-portfolios-mcp"
+    server_name: str = "planview-portfolios-actions"
     server_version: str = "0.1.0"
 
     # Logging settings

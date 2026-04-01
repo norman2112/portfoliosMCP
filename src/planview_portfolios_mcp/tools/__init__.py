@@ -2,11 +2,11 @@
 
 from .ping import oauth_ping
 from .projects import (
-    list_projects,
     get_project,
     get_project_attributes,
     create_project,
     update_project,
+    delete_project,
     get_project_wbs,
     list_field_reference,
 )
@@ -32,11 +32,11 @@ from .okrs import (
 
 __all__ = [
     "oauth_ping",
-    "list_projects",
     "get_project",
     "get_project_attributes",
     "create_project",
     "update_project",
+    "delete_project",
     "get_project_wbs",
     "list_field_reference",
     "get_work",

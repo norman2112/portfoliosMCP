@@ -6,8 +6,6 @@ import logging
 from time import time
 from typing import Any
 
-from fastmcp import Context
-
 from ..exceptions import PlanviewConnectionError, PlanviewNotFoundError, PlanviewValidationError
 from ..performance import log_performance
 from ..soap_client import get_soap_client_for_service, _handle_soap_result
@@ -174,16 +172,16 @@ def _validate_financial_plan_line(line_data: dict[str, Any]) -> None:
 
 @log_performance
 async def upsert_financial_plan(
-    ctx: Context,
     plan_data: dict[str, Any],
 ) -> dict[str, Any]:
-    """Upsert (create or update) a financial plan using SOAP FinancialPlanService.
+    """[LOCAL — SOAP financial plan write. No Beta MCP equivalent exists for financial plans.]
+
+    Upsert (create or update) a financial plan using SOAP FinancialPlanService.
 
     Creates or updates a financial plan in Planview Portfolios using the SOAP API.
     This is a single-line update tool optimized for simple use cases.
 
     Args:
-        ctx: FastMCP context
         plan_data: Financial plan data dictionary. Required fields:
             - Key: Financial plan key URI (e.g., "ekey://12/MyPlan") OR
             - EntityKey: Entity key URI (e.g., "key://2/$Plan/17286") AND
@@ -533,7 +531,6 @@ async def upsert_financial_plan(
 
 @log_performance
 async def discover_financial_plan_info(
-    ctx: Context,
     entity_key: str,
     version_key: str = "key://14/1",
     reference_entity_key: str | None = None,
@@ -542,7 +539,9 @@ async def discover_financial_plan_info(
     summary: bool = False,
     fields: list[str] | None = None,
 ) -> dict[str, Any] | None:
-    """Discover financial plan information with smart fallback.
+    """[LOCAL — financial plan discovery with smart fallback. No Beta MCP equivalent exists for financial plans.]
+    
+    Discover financial plan information with smart fallback.
     
     Attempts to read the financial plan for the target project. If that fails
     (e.g., project is too new), falls back to reading a reference project's
@@ -553,7 +552,6 @@ async def discover_financial_plan_info(
     (default for this tool) to avoid large EntryDto arrays and reduce payload size.
     
     Args:
-        ctx: FastMCP context
         entity_key: Target project entity key (e.g., "key://2/$Plan/17291")
         version_key: Financial plan version key (default: "key://14/1" for Actual/Forecast)
         reference_entity_key: Optional reference project entity key for fallback.
@@ -571,7 +569,6 @@ async def discover_financial_plan_info(
     Example:
         # Fast path for new projects - skip target read, use config or reference
         plan_info = await discover_financial_plan_info(
-            ctx,
             entity_key="key://2/$Plan/17291",
             reference_entity_key="key://2/$Plan/3818",
             skip_target_read=True  # Skip slow read for new project
@@ -579,7 +576,6 @@ async def discover_financial_plan_info(
         
         # Standard path - try target first, then reference
         plan_info = await discover_financial_plan_info(
-            ctx,
             entity_key="key://2/$Plan/17291",
             reference_entity_key="key://2/$Plan/3818"
         )
@@ -597,7 +593,7 @@ async def discover_financial_plan_info(
             try:
                 logger.info(f"Reading reference project {reference_entity_key} for account discovery")
                 result = await read_financial_plan(
-                    ctx, reference_entity_key, version_key,
+                    reference_entity_key, version_key,
                     include_entries=include_entries, summary=summary, fields=fields,
                 )
                 logger.info("Successfully read reference project financial plan")
@@ -643,7 +639,7 @@ async def discover_financial_plan_info(
     # Standard path: Try reading the target project first
     try:
         result = await read_financial_plan(
-            ctx, entity_key, version_key,
+            entity_key, version_key,
             include_entries=include_entries, summary=summary, fields=fields,
         )
         logger.info(f"Successfully read financial plan for {entity_key}")
@@ -659,7 +655,7 @@ async def discover_financial_plan_info(
                     f"for account discovery"
                 )
                 result = await read_financial_plan(
-                    ctx, reference_entity_key, version_key,
+                    reference_entity_key, version_key,
                     include_entries=include_entries, summary=summary, fields=fields,
                 )
                 logger.info(f"Successfully read reference project financial plan")
@@ -701,21 +697,21 @@ async def discover_financial_plan_info(
 
 @log_performance
 async def read_financial_plan(
-    ctx: Context,
     entity_key: str,
     version_key: str,
     include_entries: bool = False,
     summary: bool = False,
     fields: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Read a financial plan for a project using SOAP FinancialPlanService.
+    """[LOCAL — SOAP financial plan read. No Beta MCP equivalent exists for financial plans.]
+
+    Read a financial plan for a project using SOAP FinancialPlanService.
 
     This tool reads the financial plan structure including all account lines,
     entries, and periods. Use this to discover available accounts before
     adding new lines with upsert_financial_plan.
 
     Args:
-        ctx: FastMCP context
         entity_key: Project entity key (e.g., "key://2/$Plan/17288")
         version_key: Financial plan version key (e.g., "key://14/1" for Actual/Forecast)
         include_entries: If True, include EntryDto arrays for each line. Defaults to False.
@@ -739,7 +735,6 @@ async def read_financial_plan(
     Example:
         # Read financial plan for project 17288, Actual/Forecast version
         result = await read_financial_plan(
-            ctx,
             entity_key="key://2/$Plan/17288",
             version_key="key://14/1"
         )
@@ -884,14 +879,15 @@ async def read_financial_plan(
 
 @log_performance
 async def load_financial_plan_from_reference(
-    ctx: Context,
     target_project_id: str,
     reference_project_id: str,
     version_key: str = "key://14/1",
     scale_factor: float = 1.0,
     confirm: bool = False,
 ) -> dict[str, Any]:
-    """Load a financial plan onto a project by copying the account structure and values
+    """[LOCAL — copy financial plan from reference project. No Beta MCP equivalent exists for financial plans.]
+
+    Load a financial plan onto a project by copying the account structure and values
 from a reference project. Defaults to dry-run mode (confirm=False) which shows
 a preview without writing anything. Set confirm=True to execute.
 
@@ -988,8 +984,8 @@ This is a heavy operation — always preview first unless you're sure.
         return []
 
     # Read schedule dates (for month-offset preview messaging and truncation).
-    target_project = await get_project(ctx, target_project_id, attributes=["scheduleStart", "scheduleFinish"])
-    ref_project = await get_project(ctx, reference_project_id, attributes=["scheduleStart", "scheduleFinish"])
+    target_project = await get_project(target_project_id, attributes=["scheduleStart", "scheduleFinish"])
+    ref_project = await get_project(reference_project_id, attributes=["scheduleStart", "scheduleFinish"])
     def _data_obj(resp: Any) -> dict[str, Any]:
         if not isinstance(resp, dict):
             return {}
@@ -1010,7 +1006,6 @@ This is a heavy operation — always preview first unless you're sure.
 
     # 1) Read reference financial plan with entries.
     reference_plan = await read_financial_plan(
-        ctx,
         reference_entity_key,
         version_key,
         include_entries=True,
@@ -1055,7 +1050,6 @@ This is a heavy operation — always preview first unless you're sure.
     # 2) Read target periods (we only need periods list for remapping).
     try:
         target_plan = await read_financial_plan(
-            ctx,
             target_entity_key,
             version_key,
             include_entries=False,
@@ -1066,7 +1060,6 @@ This is a heavy operation — always preview first unless you're sure.
     except Exception:
         # If target plan doesn't exist yet, fall back to discovery using reference.
         fallback_info = await discover_financial_plan_info(
-            ctx,
             entity_key=target_entity_key,
             version_key=version_key,
             reference_entity_key=reference_entity_key,
@@ -1218,7 +1211,7 @@ This is a heavy operation — always preview first unless you're sure.
         "Lines": remapped_lines,
     }
 
-    upsert_result = await upsert_financial_plan(ctx, plan_payload)
+    upsert_result = await upsert_financial_plan(plan_payload)
     duration_ms = int((time() - start_time) * 1000)
 
     # Provide the same summary back to the caller for convenience.

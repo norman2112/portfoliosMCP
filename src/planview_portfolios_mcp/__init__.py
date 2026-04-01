@@ -1,13 +1,10 @@
-"""Planview Portfolios MCP Server.
+"""Planview Portfolios Actions MCP server (stdio).
 
-An MCP server for integrating with Planview Portfolios, providing tools for
-project/portfolio management and resource management.
+Local write/action companion to the read-only Planview Beta MCP. Exposes tools via
+the official ``mcp`` SDK; run with ``python -m planview_portfolios_mcp`` or the
+``planview-portfolios-actions`` console script after install.
 """
 
 __version__ = "0.1.0"
-
-# Note: FastMCP Cloud should import mcp directly from server module:
-# from planview_portfolios_mcp.server import mcp
-# This avoids relative import issues during package initialization
 
 __all__ = ["__version__"]

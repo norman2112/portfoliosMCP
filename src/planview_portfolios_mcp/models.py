@@ -59,14 +59,6 @@ class ResourceAllocation(BaseModel):
         return self
 
 
-class ListProjectsParams(BaseModel):
-    """Validation for list_projects parameters."""
-
-    portfolio_id: str | None = None
-    status: str | None = None
-    limit: int = Field(50, ge=1, le=1000)
-
-
 class ListResourcesParams(BaseModel):
     """Validation for list_resources parameters."""
 

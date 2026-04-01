@@ -6,8 +6,6 @@ from datetime import datetime
 from time import time
 from typing import Any
 
-from fastmcp import Context
-
 from ..exceptions import PlanviewConnectionError, PlanviewValidationError
 from ..models import TaskDto2, WorkOptionsDto
 from ..performance import log_performance
@@ -57,16 +55,16 @@ def _validate_task_fields(task_data: dict[str, Any]) -> None:
 
 @log_performance
 async def create_task(
-    ctx: Context,
     task_data: dict[str, Any],
     options: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Create a new task using SOAP TaskService.
+    """[LOCAL — write operation via SOAP. Beta MCP cannot create tasks.]
+
+    Create a new task using SOAP TaskService.
 
     Creates a task (planning entity below PPL) in Planview Portfolios using the SOAP API.
 
     Args:
-        ctx: FastMCP context
         task_data: Task data dictionary with TaskDto2 fields. Required fields:
             - Description: Task description (required)
             - FatherKey: Parent work entity key URI (required)
@@ -272,17 +270,17 @@ async def create_task(
 
 @log_performance
 async def batch_create_tasks(
-    ctx: Context,
     tasks: list[dict[str, Any]],
     options: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Batch create multiple tasks in a single SOAP call.
+    """[LOCAL — bulk write operation via SOAP. Beta MCP cannot create tasks.]
+
+    Batch create multiple tasks in a single SOAP call.
     
     Much faster than calling create_task() multiple times. Creates all tasks
     in a single SOAP request, significantly reducing latency for bulk creation.
     
     Args:
-        ctx: FastMCP context
         tasks: List of task creation dictionaries. Each dict must contain:
             - Description: Task description (required)
             - FatherKey: Parent work entity key URI (required)
@@ -321,7 +319,7 @@ async def batch_create_tasks(
                 "ScheduleFinishDate": "2024-01-30T17:00:00"
             }
         ]
-        result = await batch_create_tasks(ctx, tasks)
+        result = await batch_create_tasks(tasks)
         
     Notes:
         - All tasks are created in a single SOAP call, making this much faster
@@ -561,13 +559,14 @@ async def batch_create_tasks(
 
 
 @log_performance
-async def read_task(ctx: Context, task_key: str) -> dict[str, Any]:
-    """Read a task by key using SOAP TaskService.
+async def read_task(task_key: str) -> dict[str, Any]:
+    """[LOCAL — SOAP task read by key. For reading tasks with custom attributes by project or task ID, Beta MCP's getTasksByProjectIds or getTasksByTaskIds may be richer.]
+
+    Read a task by key using SOAP TaskService.
 
     Reads a task from Planview Portfolios using the SOAP API.
 
     Args:
-        ctx: FastMCP context
         task_key: Task key URI in key://, search://, or ekey:// format
 
     Returns:
@@ -638,10 +637,11 @@ async def read_task(ctx: Context, task_key: str) -> dict[str, Any]:
 
 @log_performance
 async def batch_delete_tasks(
-    ctx: Context,
     task_keys: list[str],
 ) -> dict[str, Any]:
-    """Delete multiple tasks in bulk using the SOAP TaskService.
+    """[LOCAL — bulk write operation via SOAP. Beta MCP cannot delete tasks.]
+
+    Delete multiple tasks in bulk using the SOAP TaskService.
 
     Planview SOAP operations are not guaranteed atomic. This tool therefore
     returns per-key success/failure information so callers can safely retry
@@ -765,14 +765,15 @@ async def batch_delete_tasks(
 
 
 @log_performance
-async def delete_task(ctx: Context, task_key: str) -> dict[str, Any]:
-    """Delete a task using SOAP TaskService.
+async def delete_task(task_key: str) -> dict[str, Any]:
+    """[LOCAL — write operation via SOAP. Beta MCP cannot delete tasks.]
+
+    Delete a task using SOAP TaskService.
 
     Deletes a task from Planview Portfolios using the SOAP API.
     Note: Deleting a task will also delete all its child tasks.
 
     Args:
-        ctx: FastMCP context
         task_key: Task key URI in key://, search://, or ekey:// format
 
     Returns:

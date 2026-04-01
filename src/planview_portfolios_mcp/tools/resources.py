@@ -4,7 +4,6 @@ import logging
 from time import time
 from typing import Any
 
-from fastmcp import Context
 from pydantic import ValidationError
 
 from ..client import get_client, make_request
@@ -22,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 @log_performance
 async def list_resources(
-    ctx: Context,
     department: str | None = None,
     role: str | None = None,
     available: bool | None = None,
@@ -31,7 +29,6 @@ async def list_resources(
     """List resources (team members) from Planview.
 
     Args:
-        ctx: FastMCP context
         department: Optional department filter
         role: Optional role filter
         available: Optional filter for resource availability
@@ -109,11 +106,10 @@ async def list_resources(
 
 
 @log_performance
-async def get_resource(ctx: Context, resource_id: str) -> dict[str, Any]:
+async def get_resource(resource_id: str) -> dict[str, Any]:
     """Get detailed information about a specific resource.
 
     Args:
-        ctx: FastMCP context
         resource_id: The unique identifier of the resource
 
     Returns:
@@ -173,7 +169,6 @@ async def get_resource(ctx: Context, resource_id: str) -> dict[str, Any]:
 
 @log_performance
 async def allocate_resource(
-    ctx: Context,
     resource_id: str,
     project_id: str,
     allocation_percentage: float,
@@ -184,7 +179,6 @@ async def allocate_resource(
     """Allocate a resource to a project.
 
     Args:
-        ctx: FastMCP context
         resource_id: The unique identifier of the resource to allocate
         project_id: The unique identifier of the project
         allocation_percentage: Percentage of resource capacity to allocate (0-100)

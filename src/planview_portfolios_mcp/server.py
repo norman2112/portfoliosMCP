@@ -1,11 +1,20 @@
-"""FastMCP server for Planview Portfolios integration."""
+"""MCP stdio server for Planview Portfolios (official MCP Python SDK)."""
+
+from __future__ import annotations
 
 import asyncio
 import atexit
-import sys
+import logging
 import os
+import sys
+from collections.abc import Awaitable, Callable
+from typing import Any
 
-from fastmcp import FastMCP
+import mcp.types as types
+from mcp.server import Server
+from mcp.server.stdio import stdio_server
+
+from .tool_registry import TOOL_NAMES, bind_arguments, build_tool_definitions
 
 # Handle package imports (preferred) with a fallback for direct script execution.
 try:
@@ -14,7 +23,6 @@ try:
     from .soap_client import close_soap_client, get_soap_client
     from . import tools as _tools
 except ImportError:  # pragma: no cover
-    # If running as a script, add parent directories to path for absolute imports.
     _current_dir = os.path.dirname(os.path.abspath(__file__))
     _src_dir = os.path.dirname(_current_dir)
     if _src_dir not in sys.path:
@@ -25,79 +33,84 @@ except ImportError:  # pragma: no cover
     from planview_portfolios_mcp.soap_client import close_soap_client, get_soap_client
     from planview_portfolios_mcp import tools as _tools
 
-# Pull tool functions into module namespace for FastMCP registration.
-batch_create_tasks = _tools.batch_create_tasks
-batch_delete_tasks = _tools.batch_delete_tasks
-create_project = _tools.create_project
-create_task = _tools.create_task
-delete_task = _tools.delete_task
-discover_financial_plan_info = _tools.discover_financial_plan_info
-load_financial_plan_from_reference = _tools.load_financial_plan_from_reference
-get_key_results_for_objective = _tools.get_key_results_for_objective
-get_project = _tools.get_project
-get_project_attributes = _tools.get_project_attributes
-get_work = _tools.get_work
-get_work_attributes = _tools.get_work_attributes
-list_all_objectives_with_key_results = _tools.list_all_objectives_with_key_results
-list_objectives = _tools.list_objectives
-list_projects = _tools.list_projects
-get_project_wbs = _tools.get_project_wbs
-list_work = _tools.list_work
-update_work = _tools.update_work
-oauth_ping = _tools.oauth_ping
-read_financial_plan = _tools.read_financial_plan
-read_task = _tools.read_task
-update_project = _tools.update_project
-list_field_reference = _tools.list_field_reference
-upsert_financial_plan = _tools.upsert_financial_plan
 
-# Initialize FastMCP server
-mcp = FastMCP(
-    name=settings.server_name,
-    version=settings.server_version,
+_COMPANION_SERVER_INSTRUCTIONS = (
+    "Planview Portfolios — WRITE & ACTION tools. "
+    "Use this server to CREATE, UPDATE, and DELETE projects, tasks, and financial plans, "
+    "and to read OKRs. "
+    "For READ operations like listing portfolios, searching projects, viewing strategies, "
+    "resources, dependencies, and cross-tabs, use the companion 'Planview Portfolios US' (Beta MCP) server instead. "
+    "This server covers: project CRUD, task CRUD (SOAP), financial plan read/write (SOAP), "
+    "OKRs, work hierarchy node access, and field reference discovery. "
+    "MCP server identifier: planview-portfolios-actions."
 )
 
-# Register tools
-mcp.tool()(oauth_ping)
-mcp.tool()(get_project_attributes)
-mcp.tool()(get_work_attributes)
-mcp.tool()(list_projects)
-mcp.tool()(get_project)
-mcp.tool()(create_project)
-mcp.tool()(update_project)
-mcp.tool()(list_field_reference)
-mcp.tool()(get_project_wbs)
-mcp.tool()(list_work)
-mcp.tool()(update_work)
-mcp.tool()(get_work)
-# Task service tools (SOAP API)
-mcp.tool()(create_task)
-mcp.tool()(batch_create_tasks)
-mcp.tool()(batch_delete_tasks)
-mcp.tool()(read_task)
-mcp.tool()(delete_task)
-# Financial plan service tools (SOAP API)
-mcp.tool()(discover_financial_plan_info)
-mcp.tool()(load_financial_plan_from_reference)
-mcp.tool()(read_financial_plan)
-mcp.tool()(upsert_financial_plan)
-# OKRs tools (REST API)
-mcp.tool()(list_objectives)
-mcp.tool()(get_key_results_for_objective)
-mcp.tool()(list_all_objectives_with_key_results)
+TOOL_IMPLEMENTATIONS: dict[str, Callable[..., Awaitable[Any]]] = {
+    "oauth_ping": _tools.oauth_ping,
+    "get_project_attributes": _tools.get_project_attributes,
+    "get_work_attributes": _tools.get_work_attributes,
+    "get_project": _tools.get_project,
+    "create_project": _tools.create_project,
+    "update_project": _tools.update_project,
+    "delete_project": _tools.delete_project,
+    "list_field_reference": _tools.list_field_reference,
+    "get_project_wbs": _tools.get_project_wbs,
+    "list_work": _tools.list_work,
+    "update_work": _tools.update_work,
+    "get_work": _tools.get_work,
+    "create_task": _tools.create_task,
+    "batch_create_tasks": _tools.batch_create_tasks,
+    "batch_delete_tasks": _tools.batch_delete_tasks,
+    "read_task": _tools.read_task,
+    "delete_task": _tools.delete_task,
+    "discover_financial_plan_info": _tools.discover_financial_plan_info,
+    "load_financial_plan_from_reference": _tools.load_financial_plan_from_reference,
+    "read_financial_plan": _tools.read_financial_plan,
+    "upsert_financial_plan": _tools.upsert_financial_plan,
+    "list_objectives": _tools.list_objectives,
+    "get_key_results_for_objective": _tools.get_key_results_for_objective,
+    "list_all_objectives_with_key_results": _tools.list_all_objectives_with_key_results,
+}
 
 
-def cleanup():
+def _make_server() -> Server:
+    if set(TOOL_NAMES) != set(TOOL_IMPLEMENTATIONS.keys()):
+        missing = set(TOOL_NAMES) - set(TOOL_IMPLEMENTATIONS.keys())
+        extra = set(TOOL_IMPLEMENTATIONS.keys()) - set(TOOL_NAMES)
+        raise RuntimeError(f"Tool registry mismatch. Missing: {missing}, extra: {extra}")
+
+    server = Server(
+        settings.server_name,
+        version=settings.server_version,
+        instructions=_COMPANION_SERVER_INSTRUCTIONS,
+    )
+
+    _tool_definitions = build_tool_definitions(TOOL_IMPLEMENTATIONS)
+
+    @server.list_tools()
+    async def _list_tools() -> list[types.Tool]:
+        return _tool_definitions
+
+    @server.call_tool()
+    async def _call_tool(name: str, arguments: dict[str, Any] | None) -> dict[str, Any]:
+        impl = TOOL_IMPLEMENTATIONS.get(name)
+        if impl is None:
+            raise ValueError(f"Unknown tool: {name}")
+        bound = bind_arguments(impl, arguments)
+        return await impl(**bound)
+
+    return server
+
+
+def cleanup() -> None:
     """Clean up resources on server shutdown."""
     try:
-        # Log performance summary if enabled and we have stats
         try:
             from .performance import get_performance_summary
-            from .config import settings
+
             if settings.mcp_performance_logging:
                 summary = get_performance_summary()
                 if summary.get("total_requests", 0) > 0:
-                    import logging
                     log = logging.getLogger("mcp.performance")
                     log.info(
                         "MCP Server Performance Summary: total_requests=%s avg_ms=%s slowest_tool=%s slowest_avg_ms=%s api_calls=%s",
@@ -109,48 +122,49 @@ def cleanup():
                     )
         except Exception:
             pass
-        # Run async cleanup in a new event loop if needed
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            # Schedule cleanup for later
             loop.create_task(close_client())
             loop.create_task(close_soap_client())
         else:
-            # Run cleanup immediately
             asyncio.run(close_client())
             asyncio.run(close_soap_client())
     except Exception:
-        # Best effort cleanup
         pass
 
 
-# Register cleanup handler
 atexit.register(cleanup)
 
 
-def main() -> None:
-    """Run the MCP server."""
-    import logging
+async def run_mcp_server() -> None:
+    """Run the MCP server over stdio (JSON-RPC)."""
     logger = logging.getLogger(__name__)
     logger.debug(
-        f"OKR credentials configured: "
-        f"CLIENT_ID={'***' if settings.planview_okr_client_id else 'NOT SET'}, "
-        f"CLIENT_SECRET={'***' if settings.planview_okr_client_secret else 'NOT SET'}, "
-        f"BEARER_TOKEN={'***' if settings.planview_okr_bearer_token else 'NOT SET'}"
+        "OKR credentials configured: CLIENT_ID=%s, CLIENT_SECRET=%s, BEARER_TOKEN=%s",
+        "***" if settings.planview_okr_client_id else "NOT SET",
+        "***" if settings.planview_okr_client_secret else "NOT SET",
+        "***" if settings.planview_okr_bearer_token else "NOT SET",
     )
-    # Warm TaskService SOAP client so first create_project (and its batch_create_tasks) is fast
-    async def _warm_soap():
+
+    async def _warm_soap() -> None:
         try:
-            async with get_soap_client() as _:
+            async with get_soap_client():
                 pass
         except Exception as e:
             logger.debug("SOAP client warm skipped: %s", e)
 
-    try:
-        asyncio.run(_warm_soap())
-    except Exception:
-        pass
-    mcp.run()
+    await _warm_soap()
+
+    server = _make_server()
+    init = server.create_initialization_options()
+
+    async with stdio_server() as (read_stream, write_stream):
+        await server.run(read_stream, write_stream, init, raise_exceptions=False)
+
+
+def main() -> None:
+    """Entry point for `python -m planview_portfolios_mcp.server` and console_scripts."""
+    asyncio.run(run_mcp_server())
 
 
 if __name__ == "__main__":

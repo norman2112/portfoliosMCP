@@ -1,9 +1,8 @@
-"""Entry point for running the MCP server as a module.
+"""Entry point for running the MCP server as a module (stdio JSON-RPC).
 
-This allows the package to be run with:
+The process advertises MCP server name ``planview-portfolios-actions`` to clients.
+
     python -m planview_portfolios_mcp
-
-This is required for FastMCP Cloud to properly handle relative imports.
 """
 
 from .server import main

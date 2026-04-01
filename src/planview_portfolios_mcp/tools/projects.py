@@ -5,10 +5,8 @@ from datetime import datetime, timedelta
 from time import time
 from typing import Any
 
-from fastmcp import Context
-
 from ..client import get_client, make_request
-from ..exceptions import PlanviewError, PlanviewValidationError
+from ..exceptions import PlanviewValidationError
 from ..performance import log_performance
 from field_reference import FIELD_CATEGORIES, build_tool_description_appendix, get_fields_by_category
 
@@ -73,105 +71,12 @@ def _format_attributes(attributes: list[str] | str | None) -> dict[str, str]:
 
 
 @log_performance
-async def list_projects(
-    ctx: Context,
-    filter: str | None = None,
-    limit: int | None = None,
-    attributes: list[str] | str | None = None,
-) -> dict[str, Any]:
-    """List projects from the Portfolios API.
-
-    Tries GET `/public-api/v1/projects` first (supported on some instances).
-    If that endpoint returns HTTP 405, falls back to GET `/public-api/v1/work`.
-    If `/projects` returns 405, the tool falls back to GET `/public-api/v1/work`,
-    which requires a `filter` on many instances — call with a filter when listing
-    fails without one (e.g. `project.Id .eq 3817`).
-
-    Args:
-        ctx: FastMCP context
-        filter: Optional filter string for the work API when fallback is used.
-            If omitted and `/projects` is not available (405), a clear error is raised.
-        limit: Optional limit on number of results.
-        attributes: Optional additional attributes to return.
-
-    Returns:
-        API response JSON containing project objects.
-    """
-    start_time = time()
-    logger.info(
-        "Listing projects",
-        extra={
-            "tool_name": "list_projects",
-            "filter": filter,
-            "limit": limit,
-        },
-    )
-
-    params: dict[str, Any] = {}
-    if filter is not None:
-        params["filter"] = filter
-    if limit is not None:
-        params["limit"] = limit
-    params.update(_format_attributes(attributes))
-
-    try:
-        async with get_client() as client:
-            projects_data: dict[str, Any]
-            path_used = "/public-api/v1/projects"
-            try:
-                response = await make_request(
-                    client, "GET", "/public-api/v1/projects", params=params
-                )
-                projects_data = response.json()
-            except PlanviewError as e:
-                # Some Planview instances do not support collection GET on /projects.
-                if "HTTP 405" not in str(e):
-                    raise
-
-                if filter is None or not str(filter).strip():
-                    raise PlanviewValidationError(
-                        "This instance does not support GET /public-api/v1/projects for listing "
-                        "without a filter. Use list_projects(filter='project.Id .eq <id>') or "
-                        "list_work(filter='...'), or get_project(project_id) for a single project."
-                    ) from e
-
-                fallback_params = dict(params)
-                response = await make_request(
-                    client, "GET", "/public-api/v1/work", params=fallback_params
-                )
-                projects_data = response.json()
-                path_used = "/public-api/v1/work (fallback)"
-
-            duration_ms = int((time() - start_time) * 1000)
-            logger.info(
-                "Successfully listed projects",
-                extra={
-                    "tool_name": "list_projects",
-                    "duration_ms": duration_ms,
-                    "path_used": path_used,
-                },
-            )
-            return projects_data
-
-    except Exception as e:
-        duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to list projects: {str(e)}",
-            extra={
-                "tool_name": "list_projects",
-                "duration_ms": duration_ms,
-                "error_type": type(e).__name__,
-            },
-            exc_info=True,
-        )
-        raise
-
-
-@log_performance
 async def get_project(
-    ctx: Context, project_id: str, attributes: list[str] | str | None = None
+    project_id: str, attributes: list[str] | str | None = None
 ) -> dict[str, Any]:
-    """Get a single project by id."""
+    """[LOCAL — single project read by ID. For listing/searching projects across a portfolio, use Beta MCP's listProjectsByPortfolioId or searchProjectByName instead.]
+
+    Get a single project by id."""
     start_time = time()
     logger.info(
         "Getting project details",
@@ -217,8 +122,10 @@ async def get_project(
 
 
 @log_performance
-async def get_project_attributes(ctx: Context) -> dict[str, Any]:
-    """List available project attributes."""
+async def get_project_attributes() -> dict[str, Any]:
+    """[LOCAL — raw attribute list. For natural-language attribute search, use Beta MCP's searchAttributes instead.]
+
+    List available project attributes."""
     start_time = time()
     logger.info("Getting project attributes", extra={"tool_name": "get_project_attributes"})
 
@@ -254,7 +161,6 @@ async def get_project_attributes(ctx: Context) -> dict[str, Any]:
 
 
 async def _create_default_tasks(
-    ctx: Context,
     project_structure_code: str,
     project_start_date: str | None = None,
     project_finish_date: str | None = None,
@@ -264,7 +170,6 @@ async def _create_default_tasks(
     Uses batch_create_tasks for one round-trip instead of 5x create_task.
     
     Args:
-        ctx: FastMCP context
         project_structure_code: Project structure code
         project_start_date: Project start date (ISO format)
         project_finish_date: Project finish date (ISO format)
@@ -313,7 +218,7 @@ async def _create_default_tasks(
                 task_data["ScheduleFinishDate"] = finish_d
             tasks.append(task_data)
 
-        batch_result = await batch_create_tasks(ctx, tasks=tasks)
+        batch_result = await batch_create_tasks(tasks=tasks)
         successes = batch_result.get("successes") or []
         if not isinstance(successes, list):
             successes = []
@@ -349,12 +254,13 @@ async def _create_default_tasks(
 
 @log_performance
 async def create_project(
-    ctx: Context,
     data: dict[str, Any],
     attributes: list[str] | str | None = None,
     create_default_tasks: bool = False,
 ) -> dict[str, Any]:
-    """Create a new project.
+    """[LOCAL — write operation. Beta MCP is read-only and cannot create projects.]
+
+    Create a new project.
     
     Creates a project using the Planview Portfolios API. The payload should match
     the CreateProjectDtoPublic schema from the Swagger documentation.
@@ -363,7 +269,6 @@ async def create_project(
     default dates will be set: start date = today, finish date = 6 months from today.
     
     Args:
-        ctx: FastMCP context
         data: Project creation payload. Minimum required fields:
             - description: Project name/description (required)
             - parent: Object with structureCode (required)
@@ -468,7 +373,6 @@ async def create_project(
                         schedule_finish = project_info.get("scheduleFinish")
                         
                         default_tasks = await _create_default_tasks(
-                            ctx,
                             structure_code,
                             schedule_start,
                             schedule_finish,
@@ -526,7 +430,6 @@ async def create_project(
 
 @log_performance
 async def update_project(
-    ctx: Context,
     project_id: str,
     updates: dict[str, Any],
     attributes: list[str] | str | None = None,
@@ -622,13 +525,76 @@ async def update_project(
 
 
 @log_performance
+async def delete_project(project_id: str) -> dict[str, Any]:
+    """Delete a project by ID.
+
+    Deletes a project from Planview Portfolios using the REST API.
+    WARNING: This is destructive and will delete the project and all its
+    child tasks, financial plans, and other associated data.
+
+    Args:
+        project_id: The structureCode/ID of the project to delete.
+
+    Returns:
+        Dict with deletion status.
+
+    Raises:
+        PlanviewNotFoundError: If the project doesn't exist.
+        PlanviewAuthError: If authentication fails.
+        PlanviewError: For other errors.
+    """
+    start_time = time()
+    logger.info(
+        "Deleting project",
+        extra={"tool_name": "delete_project", "project_id": project_id},
+    )
+
+    try:
+        async with get_client() as client:
+            response = await make_request(
+                client,
+                "DELETE",
+                f"/public-api/v1/projects/{project_id}",
+            )
+
+            duration_ms = int((time() - start_time) * 1000)
+            logger.info(
+                "Successfully deleted project",
+                extra={
+                    "tool_name": "delete_project",
+                    "project_id": project_id,
+                    "duration_ms": duration_ms,
+                    "status_code": response.status_code,
+                },
+            )
+
+            # 204 No Content or empty body: success (raise_for_status already passed).
+            return {"success": True, "deleted_project_id": project_id}
+
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.error(
+            f"Failed to delete project: {str(e)}",
+            extra={
+                "tool_name": "delete_project",
+                "project_id": project_id,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
+            exc_info=True,
+        )
+        raise
+
+
+@log_performance
 async def get_project_wbs(
-    ctx: Context,
     project_id: str,
     include_milestones: bool = True,
     max_depth: int | None = None,
 ) -> dict[str, Any]:
-    """Get a project's WBS as a nested, lean tree.
+    """[LOCAL — nested WBS tree with schedule data. For a flat hierarchy view, Beta MCP's getWorkHierarchy is an alternative.]
+
+    Get a project's WBS as a nested, lean tree.
 
     Calls `list_work` with `project.Id .eq {project_id}` and rebuilds the parent/child
     structure into a sorted tree.
@@ -652,7 +618,6 @@ async def get_project_wbs(
     ]
 
     payload = await list_work_tool(
-        ctx,
         filter=f"project.Id .eq {project_id}",
         fields=work_fields,
     )
@@ -808,16 +773,16 @@ async def get_project_wbs(
 
 
 async def list_field_reference(
-    ctx: Context,
     category: str | None = None,
 ) -> dict[str, Any]:
-    """List available writable project fields organized by category.
+    """[LOCAL — field discovery for write operations. For read-side attribute discovery, use Beta MCP's searchAttributes instead.]
+
+    List available writable project fields organized by category.
 
     Use this tool to discover which field IDs to pass to `update_project` or
     `create_project`.
 
     Args:
-        ctx: FastMCP context
         category: Optional category filter. If not provided, returns all categories.
             Valid categories:
             core_identity, dates, progress, status_assessments, investment_scoring,

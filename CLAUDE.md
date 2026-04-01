@@ -4,67 +4,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Model Context Protocol (MCP) server for integrating with Planview Portfolios, built with FastMCP. The server is hosted on FastMCP Cloud at `https://portfolios-mcp.fastmcp.app/mcp` and exposes Planview's project and resource management capabilities through MCP tools that can be used by Claude Desktop and other MCP clients.
+This is a **local** Model Context Protocol (MCP) server for Planview Portfolios, built with the official `mcp` Python SDK (stdio transport). It exposes **write & action tools** — project CRUD, task management (SOAP), financial plans (SOAP), OKRs, and work hierarchy access — that complement the read-only **Beta MCP** server (`Planview Portfolios US`) hosted by Planview.
+
+### Two-Server Architecture
+
+| Server | Role | Tools | Transport |
+|--------|------|-------|-----------|
+| **Beta MCP** (`Planview Portfolios US`) | Read — portfolios, search, cross-tabs, strategies, resources, dependencies, hierarchy trees | 29 | Planview-hosted (remote) |
+| **Local MCP** (`planview-portfolios-actions`) | Write — create/update/delete projects, SOAP tasks, financial plans, OKRs, work node access | 24 | Local stdio |
+
+**Routing rule:** All tool descriptions include `[LOCAL — ...]` hints. If a hint says "use Beta MCP's X instead," prefer that tool for the read path. This server owns all writes and anything SOAP/OKR/financial-plan related.
 
 ## Development Commands
 
 ### Environment Setup
 ```bash
-# Create and activate virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Install development dependencies
-pip install -r requirements-dev.txt
-
-# Configure environment
-cp .env.example .env
-# Edit .env with Planview API credentials
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -e .
+cp .env.example .env      # Add Planview API credentials
 ```
 
 ### Running the Server
-
-**Production**: The server is hosted on FastMCP Cloud at `https://portfolios-mcp.fastmcp.app/mcp`. No local server setup is required for end users.
-
-**Local Development**:
 ```bash
-# Standard run
-python -m planview_portfolios_mcp.server
+# Standard (stdio transport — used by Claude Code)
+python -m planview_portfolios_mcp
 
-# Alternative
-python src/planview_portfolios_mcp/server.py
+# Alternative entry points
+python -m planview_portfolios_mcp.server
+planview-portfolios-actions  # console script if installed
 ```
+
+The server speaks MCP JSON-RPC over stdin/stdout. It registers 24 tools on startup.
 
 ### Testing
 ```bash
-# Run all tests
-pytest
-
-# Run tests with verbose output
-pytest -v
-
-# Run specific test file
-pytest tests/test_filename.py
-
-# Run with coverage
-pytest --cov=src/planview_portfolios_mcp
+pytest                              # Run all tests
+pytest -v                           # Verbose
+pytest tests/test_filename.py       # Specific file
+pytest --cov=src/planview_portfolios_mcp  # With coverage
 ```
 
 ### Code Quality
 ```bash
-# Format code (Black)
-black src/
-
-# Lint code (Ruff)
-ruff check src/
-
-# Type checking (mypy)
-mypy src/
-
-# Run all quality checks
 black src/ && ruff check src/ && mypy src/
 ```
 
@@ -72,186 +54,146 @@ black src/ && ruff check src/ && mypy src/
 
 ### Core Components
 
-**server.py**: FastMCP server initialization and tool registration. Creates a single FastMCP instance and registers all tool functions from the tools modules. The server's `main()` function runs the async event loop. Includes cleanup handlers for graceful shutdown.
+**server.py**: MCP Server initialization (`Server(settings.server_name)` — default `planview-portfolios-actions`), `@server.list_tools()` and `@server.call_tool()` handlers, stdio transport via `stdio_server()`. Includes SOAP warm-up on startup and `atexit` cleanup.
 
-**config.py**: Centralized configuration using Pydantic Settings. The `PlanviewSettings` class automatically loads from `.env` file and provides validated configuration values. A global `settings` instance is imported throughout the codebase.
+**tool_registry.py**: Central registry for all 24 tools. Contains `ROUTING_HINTS` (per-tool `[LOCAL — ...]` prefixes), `INPUT_SCHEMAS` (JSON Schema for each tool), `build_tool_definitions()` (returns `Tool` objects), `bind_arguments()` (maps incoming args to function params), and `TOOL_NAMES` ordering.
 
-**client.py**: Shared HTTP client with connection pooling, automatic retry logic, and comprehensive error handling. Provides `get_client()` context manager for tools to use. Implements exponential backoff retry for transient failures (429, 502, 503, 504).
+**config.py**: Centralized configuration using Pydantic Settings. The `PlanviewSettings` class loads from `.env` and provides validated config. A global `settings` instance is imported throughout.
 
-**exceptions.py**: Custom exception hierarchy for Planview API errors. Provides specific exception types for different error scenarios (auth, validation, rate limiting, server errors, etc.) with clear error messages.
+**client.py**: Shared HTTP client with connection pooling, automatic retry (exponential backoff for 429, 502, 503, 504), and error handling. Provides `get_client()` context manager.
 
-**models.py**: Pydantic models for input validation and type safety. Includes models for project creation/updates, resource allocation, and list parameters. Validates date ranges, numeric constraints, and required fields.
+**soap_client.py**: SOAP client (zeep) with retry logic. Provides `get_soap_client()` context manager and `make_soap_request()` helper.
 
-**logging_config.py**: Structured logging configuration with JSON formatter support. Configurable log levels and output formats (JSON or standard text). Supports file and console handlers.
+**exceptions.py**: Custom exception hierarchy for Planview API errors (auth, validation, rate limiting, server errors).
 
-**tools/**: Contains tool implementations organized by domain:
-- `projects.py`: Project and portfolio management tools (list, get, create, update)
-- `resources.py`: Resource management tools (list, get, allocate)
-- `__init__.py`: Exports all tool functions for registration
+**models.py**: Pydantic models for input validation. Validates date ranges, numeric constraints, required fields.
+
+**logging_config.py**: Structured logging with JSON formatter support.
+
+**tools/**: Tool implementations organized by domain:
+- `projects.py`: Project CRUD + WBS + field reference
+- `work.py`: Work hierarchy read/update
+- `tasks.py`: Task CRUD via SOAP (TaskService)
+- `financial_plan.py`: Financial plan read/write via SOAP (FinancialPlanService)
+- `okrs.py`: OKR objectives and key results
+- `ping.py`: OAuth health check
+- `resources.py`: Shared REST helpers for `/public-api/v1/resources` (list/get/allocate)—kept for scripts, tests, or future use; **not** registered in `server.py` / `tool_registry.py`, so they never appear in MCP `list_tools`.
 
 ### Tool Pattern
 
 All tools follow a consistent async pattern:
-1. Accept a `ctx: Context` parameter from FastMCP (required first parameter)
+1. Accept typed parameters directly (no `ctx` — this is not FastMCP)
 2. Use Pydantic models from `models.py` for input validation
-3. Use `get_client()` context manager from `client.py` for HTTP requests
-4. Use `make_request()` helper for automatic retry and error handling
-5. Return typed data (dict[str, Any] or list[dict[str, Any]])
-6. Raise custom exceptions from `exceptions.py` for clear error messages
+3. Use `get_client()` for REST or `get_soap_client()` for SOAP
+4. Return typed data (`dict[str, Any]` or `list[dict[str, Any]]`)
+5. Raise custom exceptions from `exceptions.py`
+
+### Adding a New Tool
+1. Create async function in the appropriate `tools/` module
+2. Add entry to `ROUTING_HINTS` in `tool_registry.py`
+3. Add entry to `INPUT_SCHEMAS` in `tool_registry.py`
+4. Add function name to `TOOL_NAMES` in `tool_registry.py`
+5. Wire into `TOOL_IMPLEMENTATIONS` dict in `server.py`
+6. Add tests
 
 ### Authentication Flow
 
-The current implementation uses OAuth 2.0 client_credentials flow with automatic token management:
-- `Authorization: Bearer {oauth_token}` (automatically obtained and refreshed)
-- `X-Tenant-Id: {settings.planview_tenant_id}`
+OAuth 2.0 `client_credentials` flow with automatic token management:
+- Tokens fetched on first HTTP client creation
+- Cached in memory, reused until expiration (60 minutes)
+- Auto-refreshed on expiry or 401
+- Headers: `Authorization: Bearer {token}` + `X-Tenant-Id: {tenant_id}`
 
-OAuth tokens are automatically:
-- Fetched when the HTTP client is first created
-- Cached in memory and reused until expiration (60 minutes)
-- Automatically refreshed when expired
-- Refreshed on 401 errors with automatic retry
-
-Required environment variables:
-- `PLANVIEW_API_URL`: Base URL of Planview instance (e.g., `https://scdemo504.pvcloud.com`)
+Required env vars:
+- `PLANVIEW_API_URL`: Base URL including `/polaris` (e.g., `https://scdemo520.pvcloud.com/polaris`)
 - `PLANVIEW_CLIENT_ID`: OAuth client ID
 - `PLANVIEW_CLIENT_SECRET`: OAuth client secret
 - `PLANVIEW_TENANT_ID`: Tenant ID
 
-### Configuration Management
+### Claude Code Config
 
-Settings are loaded from `.env` via Pydantic Settings with these behaviors:
-- Case-insensitive environment variable matching
-- Defaults provided for all settings except API credentials
-- Extra environment variables are ignored
-- UTF-8 encoding for .env file
+```json
+{
+  "mcpServers": {
+    "planview-portfolios-actions": {
+      "command": "/path/to/venv/bin/python3",
+      "args": ["-m", "planview_portfolios_mcp"],
+      "env": {
+        "PLANVIEW_API_URL": "https://your-instance.pvcloud.com/polaris",
+        "PLANVIEW_CLIENT_ID": "your_client_id",
+        "PLANVIEW_CLIENT_SECRET": "your_client_secret",
+        "PLANVIEW_TENANT_ID": "your_tenant_id",
+        "USE_OAUTH": "true"
+      }
+    }
+  }
+}
+```
 
 ## API Integration Notes
 
-### Planview API Structure
+### REST API
 - Base URL pattern: `{PLANVIEW_API_URL}/public-api/v1/{endpoint}`
-- Authentication: OAuth 2.0 (tokens valid for 60 minutes)
-- Rate limiting: One record at a time (no batching)
-- Date format: ISO 8601 (YYYY-MM-DD)
-- Case-sensitive: All attribute names and values
+- Date format: ISO 8601 (`YYYY-MM-DD`)
+- Case-sensitive attribute names and values
 
-### Current Implementation Limitations
-1. **Pagination**: Not implemented (relies on limit parameter only)
-2. **Batching**: Single-record operations only (matches API constraint)
-
-### Error Handling & Retry Logic
-
-The implementation includes robust error handling:
-- Automatic retry with exponential backoff for transient failures (429, 502, 503, 504)
-- Custom exception types for different error scenarios
-- Connection pooling and reuse for better performance
-- Configurable retry attempts via `MAX_RETRIES` setting
+### SOAP API
+- TaskService: `{PLANVIEW_API_URL}/planview/services/TaskService.svc`
+- FinancialPlanService: `{PLANVIEW_API_URL}/planview/services/FinancialPlanService.svc`
+- Service binding: `ITaskService3` (latest version)
+- Same OAuth tokens as REST
+- Key URI formats: `key://2/$Plan/12345` (direct), `search://2/$Plan?description=Name` (search), `ekey://2/namespace/id` (external)
+- Response fields may be null even on success — this is normal SOAP behavior
+- Task updates not exposed (`ITaskService3.Update` doesn't serialize reliably with zeep)
 
 ### Tool-to-API Mapping
 
-**REST API Tools:**
-- `list_projects` → `GET /work` (uses filter parameter, projects are work items at PPL)
+**REST:**
 - `get_project` → `GET /projects/{id}`
-- `create_project` → `POST /projects` (requires `description` and `parent.structureCode`)
+- `create_project` → `POST /projects`
 - `update_project` → `PATCH /projects/{id}`
-- `list_work` → `GET /work` (with filter parameter)
+- `delete_project` → `DELETE /projects/{id}`
+- `list_work` → `GET /work` (with filter)
 - `get_work` → `GET /work/{id}`
-- `list_resources` → `GET /resources` (filter by department, role, available)
-- `get_resource` → `GET /resources/{id}`
-- `allocate_resource` → `POST /allocations`
+- `update_work` → `PATCH /work/{id}`
 
-**SOAP API Tools:**
-- `create_task` / `batch_create_tasks` → `ITaskService3.Create` (SOAP operation)
-- `read_task` → `ITaskService3.Read` (SOAP operation)
-- `delete_task` / `batch_delete_tasks` → `ITaskService3.Delete` (SOAP operation)
+**SOAP:**
+- `create_task` / `batch_create_tasks` → `ITaskService3.Create`
+- `read_task` → `ITaskService3.Read`
+- `delete_task` / `batch_delete_tasks` → `ITaskService3.Delete`
+- `read_financial_plan` → `IFinancialPlanService.Read`
+- `upsert_financial_plan` → `IFinancialPlanService.Upsert`
+- `load_financial_plan_from_reference` → `IFinancialPlanService.Read` + `Upsert`
 
-Task **updates** are not exposed (`ITaskService3.Update`): zeep does not serialize the WSDL’s `dtos` input reliably. Workaround: delete and recreate the task (or use the Planview UI).
-
-Note: Actual Planview API endpoints use `/public-api/v1/` prefix. The `PLANVIEW_API_URL` should be the base URL including the `/polaris` path but without the `/public-api/v1/` prefix (e.g., `https://scdemo504.pvcloud.com/polaris`).
-
-### SOAP API Integration
-
-The server supports both REST and SOAP APIs. SOAP operations use the TaskService web service.
-
-**SOAP Endpoint Configuration:**
-- SOAP service URL: `{PLANVIEW_API_URL}/planview/services/TaskService.svc`
-- WSDL URL: `{PLANVIEW_API_URL}/planview/services/TaskService.svc?wsdl`
-- Service binding: `ITaskService3` (latest version)
-- Configurable via `SOAP_SERVICE_PATH` setting (default: `/planview/services/TaskService.svc`)
-
-**SOAP Authentication:**
-- Uses same OAuth 2.0 tokens as REST API
-- Token added to SOAP header: `Authorization: Bearer {token}`
-- `X-Tenant-Id` header also included
-- Token refresh handled automatically (same as REST)
-
-**SOAP Response Handling:**
-- All SOAP operations return `OpenSuiteResult` structure:
-  - `Successes`: List of successful operations (DTO contains keys only)
-  - `Failures`: List of failed operations (DTO contains full data + error messages)
-  - `Warnings`: List of warnings (DTO contains full data + warning messages)
-  - `GeneralErrorMessage`: Non-task-specific errors (database, connectivity)
-- Responses converted to consistent dict format matching REST API patterns
-- Failures raise `PlanviewValidationError` with detailed error messages
-- General errors raise `PlanviewServerError`
-
-**Key URI Formats:**
-SOAP operations support three key URI formats:
-- `key://2/$Plan/12345` - Direct key reference (most efficient)
-- `search://2/$Plan?description=Task Name` - Search-based lookup
-- `ekey://2/namespace/external_key` - External key reference (recommended for creates)
-
-**SOAP Client Pattern:**
-- Use `get_soap_client()` context manager from `soap_client.py`
-- Use `make_soap_request()` helper for automatic retry and error handling
-- zeep library handles WSDL parsing and XML serialization
-- AsyncTransport provides async support via httpx
+**OKRs (REST):**
+- `list_objectives` → `GET /okr/objectives`
+- `list_all_objectives_with_key_results` → `GET /okr/objectives` + `/okr/objectives/{id}/key-results`
+- `get_key_results_for_objective` → `GET /okr/objectives/{id}/key-results`
 
 ## Type Annotations
 
-The project uses modern Python type annotations:
-- Union types: `str | None` (not `Optional[str]`)
-- Generics: `list[dict[str, Any]]` (not `List[Dict[str, Any]]`)
-- Requires Python 3.10+ for this syntax
+Modern Python 3.10+ syntax: `str | None`, `list[dict[str, Any]]`.
 
-## Testing Approach
+## Project Structure
 
-When creating tests:
-1. Use pytest-asyncio for async tests
-2. Mock httpx.AsyncClient for API calls
-3. Test both success and error paths
-4. Verify authentication headers are included
-5. Test parameter validation and optional fields
-
-## Common Modifications
-
-### Adding a New Tool
-1. Create async function in appropriate tools module
-2. Follow tool pattern (ctx first, typed parameters, httpx async call)
-3. Import and export in `tools/__init__.py`
-4. Register with `mcp.tool()` decorator in `server.py`
-5. Add tests for the new tool
-
-### Adding New Configuration
-1. Add field to `PlanviewSettings` class in `config.py`
-2. Add default value or make required
-3. Document in `.env.example`
-4. Access via global `settings` instance
-
-### Modifying API Calls
-
-**REST API Calls:**
-- Use `get_client()` context manager to get shared HTTP client
-- Use `make_request()` helper function for automatic retry and error handling
-- All requests automatically include authentication headers (Authorization + X-Tenant-Id)
-- PATCH/POST requests automatically include "Content-Type": "application/json"
-- Custom exceptions are raised automatically based on HTTP status codes
-- Use Pydantic models from `models.py` for input validation before API calls
-
-**SOAP API Calls:**
-- Use `get_soap_client()` context manager to get zeep Client instance
-- Use `make_soap_request()` helper function for automatic retry and error handling
-- All SOAP requests automatically include authentication headers (Authorization + X-Tenant-Id)
-- zeep handles XML serialization and SOAP envelope construction
-- Use Pydantic models from `models.py` for input validation (convert to dict with `model_dump(by_alias=True)`)
-- Service name: `ITaskService3` (defined as constant in tools)
-- Operations exposed as tools: Create, Read, Delete (Update is omitted for the reason above; method names otherwise match SOAP operation names)
+```
+src/planview_portfolios_mcp/
+├── server.py           # MCP Server (stdio) + tool routing
+├── tool_registry.py    # Tool definitions, routing hints, input schemas
+├── __main__.py         # Entry point
+├── config.py           # Pydantic Settings
+├── client.py           # HTTP client + retry
+├── soap_client.py      # SOAP client (zeep) + retry
+├── exceptions.py       # Exception hierarchy
+├── models.py           # Input validation
+├── logging_config.py   # Structured logging
+└── tools/
+    ├── projects.py
+    ├── work.py
+    ├── tasks.py
+    ├── financial_plan.py
+    ├── okrs.py
+    ├── ping.py
+    ├── resources.py    # internal /resources REST helpers only
+    └── __init__.py
+```

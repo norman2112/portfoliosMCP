@@ -4,8 +4,6 @@ import logging
 from time import time
 from typing import Any
 
-from fastmcp import Context
-
 from ..client import get_client, make_request
 from ..exceptions import PlanviewError, PlanviewValidationError
 from ..performance import log_performance
@@ -22,8 +20,10 @@ def _format_attributes(attributes: list[str] | str | None) -> dict[str, str]:
 
 
 @log_performance
-async def get_work_attributes(ctx: Context) -> dict[str, Any]:
-    """Get available work attributes."""
+async def get_work_attributes() -> dict[str, Any]:
+    """[LOCAL — raw work attribute list. For natural-language attribute search, use Beta MCP's searchAttributes(entity='work').]
+
+    Get available work attributes."""
     start_time = time()
     logger.info("Getting work attributes", extra={"tool_name": "get_work_attributes"})
 
@@ -60,12 +60,13 @@ async def get_work_attributes(ctx: Context) -> dict[str, Any]:
 
 @log_performance
 async def list_work(
-    ctx: Context,
     filter: str,
     attributes: list[str] | str | None = None,
     fields: list[str] | None = None,
 ) -> dict[str, Any]:
-    """List work items using a filter string (e.g., `project.Id .eq 1906`).
+    """[LOCAL — query work items with filter (e.g., project.Id .eq X). Limited filtering support. For portfolio-scoped project lists, use Beta MCP's listProjectsByPortfolioId instead.]
+
+    List work items using a filter string (e.g., `project.Id .eq 1906`).
 
     If `fields` is provided, the response is trimmed per work item to reduce payload size.
     """
@@ -290,11 +291,12 @@ async def list_work(
 
 @log_performance
 async def get_work(
-    ctx: Context,
     work_id: str,
     attributes: list[str] | str | None = None,
 ) -> dict[str, Any]:
-    """Get a single work item by id."""
+    """[LOCAL — read any single work hierarchy node by ID (including portfolio-level nodes). For listing projects within a portfolio, use Beta MCP's listProjectsByPortfolioId.]
+
+    Get a single work item by id."""
     start_time = time()
     logger.info(
         "Getting work item", extra={"tool_name": "get_work", "work_id": work_id}
@@ -340,12 +342,13 @@ async def get_work(
 
 @log_performance
 async def update_work(
-    ctx: Context,
     work_id: str,
     updates: dict[str, Any],
     attributes: list[str] | str | None = None,
 ) -> dict[str, Any]:
-    """Update an existing work item (partial payload).
+    """[LOCAL — write operation. Beta MCP is read-only and cannot update work items.]
+
+    Update an existing work item (partial payload).
 
     Useful for updating phase/task fields like `ExecType` (execution type) on
     work items via PATCH `/public-api/v1/work/{id}`.
@@ -375,14 +378,12 @@ async def update_work(
                     json=updates,
                 )
                 return response.json()
-            except PlanviewError as e:
+            except PlanviewValidationError as e:
                 if "HTTP 405" in str(e):
                     raise PlanviewValidationError(
                         "This Planview instance does not allow PATCH on /public-api/v1/work/{id}. "
                         "Use update_project for PPL items, or update this work item in Planview UI."
                     ) from e
-                raise
-            except PlanviewValidationError as e:
                 # If we sent multiple fields, try isolating which one is blocked.
                 if len(updates) > 1:
                     blocked_fields: dict[str, str] = {}
@@ -422,6 +423,13 @@ async def update_work(
                 raise PlanviewValidationError(
                     f"Work update failed for work '{work_id}'. Planview error: {str(e)}"
                 ) from e
+            except PlanviewError as e:
+                if "HTTP 405" in str(e):
+                    raise PlanviewValidationError(
+                        "This Planview instance does not allow PATCH on /public-api/v1/work/{id}. "
+                        "Use update_project for PPL items, or update this work item in Planview UI."
+                    ) from e
+                raise
     except Exception as e:
         duration_ms = int((time() - start_time) * 1000)
         logger.error(

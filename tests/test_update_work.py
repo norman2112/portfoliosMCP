@@ -43,7 +43,6 @@ async def test_update_work_calls_patch(monkeypatch):
     monkeypatch.setattr(work_mod, "get_client", mock_get_client)
 
     result = await work_mod.update_work(
-        ctx=None,
         work_id="123",
         updates={"ExecType": {"structureCode": "6354|Project"}},
         attributes=["Description"],
@@ -100,7 +99,6 @@ async def test_update_work_blocks_field_identification(monkeypatch):
 
     with pytest.raises(PlanviewValidationError) as excinfo:
         await work_mod.update_work(
-            ctx=None,
             work_id="123",
             updates={"ExecType": {"structureCode": "6354|Project"}, "OtherField": {"structureCode": "X|Y"}},
         )
