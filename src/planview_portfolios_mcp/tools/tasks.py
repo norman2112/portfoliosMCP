@@ -6,8 +6,16 @@ from datetime import datetime
 from time import time
 from typing import Any
 
-from ..exceptions import PlanviewConnectionError, PlanviewValidationError
-from ..models import TaskDto2, WorkOptionsDto
+import httpx
+from pydantic import ValidationError as PydanticValidationError
+from zeep.exceptions import Fault, TransportError, ValidationError as ZeepValidationError
+
+from ..exceptions import (
+    PlanviewConnectionError,
+    PlanviewError,
+    PlanviewValidationError,
+)
+from ..models import WorkOptionsDto
 from ..performance import log_performance
 from ..soap_client import (
     _handle_soap_result,
@@ -178,7 +186,8 @@ async def create_task(
                 task_dto_factory = client.get_type(
                     "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto2/2012/08}TaskDto2"
                 )
-            except Exception as e:
+            except (LookupError, AttributeError, KeyError, TypeError, ValueError) as e:
+                logger.exception("TaskDto2 type not found or invalid in WSDL")
                 raise PlanviewValidationError(f"TaskDto2 type not found in WSDL: {e}") from e
 
             # Verify required fields are present
@@ -201,10 +210,22 @@ async def create_task(
                 try:
                     result_direct = await asyncio.to_thread(create_op, dtos=[task_payload])
                     result = _handle_soap_result(result_direct)
-                    logger.debug("Task creation succeeded using dict approach")
+                    logger.info(
+                        "SOAP serialization: approach %d (%s) succeeded for %s",
+                        1,
+                        "raw dict",
+                        "create_task",
+                    )
                 except Exception as e1:
                     last_error = e1
-                    logger.debug(f"Dict approach failed: {e1}, trying TaskDto2 object")
+                    logger.debug(
+                        "SOAP serialization: approach %d (%s) failed for %s: %s: %s",
+                        1,
+                        "raw dict",
+                        "create_task",
+                        type(e1).__name__,
+                        e1,
+                    )
             
             # Approach 2: Create TaskDto2 object and pass as list (works for both regular tasks and milestones)
             if result is None:
@@ -213,10 +234,22 @@ async def create_task(
                     # Try with list of TaskDto2 object (zeep should handle conversion)
                     result_direct = await asyncio.to_thread(create_op, dtos=[task_dto_obj])
                     result = _handle_soap_result(result_direct)
-                    logger.debug("Task creation succeeded using TaskDto2 object approach")
+                    logger.info(
+                        "SOAP serialization: approach %d (%s) succeeded for %s",
+                        2,
+                        "TaskDto2",
+                        "create_task",
+                    )
                 except Exception as e2:
                     last_error = e2
-                    logger.debug(f"TaskDto2 object approach failed: {e2}, trying ArrayOfTaskDto2 wrapper")
+                    logger.debug(
+                        "SOAP serialization: approach %d (%s) failed for %s: %s: %s",
+                        2,
+                        "TaskDto2",
+                        "create_task",
+                        type(e2).__name__,
+                        e2,
+                    )
                     
                     # Approach 3: Try wrapping in ArrayOfTaskDto2 explicitly
                     try:
@@ -227,9 +260,22 @@ async def create_task(
                         dtos_param = array_type([task_dto_obj])
                         result_direct = await asyncio.to_thread(create_op, dtos=dtos_param)
                         result = _handle_soap_result(result_direct)
-                        logger.debug("Task creation succeeded using ArrayOfTaskDto2 wrapper approach")
+                        logger.info(
+                            "SOAP serialization: approach %d (%s) succeeded for %s",
+                            3,
+                            "ArrayOfTaskDto2",
+                            "create_task",
+                        )
                     except Exception as e3:
                         last_error = e3
+                        logger.debug(
+                            "SOAP serialization: approach %d (%s) failed for %s: %s: %s",
+                            3,
+                            "ArrayOfTaskDto2",
+                            "create_task",
+                            type(e3).__name__,
+                            e3,
+                        )
                         logger.error(f"All task creation approaches failed. Last error: {e3}", exc_info=True)
                         dict_error_msg = f"Dict error: {last_error}" if not is_milestone else "Dict skipped for milestone"
                         raise PlanviewConnectionError(
@@ -254,16 +300,36 @@ async def create_task(
 
             return result
 
-    except Exception as e:
+    except (
+        PlanviewError,
+        Fault,
+        TransportError,
+        ZeepValidationError,
+        httpx.HTTPError,
+        TypeError,
+        ValueError,
+        RuntimeError,
+        OSError,
+    ) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to create task: {str(e)}",
+        logger.exception(
+            "Failed to create task",
             extra={
                 "tool_name": "create_task",
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to create task (unexpected error)",
+            extra={
+                "tool_name": "create_task",
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -355,9 +421,9 @@ async def batch_create_tasks(
         options_dict = None
         if options:
             try:
-                options_dto = WorkOptionsDto.model_validate(options)
-                options_dict = options_dto.model_dump(by_alias=True, exclude_none=True)
-            except Exception as e:
+                WorkOptionsDto.model_validate(options)
+            except PydanticValidationError as e:
+                logger.exception("Invalid batch_create_tasks options (Pydantic validation)")
                 raise PlanviewValidationError(f"Invalid options: {str(e)}") from e
         
         # Build list of TaskDto2 objects for batch create
@@ -399,7 +465,8 @@ async def batch_create_tasks(
                 task_dto_factory = client.get_type(
                     "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto2/2012/08}TaskDto2"
                 )
-            except Exception as e:
+            except (LookupError, AttributeError, KeyError, TypeError, ValueError) as e:
+                logger.exception("TaskDto2 type not found or invalid in WSDL (batch)")
                 raise PlanviewConnectionError(f"TaskDto2 type not found in WSDL: {e}") from e
             
             # Create TaskDto2 objects for all tasks
@@ -408,7 +475,8 @@ async def batch_create_tasks(
                 try:
                     task_dto_obj = task_dto_factory(**task_payload)
                     final_task_dtos.append(task_dto_obj)
-                except Exception as e:
+                except (TypeError, ValueError, ZeepValidationError) as e:
+                    logger.exception("Task %s failed to build TaskDto2 object", i)
                     raise PlanviewValidationError(
                         f"Task {i} failed to create TaskDto2 object: {e}"
                     ) from e
@@ -422,9 +490,29 @@ async def batch_create_tasks(
                     "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/TaskDto2/2012/08}ArrayOfTaskDto2"
                 )
                 dtos_param = array_type(final_task_dtos)
-            except Exception:
+                logger.info(
+                    "SOAP serialization: approach %d (%s) succeeded for %s",
+                    1,
+                    "ArrayOfTaskDto2",
+                    "batch_create_tasks",
+                )
+            except Exception as e:
+                logger.debug(
+                    "SOAP serialization: approach %d (%s) failed for %s: %s: %s",
+                    1,
+                    "ArrayOfTaskDto2",
+                    "batch_create_tasks",
+                    type(e).__name__,
+                    e,
+                )
                 # Fallback to plain list if ArrayOf wrapper fails
                 dtos_param = final_task_dtos
+                logger.info(
+                    "SOAP serialization: approach %d (%s) succeeded for %s",
+                    2,
+                    "plain list",
+                    "batch_create_tasks",
+                )
             
             result_direct = await asyncio.to_thread(create_op, dtos=dtos_param)
             parsed = _parse_opensuite_result(result_direct)
@@ -454,7 +542,12 @@ async def batch_create_tasks(
                     continue
                 try:
                     success_by_idx[int(idx)] = s
-                except Exception:
+                except (TypeError, ValueError) as idx_err:
+                    logger.debug(
+                        "Skipping success entry with non-integer source_index: %s: %s",
+                        type(idx_err).__name__,
+                        idx_err,
+                    )
                     continue
 
             for f in parsed.get("failures", []) or []:
@@ -463,7 +556,12 @@ async def batch_create_tasks(
                     continue
                 try:
                     failure_by_idx[int(idx)] = f
-                except Exception:
+                except (TypeError, ValueError) as idx_err:
+                    logger.debug(
+                        "Skipping failure entry with non-integer source_index: %s: %s",
+                        type(idx_err).__name__,
+                        idx_err,
+                    )
                     continue
 
             warnings_list = [
@@ -543,17 +641,38 @@ async def batch_create_tasks(
             
     except PlanviewValidationError:
         raise
-    except Exception as e:
+    except (
+        PlanviewError,
+        Fault,
+        TransportError,
+        ZeepValidationError,
+        httpx.HTTPError,
+        TypeError,
+        ValueError,
+        RuntimeError,
+        OSError,
+    ) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to batch create tasks: {str(e)}",
+        logger.exception(
+            "Failed to batch create tasks",
             extra={
                 "tool_name": "batch_create_tasks",
                 "task_count": len(tasks) if tasks else 0,
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to batch create tasks (unexpected error)",
+            extra={
+                "tool_name": "batch_create_tasks",
+                "task_count": len(tasks) if tasks else 0,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -620,17 +739,38 @@ async def read_task(task_key: str) -> dict[str, Any]:
 
             return result
 
-    except Exception as e:
+    except (
+        PlanviewError,
+        Fault,
+        TransportError,
+        ZeepValidationError,
+        httpx.HTTPError,
+        TypeError,
+        ValueError,
+        RuntimeError,
+        OSError,
+    ) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to read task: {str(e)}",
+        logger.exception(
+            "Failed to read task",
             extra={
                 "tool_name": "read_task",
                 "task_key": task_key,
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to read task (unexpected error)",
+            extra={
+                "tool_name": "read_task",
+                "task_key": task_key,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -710,7 +850,12 @@ async def batch_delete_tasks(
                     continue
                 try:
                     success_by_idx[int(idx)] = s
-                except Exception:
+                except (TypeError, ValueError) as idx_err:
+                    logger.debug(
+                        "Skipping success entry with non-integer source_index: %s: %s",
+                        type(idx_err).__name__,
+                        idx_err,
+                    )
                     continue
 
             for f in parsed.get("failures", []) or []:
@@ -719,7 +864,12 @@ async def batch_delete_tasks(
                     continue
                 try:
                     failure_by_idx[int(idx)] = f
-                except Exception:
+                except (TypeError, ValueError) as idx_err:
+                    logger.debug(
+                        "Skipping failure entry with non-integer source_index: %s: %s",
+                        type(idx_err).__name__,
+                        idx_err,
+                    )
                     continue
 
             for local_idx, key in enumerate(chunk_keys):
@@ -825,16 +975,37 @@ async def delete_task(task_key: str) -> dict[str, Any]:
 
             return result
 
-    except Exception as e:
+    except (
+        PlanviewError,
+        Fault,
+        TransportError,
+        ZeepValidationError,
+        httpx.HTTPError,
+        TypeError,
+        ValueError,
+        RuntimeError,
+        OSError,
+    ) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to delete task: {str(e)}",
+        logger.exception(
+            "Failed to delete task",
             extra={
                 "tool_name": "delete_task",
                 "task_key": task_key,
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to delete task (unexpected error)",
+            extra={
+                "tool_name": "delete_task",
+                "task_key": task_key,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise

@@ -1,5 +1,6 @@
 """Shared HTTP client for Planview API interactions with retry logic."""
 
+import json
 import logging
 from contextlib import asynccontextmanager
 from typing import AsyncContextManager
@@ -155,8 +156,11 @@ async def make_request(
                 client.headers["Authorization"] = f"Bearer {token}"
                 # Retry the request
                 response = await client.request(method, url, **kwargs)
-            except Exception as e:
-                logger.warning(f"Failed to refresh token: {e}")
+            except (PlanviewAuthError, PlanviewError, httpx.RequestError, httpx.TimeoutException):
+                logger.warning(
+                    "Failed to refresh OAuth token after 401",
+                    exc_info=True,
+                )
 
         # Check if status code warrants retry
         if should_retry_status(response.status_code):
@@ -192,7 +196,11 @@ async def make_request(
         elif e.response.status_code == 400:
             try:
                 error_detail = e.response.json().get("message", str(e))
-            except Exception:
+            except (json.JSONDecodeError, KeyError, TypeError, AttributeError):
+                logger.debug(
+                    "Could not parse 400 error body as JSON with message key",
+                    exc_info=True,
+                )
                 error_detail = str(e)
             raise PlanviewValidationError(f"Invalid request: {error_detail}") from e
         elif e.response.status_code == 429:

@@ -1,10 +1,12 @@
 """OAuth secured ping tool."""
 
+import json
 import logging
 from time import time
 from typing import Any
 
 from ..client import get_client, make_request
+from ..exceptions import PlanviewError
 from ..performance import log_performance
 
 logger = logging.getLogger(__name__)
@@ -39,16 +41,26 @@ async def oauth_ping() -> Any:
                 extra={"tool_name": "oauth_ping", "duration_ms": duration_ms},
             )
             return data
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError, UnicodeDecodeError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"OAuth ping failed: {str(e)}",
+        logger.exception(
+            "OAuth ping failed",
             extra={
                 "tool_name": "oauth_ping",
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "OAuth ping failed (unexpected error)",
+            extra={
+                "tool_name": "oauth_ping",
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 

@@ -5,6 +5,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Any, AsyncContextManager
 
+import httpx
 import requests
 from tenacity import (
     before_sleep_log,
@@ -14,7 +15,7 @@ from tenacity import (
     wait_exponential,
 )
 from zeep import Client, Settings
-from zeep.exceptions import Fault, TransportError
+from zeep.exceptions import Fault, TransportError, ValidationError as ZeepValidationError
 from zeep.transports import Transport
 
 from .config import settings
@@ -160,7 +161,8 @@ async def get_soap_client() -> AsyncContextManager[Client]:
             raise PlanviewNotFoundError(f"SOAP service not found: {str(e)}") from e
         else:
             raise PlanviewConnectionError(f"SOAP transport error: {str(e)}") from e
-    except Exception as e:
+    except (LookupError, AttributeError, OSError, ValueError, TypeError, Fault, ZeepValidationError) as e:
+        logger.exception("Failed to create shared SOAP client")
         raise PlanviewConnectionError(f"Failed to create SOAP client: {str(e)}") from e
 
     try:
@@ -195,7 +197,7 @@ def _close_cached_service_clients() -> None:
                 if isinstance(session, requests.Session):
                     session.close()
         except Exception:
-            pass
+            logger.exception("Error closing cached SOAP client session during shutdown")
     _service_client_cache.clear()
 
 
@@ -228,8 +230,11 @@ async def get_soap_client_for_service(service_path: str) -> AsyncContextManager[
                     client.transport.session.headers.update(
                         {"Authorization": auth_header, "X-Tenant-Id": settings.planview_tenant_id}
                     )
-            except Exception:
-                pass
+            except (PlanviewAuthError, PlanviewError, httpx.RequestError, httpx.TimeoutException) as e:
+                logger.exception(
+                    "Failed to refresh OAuth token on cached SOAP client: %s",
+                    e,
+                )
             yield client
             return
 
@@ -266,13 +271,15 @@ async def get_soap_client_for_service(service_path: str) -> AsyncContextManager[
         if "404" in str(e):
             raise PlanviewNotFoundError(f"SOAP service not found: {str(e)}") from e
         raise PlanviewConnectionError(f"SOAP transport error: {str(e)}") from e
-    except Exception as e:
+    except (LookupError, AttributeError, OSError, ValueError, TypeError, Fault, ZeepValidationError) as e:
+        logger.exception("Failed to create per-service SOAP client")
         raise PlanviewConnectionError(f"Failed to create SOAP client: {str(e)}") from e
     async with _service_client_lock:
         _service_client_cache[path_key] = new_client
     try:
         yield new_client
     except Exception:
+        logger.exception("Error during use of cached per-service SOAP client")
         # On error, don't evict cache - next call can retry with same client
         raise
 
@@ -305,8 +312,13 @@ def _convert_zeep_object_to_dict(obj: Any) -> dict[str, Any]:
                 value = getattr(obj, attr, None)
                 if value is not None:
                     result_dict[attr] = _convert_zeep_value_to_python(value)
-            except Exception:
-                pass
+            except (AttributeError, TypeError, ValueError) as conv_err:
+                logger.debug(
+                    "Skipping zeep attribute %r during dict conversion: %s: %s",
+                    attr,
+                    type(conv_err).__name__,
+                    conv_err,
+                )
     
     return result_dict
 
@@ -607,5 +619,5 @@ async def make_soap_request(
             raise PlanviewConnectionError(f"SOAP transport error: {error_msg}") from e
 
     except Exception as e:
-        logger.error(f"Unexpected SOAP error: {str(e)}", exc_info=True)
+        logger.exception("Unexpected SOAP error in make_soap_request")
         raise PlanviewError(f"Unexpected SOAP error: {str(e)}") from e

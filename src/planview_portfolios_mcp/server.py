@@ -20,6 +20,7 @@ from .tool_registry import TOOL_NAMES, bind_arguments, build_tool_definitions
 try:
     from .client import close_client
     from .config import settings
+    from .exceptions import PlanviewError
     from .soap_client import close_soap_client, get_soap_client
     from . import tools as _tools
 except ImportError:  # pragma: no cover
@@ -30,6 +31,7 @@ except ImportError:  # pragma: no cover
 
     from planview_portfolios_mcp.client import close_client
     from planview_portfolios_mcp.config import settings
+    from planview_portfolios_mcp.exceptions import PlanviewError
     from planview_portfolios_mcp.soap_client import close_soap_client, get_soap_client
     from planview_portfolios_mcp import tools as _tools
 
@@ -121,7 +123,9 @@ def cleanup() -> None:
                         summary.get("api_calls_count", 0),
                     )
         except Exception:
-            pass
+            logging.getLogger(__name__).exception(
+                "Performance summary logging failed during MCP cleanup"
+            )
         loop = asyncio.get_event_loop()
         if loop.is_running():
             loop.create_task(close_client())
@@ -130,7 +134,7 @@ def cleanup() -> None:
             asyncio.run(close_client())
             asyncio.run(close_soap_client())
     except Exception:
-        pass
+        logging.getLogger(__name__).exception("MCP server cleanup failed")
 
 
 atexit.register(cleanup)
@@ -150,7 +154,10 @@ async def run_mcp_server() -> None:
         try:
             async with get_soap_client():
                 pass
+        except PlanviewError as e:
+            logger.debug("SOAP client warm skipped: %s", e)
         except Exception as e:
+            logger.exception("Unexpected error during SOAP client warm (non-fatal)")
             logger.debug("SOAP client warm skipped: %s", e)
 
     await _warm_soap()

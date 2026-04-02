@@ -1,12 +1,13 @@
 """Project and portfolio management tools for Planview Portfolios."""
 
+import json
 import logging
 from datetime import datetime, timedelta
 from time import time
 from typing import Any
 
 from ..client import get_client, make_request
-from ..exceptions import PlanviewValidationError
+from ..exceptions import PlanviewError, PlanviewValidationError
 from ..performance import log_performance
 from field_reference import FIELD_CATEGORIES, build_tool_description_appendix, get_fields_by_category
 
@@ -44,7 +45,6 @@ def extract_project_info(project_response: dict[str, Any]) -> dict[str, Any]:
     
     # Validate that we have a structure code with better error context
     if not project_info.get("structureCode"):
-        import json
         error_context = (
             f"Project response missing required 'structureCode' field. "
             f"Available keys in response: {list(project_info.keys())}. "
@@ -53,7 +53,12 @@ def extract_project_info(project_response: dict[str, Any]) -> dict[str, Any]:
         try:
             response_snippet = json.dumps(project_info, indent=2, default=str)[:500]
             error_context += f"Response snippet: {response_snippet}..."
-        except Exception:
+        except (TypeError, ValueError, OverflowError) as snippet_err:
+            logger.debug(
+                "Could not JSON-serialize project_info for error context: %s: %s",
+                type(snippet_err).__name__,
+                snippet_err,
+            )
             error_context += f"Response type: {type(project_info)}"
         
         raise ValueError(error_context)
@@ -106,17 +111,28 @@ async def get_project(
             )
             return project_data
 
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to get project: {str(e)}",
+        logger.exception(
+            "Failed to get project",
             extra={
                 "tool_name": "get_project",
                 "project_id": project_id,
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to get project (unexpected error)",
+            extra={
+                "tool_name": "get_project",
+                "project_id": project_id,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -146,16 +162,26 @@ async def get_project_attributes() -> dict[str, Any]:
             )
             return data
 
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to get project attributes: {str(e)}",
+        logger.exception(
+            "Failed to get project attributes",
             extra={
                 "tool_name": "get_project_attributes",
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to get project attributes (unexpected error)",
+            extra={
+                "tool_name": "get_project_attributes",
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -196,7 +222,12 @@ async def _create_default_tasks(
                         task_start.isoformat(timespec="seconds").replace("+00:00", "Z"),
                         task_finish.isoformat(timespec="seconds").replace("+00:00", "Z"),
                     )
-            except Exception:
+            except (ValueError, TypeError, OSError) as date_err:
+                logger.debug(
+                    "Could not parse project dates for default task scheduling: %s: %s",
+                    type(date_err).__name__,
+                    date_err,
+                )
                 get_task_dates = lambda n: (None, None)
         else:
             get_task_dates = lambda n: (None, None)
@@ -243,11 +274,23 @@ async def _create_default_tasks(
         )
         return created_tasks
 
-    except Exception as e:
-        logger.error(
-            f"Error creating default tasks: {e}",
+    except (
+        PlanviewError,
+        TypeError,
+        ValueError,
+        OSError,
+        RuntimeError,
+        KeyError,
+    ):
+        logger.exception(
+            "Error creating default tasks",
             extra={"project_structure_code": project_structure_code},
-            exc_info=True,
+        )
+        return []
+    except Exception:
+        logger.exception(
+            "Unexpected error creating default tasks",
+            extra={"project_structure_code": project_structure_code},
         )
         return []
 
@@ -403,27 +446,49 @@ async def create_project(
                             "Could not extract structure code for default task creation",
                             extra={"tool_name": "create_project"}
                         )
-                except Exception as e:
-                    logger.error(
-                        f"Failed to create default tasks: {e}",
+                except (
+                    PlanviewError,
+                    TypeError,
+                    ValueError,
+                    OSError,
+                    RuntimeError,
+                    KeyError,
+                ):
+                    logger.exception(
+                        "Failed to create default tasks",
                         extra={"tool_name": "create_project"},
-                        exc_info=True,
                     )
                     # Don't fail project creation if task creation fails
+                    pass
+                except Exception:
+                    logger.exception(
+                        "Unexpected failure creating default tasks",
+                        extra={"tool_name": "create_project"},
+                    )
                     pass
             
             return created_project
 
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to create project: {str(e)}",
+        logger.exception(
+            "Failed to create project",
             extra={
                 "tool_name": "create_project",
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to create project (unexpected error)",
+            extra={
+                "tool_name": "create_project",
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -509,17 +574,28 @@ async def update_project(
                     f"Project update failed for project '{project_id}'. Planview error: {str(e)}"
                 ) from e
 
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to update project: {str(e)}",
+        logger.exception(
+            "Failed to update project",
             extra={
                 "tool_name": "update_project",
                 "project_id": project_id,
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to update project (unexpected error)",
+            extra={
+                "tool_name": "update_project",
+                "project_id": project_id,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -571,17 +647,28 @@ async def delete_project(project_id: str) -> dict[str, Any]:
             # 204 No Content or empty body: success (raise_for_status already passed).
             return {"success": True, "deleted_project_id": project_id}
 
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to delete project: {str(e)}",
+        logger.exception(
+            "Failed to delete project",
             extra={
                 "tool_name": "delete_project",
                 "project_id": project_id,
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to delete project (unexpected error)",
+            extra={
+                "tool_name": "delete_project",
+                "project_id": project_id,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -686,7 +773,12 @@ async def get_project_wbs(
     def _place_val(node: dict[str, Any]) -> int:
         try:
             return int(node.get("place") or 0)
-        except Exception:
+        except (TypeError, ValueError) as place_err:
+            logger.debug(
+                "Invalid place value on WBS node: %s: %s",
+                type(place_err).__name__,
+                place_err,
+            )
             return 0
 
     # Optionally remove milestone nodes (and promote their children).
@@ -860,4 +952,6 @@ try:
     update_project.__doc__ = _UPDATE_PROJECT_DESCRIPTION_BASE + _FIELDS_POINTER
 except Exception:
     # If doc augmentation fails for any reason, keep the original docstrings.
-    logger.exception("Failed to augment project tool descriptions with field reference")
+    logger.exception(
+        "Failed to augment project tool descriptions with field reference"
+    )

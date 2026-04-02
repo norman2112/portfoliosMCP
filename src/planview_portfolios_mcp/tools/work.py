@@ -1,5 +1,6 @@
 """Work endpoint tools for Planview Portfolios."""
 
+import json
 import logging
 from time import time
 from typing import Any
@@ -44,16 +45,26 @@ async def get_work_attributes() -> dict[str, Any]:
             )
             return data
 
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to get work attributes: {str(e)}",
+        logger.exception(
+            "Failed to get work attributes",
             extra={
                 "tool_name": "get_work_attributes",
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to get work attributes (unexpected error)",
+            extra={
+                "tool_name": "get_work_attributes",
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -275,16 +286,26 @@ async def list_work(
                 # All retries failed; re-raise the last validation error.
                 raise last_error
 
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to list work: {str(e)}",
+        logger.exception(
+            "Failed to list work",
             extra={
                 "tool_name": "list_work",
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to list work (unexpected error)",
+            extra={
+                "tool_name": "list_work",
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -325,17 +346,28 @@ async def get_work(
             )
             return data
 
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to get work item: {str(e)}",
+        logger.exception(
+            "Failed to get work item",
             extra={
                 "tool_name": "get_work",
                 "work_id": work_id,
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to get work item (unexpected error)",
+            extra={
+                "tool_name": "get_work",
+                "work_id": work_id,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -430,17 +462,28 @@ async def update_work(
                         "Use update_project for PPL items, or update this work item in Planview UI."
                     ) from e
                 raise
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to update work: {str(e)}",
+        logger.exception(
+            "Failed to update work",
             extra={
                 "tool_name": "update_work",
                 "work_id": work_id,
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to update work (unexpected error)",
+            extra={
+                "tool_name": "update_work",
+                "work_id": work_id,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 

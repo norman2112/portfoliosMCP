@@ -23,7 +23,8 @@ def _cache_key(prefix: str, *args: Any, **kwargs: Any) -> str:
     try:
         raw = f"{prefix}:{args!r}:{sorted(kwargs.items())!r}"
         return hashlib.sha256(raw.encode()).hexdigest()
-    except Exception:
+    except (TypeError, ValueError, UnicodeEncodeError, MemoryError):
+        logger.exception("Failed to build cache key from arguments")
         return f"{prefix}:{time.time()}"
 
 

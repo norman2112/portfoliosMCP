@@ -1,5 +1,6 @@
 """Resource management tools for Planview Portfolios."""
 
+import json
 import logging
 from time import time
 from typing import Any
@@ -7,7 +8,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from ..client import get_client, make_request
-from ..exceptions import PlanviewValidationError
+from ..exceptions import PlanviewError, PlanviewValidationError
 from ..performance import log_performance
 from ..models import (
     AllocationResponse,
@@ -91,16 +92,26 @@ async def list_resources(
             )
             return resources
 
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to list resources: {str(e)}",
+        logger.exception(
+            "Failed to list resources",
             extra={
                 "tool_name": "list_resources",
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to list resources (unexpected error)",
+            extra={
+                "tool_name": "list_resources",
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -152,17 +163,28 @@ async def get_resource(resource_id: str) -> dict[str, Any]:
             )
             return result
 
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to get resource: {str(e)}",
+        logger.exception(
+            "Failed to get resource",
             extra={
                 "tool_name": "get_resource",
                 "resource_id": resource_id,
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to get resource (unexpected error)",
+            extra={
+                "tool_name": "get_resource",
+                "resource_id": resource_id,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -251,10 +273,10 @@ async def allocate_resource(
             )
             return result
 
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to allocate resource: {str(e)}",
+        logger.exception(
+            "Failed to allocate resource",
             extra={
                 "tool_name": "allocate_resource",
                 "resource_id": resource_id,
@@ -262,6 +284,18 @@ async def allocate_resource(
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to allocate resource (unexpected error)",
+            extra={
+                "tool_name": "allocate_resource",
+                "resource_id": resource_id,
+                "project_id": project_id,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise

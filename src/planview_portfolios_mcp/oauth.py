@@ -1,6 +1,7 @@
 """OAuth token management for Planview Portfolios API."""
 
 import asyncio
+import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -123,12 +124,19 @@ class OAuthTokenManager:
             ) from e
         except httpx.TimeoutException as e:
             raise PlanviewError(f"Timeout obtaining OAuth token: {str(e)}") from e
-        except httpx.NetworkError as e:
+        except httpx.RequestError as e:
+            logger.error(
+                "Network or transport error obtaining OAuth token",
+                exc_info=True,
+            )
             raise PlanviewError(
                 f"Network error obtaining OAuth token: {str(e)}"
             ) from e
-        except Exception as e:
-            raise PlanviewError(f"Unexpected error obtaining OAuth token: {str(e)}") from e
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as e:
+            logger.exception("Failed to parse OAuth token response")
+            raise PlanviewError(
+                f"Invalid OAuth token response: {str(e)}"
+            ) from e
 
     async def clear_token(self):
         """Clear the cached token (force refresh on next request)."""
@@ -298,12 +306,19 @@ class OKROAuthTokenManager:
             ) from e
         except httpx.TimeoutException as e:
             raise PlanviewError(f"Timeout obtaining OKR OAuth token: {str(e)}") from e
-        except httpx.NetworkError as e:
+        except httpx.RequestError as e:
+            logger.error(
+                "Network or transport error obtaining OKR OAuth token",
+                exc_info=True,
+            )
             raise PlanviewError(
                 f"Network error obtaining OKR OAuth token: {str(e)}"
             ) from e
-        except Exception as e:
-            raise PlanviewError(f"Unexpected error obtaining OKR OAuth token: {str(e)}") from e
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as e:
+            logger.exception("Failed to parse OKR OAuth token response")
+            raise PlanviewError(
+                f"Invalid OKR OAuth token response: {str(e)}"
+            ) from e
     
     async def clear_token(self):
         """Clear the cached token (force refresh on next request)."""

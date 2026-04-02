@@ -108,6 +108,10 @@ def log_performance(func: F) -> F:
             log_performance_metric(func.__name__, duration_ms, True, api_calls=api_calls or None)
             return result
         except Exception as e:
+            logging.getLogger(__name__).exception(
+                "Tool %s raised during performance logging",
+                func.__name__,
+            )
             duration_ms = (time.perf_counter() - start) * 1000
             log_performance_metric(
                 func.__name__, duration_ms, False, api_calls=api_calls or None, error=str(e)
@@ -123,6 +127,10 @@ def log_performance(func: F) -> F:
             log_performance_metric(func.__name__, duration_ms, True)
             return result
         except Exception as e:
+            logging.getLogger(__name__).exception(
+                "Sync tool %s raised during performance logging",
+                func.__name__,
+            )
             duration_ms = (time.perf_counter() - start) * 1000
             log_performance_metric(func.__name__, duration_ms, False, error=str(e))
             raise

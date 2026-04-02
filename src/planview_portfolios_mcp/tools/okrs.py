@@ -1,5 +1,6 @@
 """OKRs (Objectives and Key Results) tools for Planview Portfolios."""
 
+import json
 import logging
 from contextlib import asynccontextmanager
 from time import time
@@ -8,7 +9,7 @@ from typing import Any
 import httpx
 from ..client import make_request
 from ..config import settings
-from ..exceptions import PlanviewValidationError
+from ..exceptions import PlanviewAuthError, PlanviewError, PlanviewValidationError
 from ..oauth import get_okr_oauth_token
 from ..performance import log_performance
 
@@ -50,9 +51,11 @@ async def _get_okr_client():
         try:
             okr_token = await get_okr_oauth_token()
             logger.debug("Using OKR OAuth token (auto-refreshing)")
-        except Exception as e:
+        except (PlanviewAuthError, PlanviewError, httpx.RequestError, httpx.TimeoutException) as e:
             logger.warning(
-                f"Failed to get OKR OAuth token: {e}. Falling back to static bearer token."
+                "Failed to get OKR OAuth token: %s. Falling back to static bearer token.",
+                e,
+                exc_info=True,
             )
     
     # Fallback to static bearer token if OAuth failed or not configured
@@ -163,7 +166,12 @@ async def list_objectives(
                 text = response.text
                 try:
                     data = response.json()
-                except Exception:
+                except (json.JSONDecodeError, UnicodeDecodeError) as parse_err:
+                    logger.debug(
+                        "OKR list_objectives: response body is not JSON: %s: %s",
+                        type(parse_err).__name__,
+                        parse_err,
+                    )
                     # If it's not JSON, return the text in a structured format
                     data = {"error": text}
             
@@ -178,16 +186,26 @@ async def list_objectives(
             )
             return data
             
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError, httpx.HTTPError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to list objectives: {str(e)}",
+        logger.exception(
+            "Failed to list objectives",
             extra={
                 "tool_name": "list_objectives",
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to list objectives (unexpected error)",
+            extra={
+                "tool_name": "list_objectives",
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -244,7 +262,12 @@ async def get_key_results_for_objective(
                 # If response is text, try to parse as JSON
                 try:
                     data = response.json()
-                except Exception:
+                except (json.JSONDecodeError, UnicodeDecodeError) as parse_err:
+                    logger.debug(
+                        "OKR get_key_results: response body is not JSON: %s: %s",
+                        type(parse_err).__name__,
+                        parse_err,
+                    )
                     # If it's not JSON, return the text in a structured format
                     data = {"error": response.text}
             
@@ -260,17 +283,28 @@ async def get_key_results_for_objective(
             )
             return data
             
-    except Exception as e:
+    except (PlanviewError, json.JSONDecodeError, httpx.HTTPError) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to get key results: {str(e)}",
+        logger.exception(
+            "Failed to get key results",
             extra={
                 "tool_name": "get_key_results_for_objective",
                 "objective_id": objective_id,
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to get key results (unexpected error)",
+            extra={
+                "tool_name": "get_key_results_for_objective",
+                "objective_id": objective_id,
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -345,12 +379,22 @@ async def list_all_objectives_with_key_results(
                 try:
                     key_results_data = await get_key_results_for_objective(objective_id)
                     objective["key_results"] = key_results_data.get("key_results", [])
-                except Exception as e:
+                except (PlanviewError, json.JSONDecodeError, httpx.HTTPError) as e:
                     logger.warning(
-                        f"Failed to fetch key results for objective {objective_id}: {e}",
+                        "Failed to fetch key results for objective %s: %s",
+                        objective_id,
+                        e,
+                        exc_info=True,
                         extra={"objective_id": objective_id},
                     )
                     # Continue with other objectives even if one fails
+                    objective["key_results"] = []
+                except Exception:
+                    logger.exception(
+                        "Unexpected error fetching key results for objective %s",
+                        objective_id,
+                        extra={"objective_id": objective_id},
+                    )
                     objective["key_results"] = []
     
     duration_ms = int((time() - start_time) * 1000)

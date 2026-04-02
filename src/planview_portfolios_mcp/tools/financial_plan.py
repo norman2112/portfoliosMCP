@@ -6,7 +6,15 @@ import logging
 from time import time
 from typing import Any
 
-from ..exceptions import PlanviewConnectionError, PlanviewNotFoundError, PlanviewValidationError
+import httpx
+from zeep.exceptions import Fault, TransportError, ValidationError as ZeepValidationError
+
+from ..exceptions import (
+    PlanviewConnectionError,
+    PlanviewError,
+    PlanviewNotFoundError,
+    PlanviewValidationError,
+)
 from ..performance import log_performance
 from ..soap_client import get_soap_client_for_service, _handle_soap_result
 from ..utils.soap_helpers import filter_and_sort_fields
@@ -390,7 +398,8 @@ async def upsert_financial_plan(
                 array_of_financial_plan_dto_factory = client.get_type(
                     "{http://schemas.planview.com/PlanviewEnterprise/OpenSuite/Dtos/FinancialPlanDto/2013/03}ArrayOfFinancialPlanDto"
                 )
-            except Exception as e:
+            except (LookupError, AttributeError, KeyError, TypeError, ValueError) as e:
+                logger.exception("Financial plan DTO type not found or invalid in WSDL")
                 raise PlanviewConnectionError(f"DTO type not found in WSDL: {e}") from e
 
             # Build nested DTO objects with ArrayOf wrappers:
@@ -441,8 +450,8 @@ async def upsert_financial_plan(
                     logger.info(f"  FinancialPlanDto.Lines type: {type(lines_attr)}, value: {lines_attr}")
                     if lines_attr:
                         logger.info(f"  FinancialPlanDto.Lines length: {len(lines_attr)}")
-            except Exception as e:
-                logger.error(f"Failed to create FinancialPlanDto object: {e}", exc_info=True)
+            except (TypeError, ValueError, ZeepValidationError):
+                logger.exception("Failed to create FinancialPlanDto object")
                 raise
             
             # Call SOAP Upsert operation
@@ -455,15 +464,16 @@ async def upsert_financial_plan(
                 # Pass the ArrayOf wrapper directly to dtos (not a list containing it)
                 result = await asyncio.to_thread(upsert_op, dtos=plan_array)
                 logger.info("✅ Financial plan upsert succeeded!")
-            except Exception as e:
-                logger.error(f"Financial plan upsert failed: {e}", exc_info=True)
+            except (Fault, TransportError, TypeError, ValueError, OSError, ZeepValidationError):
+                logger.exception("Financial plan SOAP Upsert failed")
                 raise
 
             # Handle the result
             try:
                 processed_result = _handle_soap_result(result)
-            except Exception as e:
+            except (PlanviewError, KeyError, TypeError, ValueError):
                 # Log the raw result for debugging
+                logger.exception("SOAP result handling failed for financial plan Upsert")
                 logger.error(f"SOAP result handling failed. Raw result type: {type(result)}")
                 if hasattr(result, '__dict__'):
                     logger.error(f"Raw result dict: {result.__dict__}")
@@ -515,16 +525,36 @@ async def upsert_financial_plan(
         
         # Re-raise other validation errors as-is
         raise
-    except Exception as e:
+    except (
+        PlanviewError,
+        Fault,
+        TransportError,
+        ZeepValidationError,
+        httpx.HTTPError,
+        TypeError,
+        ValueError,
+        OSError,
+        RuntimeError,
+    ) as e:
         duration_ms = int((time() - start_time) * 1000)
-        logger.error(
-            f"Failed to upsert financial plan: {str(e)}",
+        logger.exception(
+            "Failed to upsert financial plan",
             extra={
                 "tool_name": "upsert_financial_plan",
                 "duration_ms": duration_ms,
                 "error_type": type(e).__name__,
             },
-            exc_info=True,
+        )
+        raise
+    except Exception as e:
+        duration_ms = int((time() - start_time) * 1000)
+        logger.exception(
+            "Failed to upsert financial plan (unexpected error)",
+            extra={
+                "tool_name": "upsert_financial_plan",
+                "duration_ms": duration_ms,
+                "error_type": type(e).__name__,
+            },
         )
         raise
 
@@ -598,8 +628,14 @@ async def discover_financial_plan_info(
                 )
                 logger.info("Successfully read reference project financial plan")
                 return result
-            except Exception as ref_error:
-                logger.debug(f"Could not read reference project {reference_entity_key}: {ref_error}")
+            except (PlanviewError, OSError, ValueError, TypeError, KeyError) as ref_error:
+                logger.debug(
+                    "Could not read reference project %s: %s: %s",
+                    reference_entity_key,
+                    type(ref_error).__name__,
+                    ref_error,
+                    exc_info=True,
+                )
         
         # Fallback to config data (instant, no API call)
         try:
@@ -627,8 +663,13 @@ async def discover_financial_plan_info(
                     summary=summary,
                     fields=fields,
                 )
-        except Exception as config_error:
-            logger.debug(f"Could not get config data: {config_error}")
+        except (ImportError, OSError, TypeError, ValueError, KeyError) as config_error:
+            logger.debug(
+                "Could not get config data: %s: %s",
+                type(config_error).__name__,
+                config_error,
+                exc_info=True,
+            )
         
         logger.info(
             f"Could not discover financial plan info for {entity_key}. "
@@ -644,8 +685,14 @@ async def discover_financial_plan_info(
         )
         logger.info(f"Successfully read financial plan for {entity_key}")
         return result
-    except Exception as e:
-        logger.debug(f"Could not read financial plan for {entity_key}: {e}")
+    except (PlanviewError, OSError, ValueError, TypeError, KeyError) as e:
+        logger.debug(
+            "Could not read financial plan for %s: %s: %s",
+            entity_key,
+            type(e).__name__,
+            e,
+            exc_info=True,
+        )
         
         # If target project has no plan yet, try reference project
         if reference_entity_key:
@@ -660,9 +707,13 @@ async def discover_financial_plan_info(
                 )
                 logger.info(f"Successfully read reference project financial plan")
                 return result
-            except Exception as ref_error:
+            except (PlanviewError, OSError, ValueError, TypeError, KeyError) as ref_error:
                 logger.debug(
-                    f"Could not read reference project {reference_entity_key}: {ref_error}"
+                    "Could not read reference project %s: %s: %s",
+                    reference_entity_key,
+                    type(ref_error).__name__,
+                    ref_error,
+                    exc_info=True,
                 )
         
         # Final fallback: Return config data (instant, no API call)
@@ -685,8 +736,13 @@ async def discover_financial_plan_info(
                     },
                     "warnings": [],
                 }
-        except Exception as config_error:
-            logger.debug(f"Could not get config data: {config_error}")
+        except (ImportError, OSError, TypeError, ValueError, KeyError) as config_error:
+            logger.debug(
+                "Could not get config data: %s: %s",
+                type(config_error).__name__,
+                config_error,
+                exc_info=True,
+            )
         
         logger.info(
             f"Could not discover financial plan info for {entity_key}. "
@@ -844,8 +900,12 @@ async def read_financial_plan(
             if "/$Plan/" in entity_key:
                 try:
                     structure_code = entity_key.split("/$Plan/")[1].split(":")[0]
-                except Exception:
-                    pass
+                except (IndexError, ValueError, AttributeError) as split_err:
+                    logger.debug(
+                        "Could not parse structure code from entity_key: %s: %s",
+                        type(split_err).__name__,
+                        split_err,
+                    )
             
             guidance = (
                 f"\n\nGuidance: The financial plan doesn't exist yet for project {structure_code}. "
@@ -906,7 +966,8 @@ This is a heavy operation — always preview first unless you're sure.
         raise PlanviewValidationError("version_key must be a non-empty string")
     try:
         scale_factor = float(scale_factor)
-    except Exception as e:
+    except (TypeError, ValueError) as e:
+        logger.exception("Invalid scale_factor for load_financial_plan_from_reference")
         raise PlanviewValidationError(f"scale_factor must be a float: {str(e)}") from e
 
     if not isinstance(confirm, bool):
@@ -928,7 +989,13 @@ This is a heavy operation — always preview first unless you're sure.
                 from datetime import datetime
 
                 return datetime.fromisoformat(s).date()
-            except Exception:
+            except (ValueError, TypeError, OSError) as date_err:
+                logger.debug(
+                    "Could not parse date string %r: %s: %s",
+                    s,
+                    type(date_err).__name__,
+                    date_err,
+                )
                 return None
         return None
 
@@ -1057,8 +1124,12 @@ This is a heavy operation — always preview first unless you're sure.
             fields=["Periods"],
         )
         target_period_keys = _extract_period_keys(target_plan.get("data", {}).get("Periods") or target_plan.get("data", {}).get("periods"))
-    except Exception:
+    except (PlanviewError, OSError, ValueError, TypeError, KeyError):
         # If target plan doesn't exist yet, fall back to discovery using reference.
+        logger.debug(
+            "Target financial plan read failed; using discovery fallback",
+            exc_info=True,
+        )
         fallback_info = await discover_financial_plan_info(
             entity_key=target_entity_key,
             version_key=version_key,
@@ -1097,7 +1168,13 @@ This is a heavy operation — always preview first unless you're sure.
         try:
             # SOAP values are usually numeric already.
             return float(v) * scale_factor
-        except Exception:
+        except (TypeError, ValueError) as conv_err:
+            logger.debug(
+                "_scaled_value: non-numeric value %r: %s: %s",
+                v,
+                type(conv_err).__name__,
+                conv_err,
+            )
             return v
 
     # 3) Remap lines/entries.
@@ -1147,8 +1224,12 @@ This is a heavy operation — always preview first unless you're sure.
             if scaled_val is not None:
                 try:
                     total_budget += float(scaled_val)
-                except Exception:
-                    pass
+                except (TypeError, ValueError) as sum_err:
+                    logger.debug(
+                        "Skipping non-numeric scaled_val in budget total: %s: %s",
+                        type(sum_err).__name__,
+                        sum_err,
+                    )
             new_entries.append({"PeriodKey": tgt_period_key, "Value": scaled_val})
             total_entries += 1
 
