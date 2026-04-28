@@ -37,6 +37,8 @@ class PlanviewSettings(BaseSettings):
     # API request settings
     api_timeout: int = 30
     max_retries: int = 3
+    planview_ssl_verify: bool = True
+    planview_ca_bundle: str | None = None
 
     # SOAP API settings
     soap_timeout: int = 30
@@ -65,3 +67,12 @@ class PlanviewSettings(BaseSettings):
 
 # Global settings instance
 settings = PlanviewSettings()
+
+
+def get_httpx_verify_setting() -> bool | str:
+    """Resolve httpx verify setting from configured SSL options."""
+    if settings.planview_ca_bundle:
+        return settings.planview_ca_bundle
+    if not settings.planview_ssl_verify:
+        return False
+    return True

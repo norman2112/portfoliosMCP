@@ -14,7 +14,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from .config import settings
+from .config import get_httpx_verify_setting, settings
 from .exceptions import (
     PlanviewAuthError,
     PlanviewConnectionError,
@@ -51,6 +51,7 @@ class PlanviewClient:
             self._client = httpx.AsyncClient(
                 base_url=settings.planview_api_url,
                 timeout=settings.api_timeout,
+                verify=get_httpx_verify_setting(),
                 limits=httpx.Limits(
                     max_keepalive_connections=20,
                     max_connections=100,

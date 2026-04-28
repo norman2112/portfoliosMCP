@@ -9,7 +9,7 @@ from typing import Optional
 
 import httpx
 
-from .config import settings
+from .config import get_httpx_verify_setting, settings
 from .exceptions import PlanviewAuthError, PlanviewError
 
 logger = logging.getLogger(__name__)
@@ -77,7 +77,10 @@ class OAuthTokenManager:
         token_url = f"{settings.planview_api_url}/public-api/v1/oauth/token"
 
         try:
-            async with httpx.AsyncClient(timeout=settings.api_timeout) as client:
+            async with httpx.AsyncClient(
+                timeout=settings.api_timeout,
+                verify=get_httpx_verify_setting(),
+            ) as client:
                 # Use multipart/form-data per API docs
                 form = {
                     "grant_type": (None, "client_credentials"),
@@ -231,7 +234,10 @@ class OKROAuthTokenManager:
                 token_url = "https://us.id.planview.com/io/v1/oauth2/token"
         
         try:
-            async with httpx.AsyncClient(timeout=settings.api_timeout) as client:
+            async with httpx.AsyncClient(
+                timeout=settings.api_timeout,
+                verify=get_httpx_verify_setting(),
+            ) as client:
                 # Try multipart/form-data first (like Portfolios API - handles special chars better)
                 form = {
                     "grant_type": (None, "client_credentials"),

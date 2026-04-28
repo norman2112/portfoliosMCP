@@ -223,6 +223,7 @@ Ask Claude: `"Use oauth_ping to check my Planview connection"`
 | "No module named planview_portfolios_mcp" | Package not installed into the venv | Run `pip install -e .` from the repo folder (not `pip install -r requirements.txt`) |
 | OAuth 400 error | Bad credentials or uppercase API URL | Double-check all four credential values. Make sure the API URL is **lowercase** and ends with `/polaris` |
 | 401 Unauthorized | Wrong Client ID, Secret, or Tenant ID | Re-verify all credentials. Watch for extra spaces when pasting |
+| `CERTIFICATE_VERIFY_FAILED` | Corporate proxy/self-signed certificate not trusted locally | Set `PLANVIEW_CA_BUNDLE` to your corporate CA `.pem`, or use `PLANVIEW_SSL_VERIFY=false` only as a last resort |
 | Tools don't show up in Claude | Claude Desktop didn't fully restart | Quit via File → Exit (not just X), then reopen |
 | JSON syntax error on startup | Malformed config file | Copy your config into [jsonlint.com](https://jsonlint.com) to find the error |
 | Folder has no `pyproject.toml` | Nested folder from GitHub zip | Look one folder deeper — move contents up so `pyproject.toml` is at your root path |
@@ -319,8 +320,12 @@ These sections list **every MCP tool this server registers** (24 total). Older d
 | `PLANVIEW_CLIENT_ID` | OAuth Client ID |
 | `PLANVIEW_CLIENT_SECRET` | OAuth Client Secret |
 | `PLANVIEW_TENANT_ID` | Organization Tenant ID |
+| `PLANVIEW_SSL_VERIFY` | Optional. Defaults to `true`. Set to `false` to disable SSL certificate verification |
+| `PLANVIEW_CA_BUNDLE` | Optional. Path to a custom CA bundle `.pem` file for TLS verification |
 
 > The Client Secret is only shown once at creation. Store it securely.
+>
+> Only set `PLANVIEW_SSL_VERIFY=false` if you're behind a corporate proxy with a self-signed cert AND cannot get the corporate CA bundle from IT. Prefer `PLANVIEW_CA_BUNDLE` pointing at the corporate root cert `.pem`.
 
 ## SOAP API Notes
 

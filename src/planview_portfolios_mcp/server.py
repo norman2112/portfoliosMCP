@@ -21,6 +21,7 @@ try:
     from .client import close_client
     from .config import settings
     from .exceptions import PlanviewError
+    from .logging_config import logger as app_logger
     from .soap_client import close_soap_client, get_soap_client
     from . import tools as _tools
 except ImportError:  # pragma: no cover
@@ -32,6 +33,7 @@ except ImportError:  # pragma: no cover
     from planview_portfolios_mcp.client import close_client
     from planview_portfolios_mcp.config import settings
     from planview_portfolios_mcp.exceptions import PlanviewError
+    from planview_portfolios_mcp.logging_config import logger as app_logger
     from planview_portfolios_mcp.soap_client import close_soap_client, get_soap_client
     from planview_portfolios_mcp import tools as _tools
 
@@ -143,6 +145,11 @@ atexit.register(cleanup)
 async def run_mcp_server() -> None:
     """Run the MCP server over stdio (JSON-RPC)."""
     logger = logging.getLogger(__name__)
+    if not settings.planview_ssl_verify and not settings.planview_ca_bundle:
+        app_logger.warning(
+            "SSL certificate verification is disabled (PLANVIEW_SSL_VERIFY=false). "
+            "This is insecure and should only be used as a last resort."
+        )
     logger.debug(
         "OKR credentials configured: CLIENT_ID=%s, CLIENT_SECRET=%s, BEARER_TOKEN=%s",
         "***" if settings.planview_okr_client_id else "NOT SET",
