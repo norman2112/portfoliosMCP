@@ -10,6 +10,8 @@ import sys
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+logging.basicConfig(stream=sys.stderr, level=logging.INFO, force=True)
+
 import mcp.types as types
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
