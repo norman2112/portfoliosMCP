@@ -1,7 +1,48 @@
-# Planview Portfolios Actions MCP Server
+# Planview Portfolios MCP Server
 
-A Model Context Protocol server for Planview Portfolios — the **write & action companion** to the read-only [Planview Portfolios Beta MCP](https://claude.ai/chat/f88775d2-ca9b-4680-8517-793bf65f377b#two-server-architecture). Provides 24 tools for creating, updating, deleting, and managing projects, tasks (SOAP), financial plans (SOAP), OKRs, and work hierarchy nodes. Runs locally over stdio via the official `mcp` Python SDK.
+An MCP server that connects [Planview Portfolios](https://www.planview.com/products/portfolios/) (enterprise strategic portfolio management) to Claude Desktop or any MCP-compatible AI client. 24 tools covering projects, tasks, financial plans, OKRs, and work hierarchy — bridging both REST and legacy SOAP APIs under a single MCP interface.
 
+## Why This Exists
+
+Planview Portfolios is an enterprise SPM platform used by large organizations to manage project portfolios, resource capacity, and strategic funding. Its API surface is split across REST (projects, work items, OKRs) and SOAP (tasks, financial plans) with different auth models and data formats.
+
+I built this server to unify both API layers behind MCP so Claude can create projects, build financial plans, manage OKRs, and navigate work hierarchies through conversation. It's the write/action companion to Planview's own read-only Beta MCP server — together they cover the full platform.
+
+This is the second MCP server I built for Planview products (the first was [AgilePlace MCP Server](https://github.com/norman2112/agileplaceMCPserver)). Same pattern, completely different APIs — AgilePlace is a modern REST API, Portfolios mixes REST with SOAP services that require different serialization, auth, and error handling.
+
+## What It Does
+
+- **Projects** — full CRUD, attribute discovery, WBS tree navigation
+- **Tasks (SOAP)** — create, read, delete, batch operations via Planview's TaskService
+- **Financial Plans (SOAP)** — read, upsert, discover structure, copy from reference projects
+- **OKRs** — list objectives, key results, bulk fetch
+- **Work Hierarchy** — list, read, and update work items across the portfolio tree
+- **Two-server architecture** — designed to run alongside Planview's hosted Beta MCP, with routing hints so Claude knows which server handles each request
+
+## Tech Stack
+
+- **Runtime:** Python 3.10+
+- **Protocol:** MCP over stdio (official `mcp` Python SDK)
+- **APIs:** Planview REST (OAuth2) + SOAP (zeep) — TaskService, FinancialPlanService
+- **Validation:** Pydantic for config and input models
+- **HTTP:** httpx (REST), zeep (SOAP)
+
+## Architecture
+
+```
+Claude Desktop / MCP Client
+        ↓ stdio
+  Local MCP Server (Python)
+    ├── Planview REST API (OAuth2 client credentials)
+    │     ├── Projects
+    │     ├── Work Items
+    │     └── OKRs
+    └── Planview SOAP API (zeep + OAuth2)
+          ├── TaskService
+          └── FinancialPlanService
+
+  + Planview Beta MCP (remote, read-only)
+    └── Portfolios, search, cross-tabs, strategies, resources
 ## Two-Server Architecture
 
 This server is designed to run **alongside** the Planview-hosted Beta MCP (`Planview Portfolios US`). Together they cover the full Portfolios surface:
