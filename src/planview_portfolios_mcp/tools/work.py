@@ -22,7 +22,7 @@ def _format_attributes(attributes: list[str] | str | None) -> dict[str, str]:
 
 @log_performance
 async def get_work_attributes() -> dict[str, Any]:
-    """[LOCAL — raw work attribute list. For natural-language attribute search, use Beta MCP's searchAttributes(entity='work').]
+    """[LOCAL — raw work attribute list. For natural-language attribute search, use Anvi Prod's searchAttributes(entity='work').]
 
     Get available work attributes."""
     start_time = time()
@@ -75,7 +75,7 @@ async def list_work(
     attributes: list[str] | str | None = None,
     fields: list[str] | None = None,
 ) -> dict[str, Any]:
-    """[LOCAL — query work items with filter (e.g., project.Id .eq X). Limited filtering support. For portfolio-scoped project lists, use Beta MCP's listProjectsByPortfolioId instead.]
+    """[LOCAL — query work items with filter (e.g., project.Id .eq X). Needs a known project id. Cannot list the Plan tree or strategy hierarchy. For portfolio-scoped project lists, use Anvi Prod's listProjectsByPortfolioId instead.]
 
     List work items using a filter string (e.g., `project.Id .eq 1906`).
 
@@ -315,7 +315,7 @@ async def get_work(
     work_id: str,
     attributes: list[str] | str | None = None,
 ) -> dict[str, Any]:
-    """[LOCAL — read any single work hierarchy node by ID (including portfolio-level nodes). For listing projects within a portfolio, use Beta MCP's listProjectsByPortfolioId.]
+    """[LOCAL — read any single work hierarchy node by ID (including portfolio-level nodes). For listing projects within a portfolio, use Anvi Prod's listProjectsByPortfolioId.]
 
     Get a single work item by id."""
     start_time = time()
@@ -378,7 +378,7 @@ async def update_work(
     updates: dict[str, Any],
     attributes: list[str] | str | None = None,
 ) -> dict[str, Any]:
-    """[LOCAL — write operation. Beta MCP is read-only and cannot update work items.]
+    """[LOCAL — write operation. Anvi Prod is read-only and cannot update work items.]
 
     Update an existing work item (partial payload).
 

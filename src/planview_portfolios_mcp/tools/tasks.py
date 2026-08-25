@@ -66,7 +66,7 @@ async def create_task(
     task_data: dict[str, Any],
     options: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """[LOCAL — write operation via SOAP. Beta MCP cannot create tasks.]
+    """[LOCAL — write operation via SOAP. Anvi Prod cannot create tasks.]
 
     Create a new task using SOAP TaskService.
 
@@ -339,7 +339,7 @@ async def batch_create_tasks(
     tasks: list[dict[str, Any]],
     options: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """[LOCAL — bulk write operation via SOAP. Beta MCP cannot create tasks.]
+    """[LOCAL — bulk write operation via SOAP. Anvi Prod cannot create tasks.]
 
     Batch create multiple tasks in a single SOAP call.
     
@@ -679,7 +679,7 @@ async def batch_create_tasks(
 
 @log_performance
 async def read_task(task_key: str) -> dict[str, Any]:
-    """[LOCAL — SOAP task read by key. For reading tasks with custom attributes by project or task ID, Beta MCP's getTasksByProjectIds or getTasksByTaskIds may be richer.]
+    """[LOCAL — SOAP task read by key. For reading tasks with custom attributes by project or task ID, Anvi Prod's getTasksByProjectIds or getTasksByTaskIds may be richer.]
 
     Read a task by key using SOAP TaskService.
 
@@ -779,7 +779,7 @@ async def read_task(task_key: str) -> dict[str, Any]:
 async def batch_delete_tasks(
     task_keys: list[str],
 ) -> dict[str, Any]:
-    """[LOCAL — bulk write operation via SOAP. Beta MCP cannot delete tasks.]
+    """[LOCAL — bulk write operation via SOAP. Anvi Prod cannot delete tasks.]
 
     Delete multiple tasks in bulk using the SOAP TaskService.
 
@@ -916,7 +916,7 @@ async def batch_delete_tasks(
 
 @log_performance
 async def delete_task(task_key: str) -> dict[str, Any]:
-    """[LOCAL — write operation via SOAP. Beta MCP cannot delete tasks.]
+    """[LOCAL — write operation via SOAP. Anvi Prod cannot delete tasks.]
 
     Delete a task using SOAP TaskService.
 

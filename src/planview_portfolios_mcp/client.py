@@ -14,7 +14,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from .config import settings
+from .config import get_httpx_verify_setting, settings
 from .exceptions import (
     PlanviewAuthError,
     PlanviewConnectionError,
@@ -38,19 +38,22 @@ class PlanviewClient:
 
     async def __aenter__(self) -> httpx.AsyncClient:
         """Create and return HTTP client with connection pooling."""
+        if not settings.planview_client_id or not settings.planview_client_secret:
+            raise PlanviewAuthError(
+                "OAuth credentials are required (PLANVIEW_CLIENT_ID/PLANVIEW_CLIENT_SECRET).",
+                code="config",
+                hint="Set PLANVIEW_CLIENT_ID and PLANVIEW_CLIENT_SECRET. These are OAuth client credentials, not a bearer token.",
+            )
+
+        token = await get_oauth_token()
+        auth_header = f"Bearer {token}"
+        tenant = settings.planview_tenant_id
+
         if self._client is None:
-            # Get authentication token
-            if not settings.planview_client_id or not settings.planview_client_secret:
-                raise PlanviewAuthError(
-                    "OAuth credentials are required (PLANVIEW_CLIENT_ID/PLANVIEW_CLIENT_SECRET)."
-                )
-
-            token = await get_oauth_token()
-            auth_header = f"Bearer {token}"
-
             self._client = httpx.AsyncClient(
                 base_url=settings.planview_api_url,
                 timeout=settings.api_timeout,
+                verify=get_httpx_verify_setting(),
                 limits=httpx.Limits(
                     max_keepalive_connections=20,
                     max_connections=100,
@@ -58,9 +61,15 @@ class PlanviewClient:
                 ),
                 headers={
                     "Authorization": auth_header,
-                    "X-Tenant-Id": settings.planview_tenant_id,
+                    "X-Tenant-Id": tenant,
                 },
             )
+        else:
+            # Always attach the current cached token. A prior force-refresh
+            # (or SOAP warmup) can otherwise leave a stale Authorization header
+            # on this long-lived client, which then 401s with a "fresh" token.
+            self._client.headers["Authorization"] = auth_header
+            self._client.headers["X-Tenant-Id"] = tenant
         return self._client
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -151,16 +160,28 @@ async def make_request(
         ):
             logger.info("Got 401, refreshing OAuth token and retrying")
             try:
-                # Refresh token and update client headers
                 token = await get_oauth_token(force_refresh=True)
                 client.headers["Authorization"] = f"Bearer {token}"
-                # Retry the request
+                client.headers["X-Tenant-Id"] = settings.planview_tenant_id
                 response = await client.request(method, url, **kwargs)
-            except (PlanviewAuthError, PlanviewError, httpx.RequestError, httpx.TimeoutException):
-                logger.warning(
-                    "Failed to refresh OAuth token after 401",
-                    exc_info=True,
-                )
+            except PlanviewAuthError as refresh_error:
+                raise PlanviewAuthError(
+                    f"Request returned 401 and token refresh failed: {refresh_error}",
+                    code=getattr(refresh_error, "code", "auth"),
+                    hint=getattr(refresh_error, "hint", None)
+                    or "Run test_connection to see whether the token request or secured ping is failing.",
+                    status_code=401,
+                    endpoint=str(response.request.url) if response.request else url,
+                    details=getattr(refresh_error, "details", None),
+                ) from refresh_error
+            except (PlanviewError, httpx.RequestError, httpx.TimeoutException) as refresh_error:
+                raise PlanviewAuthError(
+                    f"Request returned 401 and token refresh failed: {refresh_error}",
+                    code="token_refresh_failed",
+                    hint="Run test_connection. A 401 after a brand-new token is usually PLANVIEW_TENANT_ID or the API URL host.",
+                    status_code=401,
+                    endpoint=url,
+                ) from refresh_error
 
         # Check if status code warrants retry
         if should_retry_status(response.status_code):
@@ -184,10 +205,25 @@ async def make_request(
         ) from e
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 401:
-            raise PlanviewAuthError("Invalid API key or token expired") from e
+            raise PlanviewAuthError(
+                "Planview returned 401 Unauthorized. The access token was rejected.",
+                code="unauthorized",
+                hint=(
+                    "Run test_connection. If token issuance succeeds but ping fails, "
+                    "fix PLANVIEW_TENANT_ID. If token issuance fails, fix CLIENT_ID/SECRET "
+                    "or PLANVIEW_API_URL (lowercase, must end with /polaris). "
+                    "PLANVIEW_CLIENT_SECRET is the OAuth client secret, not a bearer token."
+                ),
+                status_code=401,
+                endpoint=str(e.request.url),
+            ) from e
         elif e.response.status_code == 403:
             raise PlanviewAuthError(
-                f"Permission denied accessing {e.request.url.path}"
+                f"Permission denied accessing {e.request.url.path}",
+                code="forbidden",
+                hint="The OAuth client authenticated but is not allowed to call this path. Check the OAuth client's scopes and PLANVIEW_TENANT_ID.",
+                status_code=403,
+                endpoint=str(e.request.url),
             ) from e
         elif e.response.status_code == 404:
             raise PlanviewNotFoundError(

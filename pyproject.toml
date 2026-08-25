@@ -20,6 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
+portfoliosMCP_v2 = "planview_portfolios_mcp.server:main"
 planview-portfolios-actions = "planview_portfolios_mcp.server:main"
 
 [project.optional-dependencies]
