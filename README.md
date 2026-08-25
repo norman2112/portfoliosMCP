@@ -1,29 +1,50 @@
-# Planview Portfolios MCP Server
+# Planview Portfolios MCP Server (v2)
 
-An MCP server that connects [Planview Portfolios](https://www.planview.com/products/portfolios/) (enterprise strategic portfolio management) to Claude Desktop or any MCP-compatible AI client. 24 tools covering projects, tasks, financial plans, OKRs, and work hierarchy — bridging both REST and legacy SOAP APIs under a single MCP interface.
+An MCP server that connects [Planview Portfolios](https://www.planview.com/products/portfolios/) (enterprise strategic portfolio management) to Claude Desktop or any MCP-compatible AI client. Five action-based tools covering projects, tasks, financial plans, and work hierarchy — bridging both REST and legacy SOAP APIs under a single MCP interface.
 
 ## Why This Exists
 
-Planview Portfolios is an enterprise SPM platform used by large organizations to manage project portfolios, resource capacity, and strategic funding. Its API surface is split across REST (projects, work items, OKRs) and SOAP (tasks, financial plans) with different auth models and data formats.
+Planview Portfolios is an enterprise SPM platform used by large organizations to manage project portfolios, resource capacity, and strategic funding. Its API surface is split across REST (projects, work items) and SOAP (tasks, financial plans) with different auth models and data formats.
 
-I built this server to unify both API layers behind MCP so Claude can create projects, build financial plans, manage OKRs, and navigate work hierarchies through conversation. It's the write/action companion to Planview's own read-only Beta MCP server — together they cover the full platform.
+This server unifies both API layers behind MCP so Claude can create projects, build financial plans, manage tasks, and navigate work hierarchies through conversation.
 
 This is the second MCP server I built for Planview products (the first was [AgilePlace MCP Server](https://github.com/norman2112/agileplaceMCPserver)). Same pattern, completely different APIs — AgilePlace is a modern REST API, Portfolios mixes REST with SOAP services that require different serialization, auth, and error handling.
 
+## What Changed in v2
+
+v1 exposed 24 tools. v2 exposes **5**.
+
+Benchmark evidence is consistent that tool count degrades LLM tool-selection accuracy, and v1's surface had a lot of near-duplicates (`get_project` / `create_project` / `update_project` / `delete_project` → one `manage_project` with an `action` parameter). v2 collapses each domain into a single action-dispatched tool.
+
+| v1 | v2 |
+| --- | --- |
+| `get_project`, `create_project`, `update_project`, `delete_project`, `get_project_attributes`, `list_field_reference` | `manage_project` (`create` / `get` / `update` / `delete` / `fields`) |
+| `list_work`, `get_work`, `update_work`, `get_work_attributes`, `get_project_wbs` | `inspect_work` (`wbs` / `get` / `list` / `update`) |
+| `create_task`, `read_task`, `delete_task`, `batch_create_tasks`, `batch_delete_tasks` | `manage_tasks` (`create` / `read` / `delete`, all batch-capable) |
+| `read_financial_plan`, `upsert_financial_plan`, `discover_financial_plan_info`, `load_financial_plan_from_reference` | `manage_financial_plan` (`read` / `discover` / `upsert` / `copy`) |
+| `oauth_ping` | `test_connection` (structured checks, not a bare 401) |
+
+Other v2 changes:
+
+- **OKR tools removed.** Out of scope for v2; not shipped.
+- **Scope is stated inline.** Every tool description opens with a `[LOCAL — ...]` summary of what it does and does not cover, so Claude doesn't attempt discovery this server can't perform.
+- **Warnings promoted.** Create responses surface Planview API warnings at the top level (`warnings`, `has_warnings`, `warning_hint`) instead of burying them in `meta`.
+- **Discover returns labeled keys.** `manage_financial_plan action=discover` returns `accounts` and `periods` as `[{key, description}]`, so you can pick "Aug 2026" without a second call.
+- **Upsert accepts both payload shapes.** Flat `Lines: [...]` or SOAP-style `Lines.FinancialPlanLineDto[...]` — nested envelopes are normalized on input.
+
 ## What It Does
 
-- **Projects** — full CRUD, attribute discovery, WBS tree navigation
-- **Tasks (SOAP)** — create, read, delete, batch operations via Planview's TaskService
-- **Financial Plans (SOAP)** — read, upsert, discover structure, copy from reference projects
-- **OKRs** — list objectives, key results, bulk fetch
-- **Work Hierarchy** — list, read, and update work items across the portfolio tree
-- **Two-server architecture** — designed to run alongside Planview's hosted Beta MCP, with routing hints so Claude knows which server handles each request
+- **Projects** — full CRUD, curated writable-field catalog, live attribute lookup
+- **Work hierarchy** — WBS tree navigation, work-node read/update
+- **Tasks (SOAP)** — create, read, delete via Planview's TaskService
+- **Financial plans (SOAP)** — read, discover structure, upsert, copy from a reference project
+- **Connection diagnostics** — structured config/token/ping checks
 
 ## Tech Stack
 
 - **Runtime:** Python 3.10+
 - **Protocol:** MCP over stdio (official `mcp` Python SDK)
-- **APIs:** Planview REST (OAuth2) + SOAP (zeep) — TaskService, FinancialPlanService
+- **APIs:** Planview REST (OAuth2 client credentials) + SOAP (zeep) — TaskService, FinancialPlanService
 - **Validation:** Pydantic for config and input models
 - **HTTP:** httpx (REST), zeep (SOAP)
 
@@ -35,30 +56,19 @@ Claude Desktop / MCP Client
   Local MCP Server (Python)
     ├── Planview REST API (OAuth2 client credentials)
     │     ├── Projects
-    │     ├── Work Items
-    │     └── OKRs
+    │     └── Work Items
     └── Planview SOAP API (zeep + OAuth2)
           ├── TaskService
           └── FinancialPlanService
+```
 
-  + Planview Beta MCP (remote, read-only)
-    └── Portfolios, search, cross-tabs, strategies, resources
-## Two-Server Architecture
+## Scope
 
-This server is designed to run **alongside** the Planview-hosted Beta MCP (`Planview Portfolios US`). Together they cover the full Portfolios surface:
+This server is built for **acting on things you can already identify** — creating projects, writing financial plans, managing tasks, updating work nodes.
 
-| Server | Role | Tools | Transport |
-| --- | --- | --- | --- |
-| **Beta MCP** (`Planview Portfolios US`) | Read — portfolios, search, cross-tabs, strategies, resources, dependencies, hierarchy trees | 29 | Planview-hosted (remote) |
-| **Local MCP** (`planview-portfolios-actions`) | Write — create/update/delete projects, SOAP tasks, financial plans, OKRs, work node access | 24 | Local stdio |
+It deliberately does **not** do discovery. There is no "list all portfolios," no project search, no strategy-tree browsing. Every tool takes an id you already have. That keeps the surface small and the behavior predictable.
 
-**Beta handles:** "Show me my portfolios," "List projects in Mobility," "How many projects are in-flight?," "Search for a project by name," "What's the strategy breakdown?"
-
-**Local handles:** "Create a new project," "Add tasks to this project," "Set up a financial plan," "Show me OKRs," "Update project status," "Copy a financial plan from a reference project."
-
-**Together:** Beta finds → Local acts. "Find all behind-schedule projects in Mobility" (beta) → "Update their status to At Risk" (local).
-
-All tool descriptions include `[LOCAL — ...]` routing hints so Claude knows which server to use without guessing.
+In practice you'll get ids from the Planview UI, from a previous call's response, or from another tool. If you use a read-oriented Planview MCP alongside this one, that pairing works fine — but nothing here depends on it.
 
 ## Before You Start — Checklist
 
@@ -66,10 +76,49 @@ Gather these **before** you touch anything. You will be stuck without them.
 
 - [ ] **API URL** — Your Planview instance URL + `/polaris` (e.g., `https://scdemo5xx.pvcloud.com/polaris`) — must be **lowercase**
 - [ ] **Client ID** — From Administration → Users → OAuth2 credentials
-- [ ] **Client Secret** — Shown **once** at OAuth credential creation. If you didn't copy it, you need to create a new one.
-- [ ] **Global Tenant ID** — This is not obvious in the UI. Ask your Planview admin.
+- [ ] **Client Secret** — Shown **once** at OAuth credential creation. If you didn't copy it, create a new one.
+- [ ] **Global Tenant ID** — Not obvious in the UI. Ask your Planview admin.
+- [ ] **Parent structure codes** — See [Work Hierarchy Setup](#work-hierarchy-setup-required-for-project-creation) below. You cannot create a project without one.
 
 > ⚠️ **Do not skip this step.** You will get through the entire setup and hit a wall at the end if any of these are missing or wrong.
+
+---
+
+## Work Hierarchy Setup (Required for Project Creation)
+
+`manage_project action=create` requires `data.parent.structureCode` — the work-hierarchy (`$Plan`) folder one level above Primary Planning Level. **This server cannot discover it**, so you need to grab it once from the Planview UI.
+
+Do this before your first create and you won't have to think about it again.
+
+1. In Planview, go to **Menu → Administration → Architecture → Primary Structures**
+2. Find **Work Structure** in the list and click **(define levels)**
+3. Screenshot the tree — each node shows its name with the structure code in parentheses
+4. Paste it to Claude: *"Commit these structure codes to memory for [tenant name]"*
+
+After that, project creation just works — Claude has the codes and picks the right parent.
+
+> Requires admin access. If you don't have it, ask whoever administers your tenant for a screenshot of that page — it's a one-time ask.
+
+**Two things to know:**
+
+- **Codes are per-tenant.** Nothing carries between environments. Label the tenant when you commit them.
+- **Resolve by code, never by name.** Duplicate folder names are common (one demo tenant has three departments named "Marketing" and two nodes named "Archived Area"). The code is the only unambiguous handle.
+
+The layer you want is where projects hang directly — typically Department, one below Division:
+
+```
+PlanRoot (Enterprise)
+└── Active Enterprise Area
+    └── Information Technology      ← Division
+        ├── Mobility                ← Department  ✅ use this code
+        ├── System Development      ← Department  ✅
+        └── Business Applications   ← Department  ✅
+            └── [your project]
+```
+
+> Note: portfolio entity IDs are **not** work-hierarchy node IDs. The same business unit can be portfolio `5964` and work node `3787`. They are not interchangeable.
+
+> Also distinct from **alternate structures** (Region, Line of Business, etc.), which live under **Administration → Attributes and Column Sets → Alternate Structures**. Both use structure codes; they are different trees.
 
 ---
 
@@ -148,7 +197,7 @@ If the file doesn't exist, create a new text file with that exact name.
 ```json
 {
   "mcpServers": {
-    "planview-portfolios-actions": {
+    "portfoliosMCP_v2": {
       "command": "C:\\portfoliosMCP\\venv\\Scripts\\python.exe",
       "args": ["-m", "planview_portfolios_mcp"],
       "env": {
@@ -181,10 +230,10 @@ Close Claude Desktop completely — use **File → Exit** or right-click the ico
 In Claude Desktop, type:
 
 ```
-Use oauth_ping to check my Planview connection
+Use test_connection to check my Planview connection
 ```
 
-If you see a success response, you're done. If you get an error, check the troubleshooting table below.
+You should get a structured result with config, token, and ping checks. If any check fails, the response tells you which one — see the troubleshooting table below.
 
 ---
 
@@ -230,7 +279,7 @@ If the file doesn't exist, create it.
 ```json
 {
   "mcpServers": {
-    "planview-portfolios-actions": {
+    "portfoliosMCP_v2": {
       "command": "/Users/yourname/portfoliosMCP/venv/bin/python3",
       "args": ["-m", "planview_portfolios_mcp"],
       "env": {
@@ -251,7 +300,7 @@ Replace the Python path with your output from Step 3. Fill in all four credentia
 
 ### Step 7: Test it
 
-Ask Claude: `"Use oauth_ping to check my Planview connection"`
+Ask Claude: `"Use test_connection to check my Planview connection"`
 
 ---
 
@@ -262,9 +311,11 @@ Ask Claude: `"Use oauth_ping to check my Planview connection"`
 | `python` or `pip` is "not recognized" | Python isn't installed or isn't on PATH | Reinstall Python from python.org — check **"Add Python to PATH"** |
 | "Bad escaped character in JSON" | Single backslashes in the config file | Change every `\` to `\\` in the `command` path |
 | "No module named planview_portfolios_mcp" | Package not installed into the venv | Run `pip install -e .` from the repo folder (not `pip install -r requirements.txt`) |
-| OAuth 400 error | Bad credentials or uppercase API URL | Double-check all four credential values. Make sure the API URL is **lowercase** and ends with `/polaris` |
+| `test_connection`: token OK, ping 401 | Tenant ID is wrong or empty | Almost never a stale secret — re-check `PLANVIEW_TENANT_ID` first |
+| OAuth 400 error | Bad credentials or uppercase API URL | Double-check all four values. API URL must be **lowercase** and end with `/polaris` |
 | 401 Unauthorized | Wrong Client ID, Secret, or Tenant ID | Re-verify all credentials. Watch for extra spaces when pasting |
 | Tools don't show up in Claude | Claude Desktop didn't fully restart | Quit via File → Exit (not just X), then reopen |
+| Tools vanish after an edit | Server crashed on startup | Check your terminal for a stack trace, then toggle the connector off/on |
 | JSON syntax error on startup | Malformed config file | Copy your config into [jsonlint.com](https://jsonlint.com) to find the error |
 | Folder has no `pyproject.toml` | Nested folder from GitHub zip | Look one folder deeper — move contents up so `pyproject.toml` is at your root path |
 
@@ -282,107 +333,128 @@ Ask Claude: `"Use oauth_ping to check my Planview connection"`
 
 ## Tools
 
-These sections list **every MCP tool this server registers** (24 total). Older drafts of this project mentioned `list_resources` / `get_resource` / `allocate_resource`; those helpers still exist in `tools/resources.py` as **optional, non-exposed** REST wrappers—they are **not** in `tool_registry.py` or `server.py` and clients will not see them.
+Five tools, action-dispatched. Every description opens with a `[LOCAL — ...]` summary stating what the tool covers and what it can't do.
 
-### Projects (REST) — Read & Write
+### `test_connection`
 
-| Tool | Description |
+No parameters. Runs three checks and always returns a structured result rather than throwing:
+
+1. **Config** — API URL shape, client id/secret present, tenant id present. Detects a bearer JWT pasted into `PLANVIEW_CLIENT_SECRET`.
+2. **Token** — tries multipart, then form, then JSON encoding.
+3. **Ping** — secured ping with that token and `X-Tenant-Id`.
+
+> Token succeeds but ping returns 401 → tenant ID is wrong or empty. Not a stale secret.
+
+### `manage_project`
+
+| Action | Notes |
 | --- | --- |
-| `get_project` | Get a single project by ID |
-| `create_project` | Create a new project (auto-defaults dates if omitted) |
-| `update_project` | Partial update of project fields |
-| `delete_project` | Delete a project by ID (destructive — removes project and all child data) |
-| `get_project_attributes` | List available project attributes |
-| `get_project_wbs` | Get project WBS as a nested tree |
-| `list_field_reference` | Browse writable fields by category (for create/update) |
+| `create` | Requires `data.description` and `data.parent.structureCode`. Dates default to today and +6 months. `create_default_tasks=true` seeds five sample tasks via SOAP. |
+| `get` | Requires `project_id`. Response includes `parent.structureCode` for reuse on later creates. |
+| `update` | Partial PATCH. Field IDs are **case-sensitive** — call `action=fields` first if unsure. |
+| `delete` | Destructive; removes the project and children. |
+| `fields` | Curated writable-field catalog (~120 fields). Optional `category` filter. `include_live_catalog=true` fetches the live attribute list. |
 
-> **For listing/searching projects across portfolios**, use Beta MCP's `listProjectsByPortfolioId`, `searchProjectByName`, or `getProjectsByPortfolioId`.
+> ⚠️ **Do not invent StructureCode values** (Status, Region, RAG, etc.) on create. They are tenant-specific and the catalog's `example` values are not safe to send. Omit them and let Planview apply product defaults, then PATCH with codes you've verified.
 
-### Work Items (REST) — Read & Write
+> Check `has_warnings` after every create. See [Warnings](#warnings-are-non-fatal-but-real) below.
 
-| Tool | Description |
+**Not supported:** listing the work tree, browsing `$Strategy`, or discovering a parent code. Bring the id.
+
+### `inspect_work`
+
+| Action | Notes |
 | --- | --- |
-| `list_work` | List work items using a filter string (e.g., `project.Id .eq 1906`) |
-| `get_work` | Get a single work/hierarchy node by ID (including portfolio-level nodes) |
-| `update_work` | Partial update of a work item |
-| `get_work_attributes` | List available work attributes |
+| `wbs` (default) | Nested WBS tree for a known `project_id`. Optional `max_depth`. |
+| `get` | One work node by `work_id`. |
+| `list` | Work items under a known project. Prefer `project_id` (the filter is built for you); raw `filter` is a fallback, e.g. `project.Id .eq 1906`. |
+| `update` | PATCH a work node. Returns **405 on some instances** — use `manage_project` for project-level fields. |
 
-> **For portfolio-scoped project lists**, use Beta MCP's `listProjectsByPortfolioId`.
+> This is the work hierarchy (`$Plan`), not strategy (`$Strategy`). It cannot enumerate the Plan tree or list parents without an id.
 
-### Tasks (SOAP) — Write-Only
+### `manage_tasks`
 
-| Tool | Description |
+| Action | Notes |
 | --- | --- |
-| `create_task` | Create a task (PascalCase fields, key URI format) |
-| `read_task` | Read a task by key (`key://`, `ekey://`, or `search://`) |
-| `delete_task` | Delete a task (cascades to children) |
-| `batch_create_tasks` | Create multiple tasks in a single SOAP call |
-| `batch_delete_tasks` | Delete multiple tasks (returns per-key success/failure) |
+| `create` | Requires `tasks` (list; length 1 is fine). Each needs `Description`. `FatherKey` optional if `project_id` is set. An `ekey://` is minted when `Key` is missing so retries don't duplicate. |
+| `read` | Requires `task_key` or `task_keys`. Null fields in the response do **not** mean the create failed. |
+| `delete` | Requires `task_key` or `task_keys`. Cascades to children. Per-key results. |
 
-> Task updates are not exposed: the SOAP Update operation does not serialize reliably with zeep. To change a task, delete and recreate it (or use the Planview UI).
+> **Task updates are not supported.** SOAP Update doesn't serialize reliably with zeep. Delete and recreate, or use the UI.
 
-> **For reading tasks with custom attributes**, Beta MCP's `getTasksByProjectIds` or `getTasksByTaskIds` may be richer.
+> SOAP Create is **not atomic** — the response carries per-task success/failure. Retry only the failures.
 
-### Financial Plans (SOAP) — Local-Only
+### `manage_financial_plan`
 
-| Tool | Description |
+| Action | Notes |
 | --- | --- |
-| `read_financial_plan` | Read plan structure, accounts, and periods |
-| `upsert_financial_plan` | Create or update a financial plan (single-line optimized) |
-| `discover_financial_plan_info` | Smart discovery with reference project fallback |
-| `load_financial_plan_from_reference` | Copy account structure + values from a reference project (dry-run by default) |
+| `read` | Plan for `project_id` (or `entity_key`) + `version_key` (default Actual/Forecast `key://14/1`). `include_entries=false` by default to keep the payload small. |
+| `discover` | Accounts and periods with fallback: target → reference project → config. Returns `accounts` / `periods` as `[{key, description}]` plus bare key lists. Source is tagged. Use this when upsert says "No editable lines." |
+| `upsert` | Requires `plan_data` with `Lines`. Creates the plan if it doesn't exist. |
+| `copy` | Copies account structure and values from `reference_project_id` onto `target_project_id`. **Dry-run unless `confirm=true`.** Always preview first. |
 
-> **Tip:** Use `discover_financial_plan_info` or `read_financial_plan` first to find valid account/period keys before calling `upsert_financial_plan`.
+**Preferred upsert shape:**
 
-> No Beta MCP equivalent exists for financial plans.
+```json
+{
+  "EntityKey": "key://2/$Plan/17696",
+  "VersionKey": "key://14/1",
+  "Lines": [{
+    "AccountKey": "key://2/$Account/3653",
+    "Unit": "Currency",
+    "Entries": [
+      { "PeriodKey": "key://16/183", "Value": 50000 },
+      { "PeriodKey": "key://16/184", "Value": 50000 }
+    ]
+  }]
+}
+```
 
-### OKRs (REST) — Local-Only
+SOAP-style envelopes (`Lines.FinancialPlanLineDto`, `Entries.EntryDto`) are also accepted and normalized — so a `read` response can be fed back in after adding entries.
 
-| Tool | Description |
-| --- | --- |
-| `list_objectives` | List objectives with pagination |
-| `get_key_results_for_objective` | Get key results for a specific objective |
-| `list_all_objectives_with_key_results` | Bulk fetch all objectives + their key results |
+> ⚠️ **Never build PeriodKeys by incrementing.** Period ids skip across fiscal-year boundaries — one tenant runs `…181, 182, 183 … 187` then jumps to `193`. Only use keys returned by `discover` or `read`. Prefer the labeled `periods` array so you can see which month you're writing to.
 
-> No Beta MCP equivalent exists for OKRs.
+---
 
-### Utility
+## Behaviors Worth Knowing
 
-| Tool | Description |
-| --- | --- |
-| `oauth_ping` | Verify OAuth credentials are working |
+### Warnings are non-fatal but real
 
-## Authentication
+Create responses promote Planview API warnings to top-level `warnings` / `has_warnings` / `warning_hint`. The project **does** exist — do not retry the create.
 
-| Variable | Description |
-| --- | --- |
-| `PLANVIEW_API_URL` | Base URL including `/polaris` path (lowercase) |
-| `PLANVIEW_CLIENT_ID` | OAuth Client ID |
-| `PLANVIEW_CLIENT_SECRET` | OAuth Client Secret |
-| `PLANVIEW_TENANT_ID` | Organization Tenant ID |
+The common one is `InvalidDefaultValues` + `InvalidStructureCode`, meaning a tenant-configured attribute default points at a code Planview won't accept. The field is silently left unset. Example seen in the wild:
 
-> The Client Secret is only shown once at creation. Store it securely.
+```
+1020 InvalidStructureCode: (2263) is not a valid choice for Region
+```
 
-## SOAP API Notes
+The attribute default is stored as a `code|label` pair captured when it was set (`2263|North America`). The label is a snapshot, not a live lookup — so a correct-looking label tells you nothing about whether the code still resolves. Fix it in **Administration → Attributes and Column Sets → Alternate Structures → [attribute] → Edit Attribute**, either by reactivating the code (**Show Deactivated Elements**) or repointing the Default list.
 
-This server uses both REST and SOAP APIs. SOAP is used for tasks (`TaskService`) and financial plans (`FinancialPlanService`).
+If nothing in your workflow reads that field, ignoring it is a legitimate choice.
 
-Key things to know:
+### SOAP echoes are incomplete
 
-- **Response payloads may be incomplete** — the API confirms success but doesn't always echo back full data. Use the corresponding read tool to verify.
-- **Warnings are non-fatal** — `InvalidStructureCode` and `InvalidDefaultValues` indicate configuration issues but don't prevent successful operations.
-- **Field names are PascalCase** — `FatherKey`, not `father_key`.
-- **Key URI formats:** `key://2/$Plan/12345` (direct), `ekey://2/namespace/id` (external), `search://2/$Plan?description=Name` (search).
-- `batch_delete_tasks` has known SOAP response parsing reliability issues — verify deletions with `read_task`.
+`upsert` routinely returns `Lines: []` on success. This is normal, not a failure. **Always verify with `action=read`.** Same for tasks — null fields in a read response don't mean the write failed.
 
-See `SOAP_API_BEHAVIORS.md` for the full rundown.
+### Read and upsert are shaped differently
+
+`read` passes SOAP's response through as-is, so collections arrive wrapped in typed envelopes (`Lines.FinancialPlanLineDto[]`). That wrapper is an artifact of XML→JSON conversion — XML has no array type, so a converter keys the list by its child element name. `upsert` normalizes both shapes on input, so the round trip works either way.
+
+### Key URI formats
+
+- `key://2/$Plan/12345` — direct
+- `ekey://2/namespace/id` — external
+- `search://2/$Plan?description=Name` — search
+
+Field names in SOAP payloads are **PascalCase** (`FatherKey`, not `father_key`).
 
 ## Known Limitations
 
-- **`list_projects` without a filter** — some instances require a filter (e.g., `project.Id .eq 3817`)
-- **`update_work`** — returns 405 on some instances. Use `update_project` for project-level items
-- **Task updates** — not supported. Workaround: delete + recreate
-- **`batch_delete_tasks`** — SOAP response parsing is flaky. Verify with `read_task`
+- **No discovery.** No portfolio lists, project search, or strategy browsing. Every tool needs an id you already have.
+- **Parent structure codes** — must come from the Planview UI. See [Work Hierarchy Setup](#work-hierarchy-setup-required-for-project-creation).
+- **`inspect_work action=update`** — 405 on some instances. Use `manage_project` for project-level items.
+- **Task updates** — not supported. Delete and recreate.
+- **`inspect_work action=list` without a filter** — some instances require one.
 
 ## Development
 
@@ -393,35 +465,10 @@ cp .env.example .env  # Add your credentials
 
 # Run
 python -m planview_portfolios_mcp
-planview-portfolios-actions   # console script (same server; MCP name planview-portfolios-actions)
 
 # Test & lint
 pytest
 black src/ && ruff check src/ && mypy src/
-```
-
-## Project Structure
-
-```
-src/planview_portfolios_mcp/
-├── server.py          # MCP Server (stdio) + tool routing
-├── tool_registry.py   # Tool definitions, routing hints, input schemas
-├── __main__.py        # Entry point (python -m planview_portfolios_mcp)
-├── config.py          # Pydantic Settings (loads from .env)
-├── client.py          # Shared HTTP client with retry logic
-├── soap_client.py     # SOAP client (zeep) with retry logic
-├── exceptions.py      # Custom exception hierarchy
-├── models.py          # Pydantic input validation models
-├── logging_config.py  # Structured logging
-└── tools/
-    ├── projects.py    # Project tools
-    ├── work.py        # Work hierarchy tools
-    ├── tasks.py       # Task tools (SOAP)
-    ├── financial_plan.py  # Financial plan tools (SOAP)
-    ├── okrs.py        # OKR tools
-    ├── ping.py        # OAuth ping
-    ├── resources.py   # Internal REST helpers for /resources (not MCP-exposed)
-    └── __init__.py
 ```
 
 ## Requirements
