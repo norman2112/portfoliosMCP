@@ -311,13 +311,9 @@ Ask Claude: `"Use test_connection to check my Planview connection"`
 | `python` or `pip` is "not recognized" | Python isn't installed or isn't on PATH | Reinstall Python from python.org — check **"Add Python to PATH"** |
 | "Bad escaped character in JSON" | Single backslashes in the config file | Change every `\` to `\\` in the `command` path |
 | "No module named planview_portfolios_mcp" | Package not installed into the venv | Run `pip install -e .` from the repo folder (not `pip install -r requirements.txt`) |
-<<<<<<< HEAD
 | `test_connection`: token OK, ping 401 | Tenant ID is wrong or empty | Almost never a stale secret — re-check `PLANVIEW_TENANT_ID` first |
-| OAuth 400 error | Bad credentials or uppercase API URL | Double-check all four values. API URL must be **lowercase** and end with `/polaris` |
-=======
 | OAuth 400 error | Bad credentials, uppercase API URL, bearer token in CLIENT_SECRET, or (rarer) endpoint not binding the grant | Run `test_connection` and read `diagnosis.verdict` / `next_step`. `credentials_rejected` → fix id/secret. `request_not_bound` → support ticket (not a password problem). Compare config `sha256_8` fingerprints for stale values |
 | 401 after a new token | Token issued, ping rejected | Almost always `PLANVIEW_TENANT_ID`. Run `test_connection` — if the token check is OK and ping fails, fix the tenant ID |
->>>>>>> ssl-verify-config
 | 401 Unauthorized | Wrong Client ID, Secret, or Tenant ID | Re-verify all credentials. Watch for extra spaces when pasting |
 | Tools don't show up in Claude | Claude Desktop didn't fully restart | Quit via File → Exit (not just X), then reopen |
 | Tools vanish after an edit | Server crashed on startup | Check your terminal for a stack trace, then toggle the connector off/on |
