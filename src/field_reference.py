@@ -7,20 +7,28 @@ This module exports only the ~120 demo-relevant writable fields, organized by ca
 
 IMPORTANT: StructureCode fields use format "code|description" (e.g., "2170|Green").
 The code is what gets sent in the PATCH; the description is human-readable.
+
+Create Parent is the work-hierarchy PPL-1 folder, copied from the Planview UI.
+This catalog cannot enumerate $Plan parents. Strategy hierarchy ($Strategy) is out of scope.
+
+Catalog StructureCode defaults were removed: demo-tenant codes (region/RAG/status)
+caused InvalidDefaultValues on create when agents sent them. Omit StructureCode
+attributes on create unless the code is verified for the target tenant.
 """
 
 from __future__ import annotations
 
 
-# Categories map field_id -> (human_title, type, default_value_or_None, ppl_only)
+# Categories map field_id -> (human_title, type, example_or_None, ppl_only)
+# example_or_None is intentionally unused for StructureCodes (tenant-specific).
 # ppl_only = True means the field is only available at Primary Planning Level (projects), not sub-tasks
 FIELD_CATEGORIES: dict[str, dict[str, tuple[str, str, object | None, bool]] | dict[str, str]] = {
     "core_identity": {
         "_description": "Basic project identity fields",
         "Description": ("Work Name", "Text", None, False),  # max 50 chars
         "ShortName": ("Work ID #", "Text", None, True),  # max 12 chars
-        "Parent": ("Parent", "StructureCode", None, False),
-        "Status": ("Work Status", "StructureCode", "WBS20$REQT|Requested", False),
+        "Parent": ("Parent (work hierarchy PPL-1; copy structure code from Planview UI)", "StructureCode", None, False),
+        "Status": ("Work Status", "StructureCode", None, False),
     },
     "dates": {
         "_description": "Schedule and actual date fields. DateTime format: ISO 8601",
@@ -41,41 +49,45 @@ FIELD_CATEGORIES: dict[str, dict[str, tuple[str, str, object | None, bool]] | di
     },
     "status_assessments": {
         "_description": "RAG status assessments. Values: Green, Yellow, Red (use structureCode|label format)",
-        "Wbs709": ("Overall Status Assessment", "StructureCode", "2170|Green", True),
-        "Wbs722": ("Schedule Status Assessment", "StructureCode", "2176|Green", True),
-        "Wbs721": ("Cost Status Assessment", "StructureCode", "2173|Green", True),
-        "Wbs723": ("Resourcing Status Assessment", "StructureCode", "2179|Green", True),
-        "Wbs724": ("Quality Status Assessment", "StructureCode", "2182|Green", True),
-        "Wbs725": ("Benefit Status Assessment", "StructureCode", "2185|Green", True),
-        "Wbs726": ("Scope Status Assessment", "StructureCode", "2188|Green", True),
-        "Wbs9": ("Manager Assessment", "StructureCode", "Wbs9$GRN|Green", True),
+        "Wbs709": ("Overall Status Assessment", "StructureCode", None, True),
+        "Wbs722": ("Schedule Status Assessment", "StructureCode", None, True),
+        "Wbs721": ("Cost Status Assessment", "StructureCode", None, True),
+        "Wbs723": ("Resourcing Status Assessment", "StructureCode", None, True),
+        "Wbs724": ("Quality Status Assessment", "StructureCode", None, True),
+        "Wbs725": ("Benefit Status Assessment", "StructureCode", None, True),
+        "Wbs726": ("Scope Status Assessment", "StructureCode", None, True),
+        "Wbs9": ("Manager Assessment", "StructureCode", None, True),
     },
     "investment_scoring": {
         "_description": "Investment approval and scoring fields (PPL only)",
         "ProductInvestmentApproval": (
             "Investment Approval",
             "StructureCode",
-            "WBS27$PEND|Pending",
+            None,
             True,
         ),
-        "Wbs27": ("Investment Status", "StructureCode", "WBS27$PEND|Pending", True),
+        "Wbs27": ("Investment Status", "StructureCode", None, True),
         "Wbs59": ("Investment Category", "StructureCode", None, True),
         "score1": ("Investment Priority Score", "Real", None, True),
         "score2": ("Investment Risk Score", "Real", None, True),
         "score3": ("Preliminary Score", "Real", None, True),
     },
     "strategic_classification": {
-        "_description": "Strategic alignment and classification fields",
-        "$Strategy": ("Strategic Hierarchy", "MultiStructureCode", None, True),
-        "Wbs7": ("Strategic Alignment", "StructureCode", "2240|Excellent Alignment", True),
+        "_description": (
+            "Strategic alignment fields on a project. $Strategy is a writable "
+            "attribute only if you already have codes — this MCP cannot browse "
+            "the strategy hierarchy (out of scope; use Anvi Prod)."
+        ),
+        "$Strategy": ("Strategic Hierarchy (out of scope to enumerate; Anvi Prod)", "MultiStructureCode", None, True),
+        "Wbs7": ("Strategic Alignment", "StructureCode", None, True),
         "Str35": ("RGT Type (Run/Grow/Transform)", "StructureCode", None, False),
         "Str34": ("Theme", "StructureCode", None, False),
-        "Wbs713": ("Line of Business", "StructureCode", "2734|Application Development", True),
-        "Wbs37": ("Region", "StructureCode", "2263|North America", True),
-        "Wbs58": ("Service Line", "StructureCode", "2254|Product Service", True),
-        "ExecType": ("Execution Type", "StructureCode", "6354|Project", False),
+        "Wbs713": ("Line of Business", "StructureCode", None, True),
+        "Wbs37": ("Region (optional; unset is fine for demos)", "StructureCode", None, True),
+        "Wbs58": ("Service Line", "StructureCode", None, True),
+        "ExecType": ("Execution Type", "StructureCode", None, False),
         "Wbs22": ("Work Type", "StructureCode", None, False),
-        "Wbs29": ("Execution Stage", "StructureCode", "WBS29CONCP|Concept", False),
+        "Wbs29": ("Execution Stage", "StructureCode", None, False),
     },
     "wsjf_safe": {
         "_description": "WSJF/SAFe prioritization fields. Fields marked NO_EDIT are read-only in UI but technically writable via API",
@@ -94,8 +106,8 @@ FIELD_CATEGORIES: dict[str, dict[str, tuple[str, str, object | None, bool]] | di
     },
     "risk": {
         "_description": "Risk and complexity assessments",
-        "Wbs708": ("Work Risk", "StructureCode", "2248|Medium Risk", False),
-        "Wbs711": ("Work Complexity", "StructureCode", "2233|Medium-High Complexity", True),
+        "Wbs708": ("Work Risk", "StructureCode", None, False),
+        "Wbs711": ("Work Complexity", "StructureCode", None, True),
         "Wbs69": ("Technical Risk", "StructureCode", None, False),
         "Wbs77": ("Business Risk", "StructureCode", None, True),
     },
@@ -167,17 +179,17 @@ def get_all_writable_field_ids() -> set[str]:
 
 
 def get_field_info(field_id: str) -> dict[str, object] | None:
-    """Look up a field by ID. Returns dict with title, type, default, ppl_only, category."""
+    """Look up a field by ID. Returns dict with title, type, example, ppl_only, category."""
 
     for cat_name, cat_fields in FIELD_CATEGORIES.items():
         if field_id in cat_fields and not field_id.startswith("_"):
             # type: ignore[assignment]
-            title, ftype, default, ppl_only = cat_fields[field_id]
+            title, ftype, example, ppl_only = cat_fields[field_id]
             return {
                 "id": field_id,
                 "title": title,
                 "type": ftype,
-                "default": default,
+                "example": example,
                 "ppl_only": ppl_only,
                 "category": cat_name,
             }
@@ -185,7 +197,7 @@ def get_field_info(field_id: str) -> dict[str, object] | None:
 
 
 def get_fields_by_category(category: str) -> dict[str, tuple[str, str, object | None, bool]]:
-    """Get all fields in a category. Returns {field_id: (title, type, default, ppl_only)}."""
+    """Get all fields in a category. Returns {field_id: (title, type, example, ppl_only)}."""
 
     cat = FIELD_CATEGORIES.get(category, {})  # type: ignore[assignment]
     if not isinstance(cat, dict):
@@ -209,7 +221,14 @@ def build_tool_description_appendix() -> str:
 
     lines: list[str] = ["\n\nCURATED FIELD REFERENCE (writable fields organized by category):"]
     lines.append(
+        'Work-hierarchy Parent (create): copy structureCode from the Planview UI (PPL-1). '
+        "This MCP cannot list $Plan parents. Strategy hierarchy ($Strategy) is out of scope."
+    )
+    lines.append(
         'StructureCode format: send {"structureCode": "CODE", "description": "LABEL"} or just {"structureCode": "CODE"}'
+    )
+    lines.append(
+        "Do not invent StructureCode values on create — omit them or verify against the tenant."
     )
     lines.append("")
 
@@ -219,10 +238,8 @@ def build_tool_description_appendix() -> str:
         lines.append(f"[{cat_name}] {desc}")
 
         field_items = [(fid, info) for fid, info in cat_fields.items() if not fid.startswith("_")]
-        for field_id, (title, ftype, default, ppl_only) in sorted(field_items, key=lambda x: x[0]):
+        for field_id, (title, ftype, _example, ppl_only) in sorted(field_items, key=lambda x: x[0]):
             parts = [f"  {field_id}: {title} ({ftype})"]
-            if default is not None:
-                parts.append(f"default={default}")
             if ppl_only:
                 parts.append("PPL-only")
             lines.append(" | ".join(parts))

@@ -41,41 +41,27 @@ except ImportError:  # pragma: no cover
 
 
 _COMPANION_SERVER_INSTRUCTIONS = (
-    "Planview Portfolios — WRITE & ACTION tools. "
-    "Use this server to CREATE, UPDATE, and DELETE projects, tasks, and financial plans, "
-    "and to read OKRs. "
-    "For READ operations like listing portfolios, searching projects, viewing strategies, "
-    "resources, dependencies, and cross-tabs, use the companion 'Planview Portfolios US' (Beta MCP) server instead. "
-    "This server covers: project CRUD, task CRUD (SOAP), financial plan read/write (SOAP), "
-    "OKRs, work hierarchy node access, and field reference discovery. "
-    "MCP server identifier: planview-portfolios-actions."
+    "Planview Portfolios — WRITE & ACTION tools (portfoliosMCP_v2). "
+    "Call test_connection if authentication fails. "
+    "Creating a project requires parent.structureCode from the Planview UI: "
+    "the work-hierarchy ($Plan) folder one level above Primary Planning Level (PPL-1). "
+    "Ask the user for that code. Do not guess. This server cannot list the Plan tree, "
+    "portfolios, or the strategy hierarchy ($Strategy) — strategy is out of scope. "
+    "Use manage_project to create/get/update/delete a project or list writable fields. "
+    "Use inspect_work for a known project's WBS or to patch a work node. "
+    "Use manage_tasks to add, read, or delete tasks. "
+    "Use manage_financial_plan to read, discover, upsert, or copy financials "
+    "(copy is dry-run until confirm=true). "
+    "For listing portfolios, searching projects, strategy trees, resources, "
+    "dependencies, and cross-tabs, use the companion Anvi Prod server."
 )
 
 TOOL_IMPLEMENTATIONS: dict[str, Callable[..., Awaitable[Any]]] = {
-    "oauth_ping": _tools.oauth_ping,
-    "get_project_attributes": _tools.get_project_attributes,
-    "get_work_attributes": _tools.get_work_attributes,
-    "get_project": _tools.get_project,
-    "create_project": _tools.create_project,
-    "update_project": _tools.update_project,
-    "delete_project": _tools.delete_project,
-    "list_field_reference": _tools.list_field_reference,
-    "get_project_wbs": _tools.get_project_wbs,
-    "list_work": _tools.list_work,
-    "update_work": _tools.update_work,
-    "get_work": _tools.get_work,
-    "create_task": _tools.create_task,
-    "batch_create_tasks": _tools.batch_create_tasks,
-    "batch_delete_tasks": _tools.batch_delete_tasks,
-    "read_task": _tools.read_task,
-    "delete_task": _tools.delete_task,
-    "discover_financial_plan_info": _tools.discover_financial_plan_info,
-    "load_financial_plan_from_reference": _tools.load_financial_plan_from_reference,
-    "read_financial_plan": _tools.read_financial_plan,
-    "upsert_financial_plan": _tools.upsert_financial_plan,
-    "list_objectives": _tools.list_objectives,
-    "get_key_results_for_objective": _tools.get_key_results_for_objective,
-    "list_all_objectives_with_key_results": _tools.list_all_objectives_with_key_results,
+    "test_connection": _tools.test_connection,
+    "manage_project": _tools.manage_project,
+    "inspect_work": _tools.inspect_work,
+    "manage_tasks": _tools.manage_tasks,
+    "manage_financial_plan": _tools.manage_financial_plan,
 }
 
 
@@ -153,10 +139,10 @@ async def run_mcp_server() -> None:
             "This is insecure and should only be used as a last resort."
         )
     logger.debug(
-        "OKR credentials configured: CLIENT_ID=%s, CLIENT_SECRET=%s, BEARER_TOKEN=%s",
-        "***" if settings.planview_okr_client_id else "NOT SET",
-        "***" if settings.planview_okr_client_secret else "NOT SET",
-        "***" if settings.planview_okr_bearer_token else "NOT SET",
+        "OAuth client configured: CLIENT_ID=%s, TENANT_ID=%s, API_URL=%s",
+        "***" if settings.planview_client_id else "NOT SET",
+        "***" if settings.planview_tenant_id else "NOT SET",
+        settings.planview_api_url,
     )
 
     async def _warm_soap() -> None:

@@ -16,40 +16,32 @@ if not config_path.exists():
 with open(config_path) as f:
     config = json.load(f)
 
-env = config.get("mcpServers", {}).get("planview-portfolios-actions", {}).get("env", {})
+_servers = config.get("mcpServers", {})
+_entry = _servers.get("portfoliosMCP_v2") or _servers.get("planview-portfolios-actions") or {}
+env = _entry.get("env", {})
 for k, v in env.items():
     os.environ[k] = str(v)
 
 # Now import (reads from os.environ via settings)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from planview_portfolios_mcp.oauth import get_oauth_token, get_okr_oauth_token
-from planview_portfolios_mcp.exceptions import PlanviewAuthError, PlanviewError
+from planview_portfolios_mcp.tools.ping import test_connection
 
 
 async def main():
-    print("Planview API auth test (using claude_desktop_config_corrected.json)\n")
-
-    # 1. Portfolios REST API (OAuth)
-    print("1. Portfolios API (PLANVIEW_*):")
-    try:
-        token = await get_oauth_token()
-        print(f"   OK – got token ({token[:20]}...)")
-    except (PlanviewAuthError, PlanviewError) as e:
-        print(f"   FAIL – {e}")
-        return 1
-
-    # 2. OKR API (OAuth)
-    print("2. OKR API (PLANVIEW_OKR_*):")
-    try:
-        okr_token = await get_okr_oauth_token()
-        print(f"   OK – got token ({okr_token[:20]}...)")
-    except (PlanviewAuthError, PlanviewError) as e:
-        print(f"   FAIL – {e}")
-        return 1
-
-    print("\nAll Planview credentials accepted.")
-    return 0
+    print("Planview API connection test (using claude_desktop_config_corrected.json)\n")
+    result = await test_connection()
+    for check in result.get("checks", []):
+        status = "OK" if check.get("ok") else "FAIL"
+        print(f"  [{status}] {check.get('name')}: {check.get('detail')}")
+    if result.get("ok"):
+        print("\nConnected.")
+        return 0
+    error = result.get("error") or {}
+    print(f"\nFailed: {error.get('error') or error.get('message') or error}")
+    if error.get("hint"):
+        print(f"Hint: {error['hint']}")
+    return 1
 
 
 if __name__ == "__main__":

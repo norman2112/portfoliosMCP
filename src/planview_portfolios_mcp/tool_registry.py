@@ -9,83 +9,41 @@ from typing import Any
 
 import mcp.types as types
 
-# Routing hints (section 5 of product spec); prepended to each tool description.
+# Routing hints prepended to each tool description.
 ROUTING_HINTS: dict[str, str] = {
-    "get_project": (
-        "[LOCAL — single project read by ID. For listing/searching projects across a portfolio, "
-        "use Beta MCP's listProjectsByPortfolioId or searchProjectByName instead.] "
+    "test_connection": (
+        "[LOCAL — diagnose this server's Planview OAuth connection. "
+        "Returns structured checks (config, token, ping) instead of a bare 401.] "
     ),
-    "create_project": (
-        "[LOCAL — write operation. Beta MCP is read-only and cannot create projects.] "
+    "manage_project": (
+        "[LOCAL — create/get/update/delete a project, or list writable fields. "
+        "Create requires parent.structureCode from the Planview UI (work hierarchy, "
+        "PPL-1 folder). This server cannot list portfolios or the strategy hierarchy. "
+        "Do not invent StructureCode attribute defaults on create — omit them or "
+        "verify for this tenant. Region is optional; InvalidDefaultValues on "
+        "optional defaults is demo_safe (create_ok) — continue, do not retry. "
+        "Anvi Prod is read-only and cannot write. For listing/searching projects across "
+        "a portfolio, use Anvi Prod's listProjectsByPortfolioId or searchProjectByName. "
+        "For strategy trees, use Anvi Prod — $Strategy is out of scope here.] "
     ),
-    "update_project": (
-        "[LOCAL — write operation. Beta MCP is read-only and cannot update projects.] "
+    "inspect_work": (
+        "[LOCAL — WBS tree, work-node get/list, or PATCH a phase/task for a known "
+        "project_id. This is the work hierarchy ($Plan), not strategy ($Strategy). "
+        "Cannot enumerate the Plan tree or list parents without an id — get parent "
+        "structure codes from the Planview UI. For portfolio-scoped project lists, "
+        "use Anvi Prod's listProjectsByPortfolioId.] "
     ),
-    "delete_project": (
-        "[LOCAL — write operation. Beta MCP is read-only and cannot delete projects. "
-        "WARNING: destructive operation, deletes project and all child data.] "
+    "manage_tasks": (
+        "[LOCAL — create/read/delete tasks via SOAP. Anvi Prod cannot write tasks. "
+        "For task reads with custom attributes, Anvi Prod's getTasksByProjectIds may be richer.] "
     ),
-    "get_project_attributes": (
-        "[LOCAL — raw attribute list. For natural-language attribute search, use Beta MCP's "
-        "searchAttributes instead.] "
+    "manage_financial_plan": (
+        "[LOCAL — read, discover, upsert, or copy a financial plan via SOAP. "
+        "discover returns accounts/periods as [{key, description}] plus bare key lists. "
+        "Period ids are not contiguous across fiscal years — never invent by incrementing. "
+        "upsert accepts flat Lines or SOAP/read envelopes. "
+        "No Anvi Prod equivalent exists for financial plans.] "
     ),
-    "get_project_wbs": (
-        "[LOCAL — nested WBS tree with schedule data. For a flat hierarchy view, Beta MCP's "
-        "getWorkHierarchy is an alternative.] "
-    ),
-    "list_field_reference": (
-        "[LOCAL — field discovery for write operations. For read-side attribute discovery, use "
-        "Beta MCP's searchAttributes instead.] "
-    ),
-    "get_work": (
-        "[LOCAL — read any single work hierarchy node by ID (including portfolio-level nodes). "
-        "For listing projects within a portfolio, use Beta MCP's listProjectsByPortfolioId.] "
-    ),
-    "list_work": (
-        "[LOCAL — query work items with filter (e.g., project.Id .eq X). Limited filtering support. "
-        "For portfolio-scoped project lists, use Beta MCP's listProjectsByPortfolioId instead.] "
-    ),
-    "update_work": (
-        "[LOCAL — write operation. Beta MCP is read-only and cannot update work items.] "
-    ),
-    "get_work_attributes": (
-        "[LOCAL — raw work attribute list. For natural-language attribute search, use Beta MCP's "
-        "searchAttributes(entity='work').] "
-    ),
-    "create_task": "[LOCAL — write operation via SOAP. Beta MCP cannot create tasks.] ",
-    "batch_create_tasks": (
-        "[LOCAL — bulk write operation via SOAP. Beta MCP cannot create tasks.] "
-    ),
-    "read_task": (
-        "[LOCAL — SOAP task read by key. For reading tasks with custom attributes by project or "
-        "task ID, Beta MCP's getTasksByProjectIds or getTasksByTaskIds may be richer.] "
-    ),
-    "delete_task": "[LOCAL — write operation via SOAP. Beta MCP cannot delete tasks.] ",
-    "batch_delete_tasks": (
-        "[LOCAL — bulk write operation via SOAP. Beta MCP cannot delete tasks.] "
-    ),
-    "read_financial_plan": (
-        "[LOCAL — SOAP financial plan read. No Beta MCP equivalent exists for financial plans.] "
-    ),
-    "upsert_financial_plan": (
-        "[LOCAL — SOAP financial plan write. No Beta MCP equivalent exists.] "
-    ),
-    "discover_financial_plan_info": (
-        "[LOCAL — financial plan discovery with smart fallback. No Beta MCP equivalent exists.] "
-    ),
-    "load_financial_plan_from_reference": (
-        "[LOCAL — copy financial plan from reference project. No Beta MCP equivalent exists.] "
-    ),
-    "list_objectives": (
-        "[LOCAL — OKR objectives list. No Beta MCP equivalent exists for OKRs.] "
-    ),
-    "list_all_objectives_with_key_results": (
-        "[LOCAL — OKR objectives with key results. No Beta MCP equivalent exists.] "
-    ),
-    "get_key_results_for_objective": (
-        "[LOCAL — OKR key results for a single objective. No Beta MCP equivalent exists.] "
-    ),
-    "oauth_ping": "[LOCAL — auth health check for this server's connection.] ",
 }
 
 _LOCAL_LINE = re.compile(r"^\[LOCAL[^\]]*\]\s*\n*", re.MULTILINE)
@@ -118,276 +76,198 @@ def _attrs_prop() -> dict[str, Any]:
     }
 
 
-# JSON Schema fragments per tool (parameters only; same shapes as pre-migration Python signatures).
 INPUT_SCHEMAS: dict[str, dict[str, Any]] = {
-    "oauth_ping": {
+    "test_connection": {
         "type": "object",
         "properties": {},
         "additionalProperties": False,
     },
-    "get_project": {
+    "manage_project": {
         "type": "object",
         "properties": {
-            "project_id": {"type": "string", "description": "Project id."},
-            **_attrs_prop(),
-        },
-        "required": ["project_id"],
-        "additionalProperties": False,
-    },
-    "get_project_attributes": {
-        "type": "object",
-        "properties": {},
-        "additionalProperties": False,
-    },
-    "create_project": {
-        "type": "object",
-        "properties": {
+            "action": {
+                "type": "string",
+                "enum": ["create", "get", "update", "delete", "fields"],
+                "description": "create | get | update | delete | fields",
+            },
+            "project_id": {
+                "type": ["string", "null"],
+                "description": "Required for get, update, and delete. This is the project's structure code, not a strategy code.",
+            },
             "data": {
                 **_obj(),
-                "description": "Project creation payload (CreateProjectDtoPublic).",
+                "description": (
+                    "Create payload. Requires description and parent.structureCode. "
+                    "parent.structureCode is the work-hierarchy folder one level above "
+                    "Primary Planning Level (PPL-1). Copy it from the Planview UI "
+                    "(Plan structure). This MCP cannot list parents. Do not use a "
+                    "strategy-hierarchy ($Strategy) code."
+                ),
+            },
+            "updates": {
+                **_obj(),
+                "description": "Partial fields to PATCH (update).",
             },
             **_attrs_prop(),
             "create_default_tasks": {
                 "type": "boolean",
-                "description": "If true, create five default sample tasks via SOAP.",
                 "default": False,
+                "description": "If true, seed five sample tasks via SOAP after create.",
             },
-        },
-        "required": ["data"],
-        "additionalProperties": False,
-    },
-    "update_project": {
-        "type": "object",
-        "properties": {
-            "project_id": {"type": "string"},
-            "updates": {**_obj(), "description": "Fields to patch (partial JSON object)."},
-            **_attrs_prop(),
-        },
-        "required": ["project_id", "updates"],
-        "additionalProperties": False,
-    },
-    "delete_project": {
-        "type": "object",
-        "properties": {
-            "project_id": {
-                "type": "string",
-                "description": "The structureCode/ID of the project to delete.",
-            },
-        },
-        "required": ["project_id"],
-        "additionalProperties": False,
-    },
-    "list_field_reference": {
-        "type": "object",
-        "properties": {
             "category": {
                 "type": ["string", "null"],
-                "description": "Optional category filter (e.g. core_identity, dates).",
+                "description": "Optional fields-catalog category (core_identity, dates, status_assessments, ...).",
+            },
+            "include_live_catalog": {
+                "type": "boolean",
+                "default": False,
+                "description": "If true with action=fields, also fetch the live attribute list.",
             },
         },
+        "required": ["action"],
         "additionalProperties": False,
     },
-    "get_project_wbs": {
+    "inspect_work": {
         "type": "object",
         "properties": {
-            "project_id": {"type": "string"},
-            "include_milestones": {"type": "boolean", "default": True},
-            "max_depth": {"type": ["integer", "null"], "description": "Optional max tree depth."},
-        },
-        "required": ["project_id"],
-        "additionalProperties": False,
-    },
-    "get_work": {
-        "type": "object",
-        "properties": {
-            "work_id": {"type": "string"},
-            **_attrs_prop(),
-        },
-        "required": ["work_id"],
-        "additionalProperties": False,
-    },
-    "list_work": {
-        "type": "object",
-        "properties": {
-            "filter": {
+            "action": {
                 "type": "string",
-                "description": "Work API filter string (e.g. project.Id .eq 1906).",
+                "enum": ["wbs", "get", "list", "update"],
+                "default": "wbs",
+                "description": "wbs (default) | get | list | update",
             },
+            "project_id": {
+                "type": ["string", "null"],
+                "description": (
+                    "Required for wbs. Preferred for list (builds project.Id .eq {id}). "
+                    "Must already be known — this tool cannot discover project or parent ids."
+                ),
+            },
+            "work_id": {
+                "type": ["string", "null"],
+                "description": "Required for get and update. Work-hierarchy structure code, not $Strategy.",
+            },
+            "filter": {
+                "type": ["string", "null"],
+                "description": (
+                    "Raw work API filter. Prefer project_id. Documented form is "
+                    "project.Id .eq {id}. Cannot list the Plan or strategy tree from here."
+                ),
+            },
+            "updates": {**_obj(), "description": "Fields to PATCH (update)."},
             **_attrs_prop(),
             "fields": {
                 "type": ["array", "null"],
                 "items": {"type": "string"},
-                "description": "Optional fields to include per item (trims payload).",
+                "description": "Optional per-item fields for list (trims payload).",
+            },
+            "include_milestones": {"type": "boolean", "default": True},
+            "max_depth": {
+                "type": ["integer", "null"],
+                "description": "Optional max WBS tree depth from the project root.",
             },
         },
-        "required": ["filter"],
         "additionalProperties": False,
     },
-    "update_work": {
+    "manage_tasks": {
         "type": "object",
         "properties": {
-            "work_id": {"type": "string"},
-            "updates": {**_obj(), "description": "Fields to PATCH on the work item."},
-            **_attrs_prop(),
-        },
-        "required": ["work_id", "updates"],
-        "additionalProperties": False,
-    },
-    "get_work_attributes": {
-        "type": "object",
-        "properties": {},
-        "additionalProperties": False,
-    },
-    "create_task": {
-        "type": "object",
-        "properties": {
-            "task_data": {**_obj(), "description": "TaskDto2 fields (Description, FatherKey, ...)."},
-            "options": {**_obj(), "description": "Optional WorkOptionsDto."},
-        },
-        "required": ["task_data"],
-        "additionalProperties": False,
-    },
-    "batch_create_tasks": {
-        "type": "object",
-        "properties": {
+            "action": {
+                "type": "string",
+                "enum": ["create", "read", "delete"],
+                "description": "create | read | delete",
+            },
             "tasks": {
-                "type": "array",
+                "type": ["array", "null"],
                 "items": {**_obj()},
-                "description": "List of task dicts (each needs Description, FatherKey).",
+                "description": "Create payload. Each item needs Description. FatherKey optional if project_id is set.",
             },
-            "options": {**_obj(), "description": "Optional WorkOptionsDto for all tasks."},
+            "task_key": {
+                "type": ["string", "null"],
+                "description": "Single key://, ekey://, or search:// for read/delete.",
+            },
+            "task_keys": {
+                "type": ["array", "null"],
+                "items": {"type": "string"},
+                "description": "Multiple keys for read/delete.",
+            },
+            "project_id": {
+                "type": ["string", "null"],
+                "description": "Fills FatherKey on create when a task omits it.",
+            },
+            "options": {**_obj(), "description": "Optional WorkOptionsDto for create."},
         },
-        "required": ["tasks"],
+        "required": ["action"],
         "additionalProperties": False,
     },
-    "read_task": {
-        "type": "object",
-        "properties": {"task_key": {"type": "string", "description": "key://, search://, or ekey://"}},
-        "required": ["task_key"],
-        "additionalProperties": False,
-    },
-    "delete_task": {
-        "type": "object",
-        "properties": {"task_key": {"type": "string"}},
-        "required": ["task_key"],
-        "additionalProperties": False,
-    },
-    "batch_delete_tasks": {
+    "manage_financial_plan": {
         "type": "object",
         "properties": {
-            "task_keys": {"type": "array", "items": {"type": "string"}},
-        },
-        "required": ["task_keys"],
-        "additionalProperties": False,
-    },
-    "read_financial_plan": {
-        "type": "object",
-        "properties": {
-            "entity_key": {"type": "string"},
-            "version_key": {"type": "string"},
+            "action": {
+                "type": "string",
+                "enum": ["read", "discover", "upsert", "copy"],
+                "description": "read | discover | upsert | copy (copy is dry-run unless confirm=true)",
+            },
+            "project_id": {
+                "type": ["string", "null"],
+                "description": "Target project structureCode for read/discover/upsert, or copy target if target_project_id omitted.",
+            },
+            "entity_key": {
+                "type": ["string", "null"],
+                "description": "SOAP entity key. Optional if project_id is set (becomes key://2/$Plan/{id}).",
+            },
+            "version_key": {
+                "type": "string",
+                "default": "key://14/1",
+                "description": "Financial plan version. Default Actual/Forecast.",
+            },
             "include_entries": {"type": "boolean", "default": False},
             "summary": {"type": "boolean", "default": False},
             "fields": {
                 "type": ["array", "null"],
                 "items": {"type": "string"},
-                "description": "Optional top-level fields to keep.",
             },
-        },
-        "required": ["entity_key", "version_key"],
-        "additionalProperties": False,
-    },
-    "upsert_financial_plan": {
-        "type": "object",
-        "properties": {
-            "plan_data": {**_obj(), "description": "FinancialPlanDto-style payload with Lines."},
-        },
-        "required": ["plan_data"],
-        "additionalProperties": False,
-    },
-    "discover_financial_plan_info": {
-        "type": "object",
-        "properties": {
-            "entity_key": {"type": "string"},
-            "version_key": {"type": "string", "default": "key://14/1"},
-            "reference_entity_key": {"type": ["string", "null"]},
+            "reference_project_id": {
+                "type": ["string", "null"],
+                "description": "Reference project for discover fallback or copy source.",
+            },
+            "reference_entity_key": {
+                "type": ["string", "null"],
+                "description": "SOAP key for the reference project (optional if reference_project_id is set).",
+            },
             "skip_target_read": {"type": "boolean", "default": False},
-            "include_entries": {"type": "boolean", "default": False},
-            "summary": {"type": "boolean", "default": False},
-            "fields": {
-                "type": ["array", "null"],
-                "items": {"type": "string"},
+            "plan_data": {
+                **_obj(),
+                "description": (
+                    "Upsert payload. Preferred flat shape: "
+                    '{EntityKey, VersionKey, Lines:[{AccountKey, Unit, Entries:[{PeriodKey, Value}]}]}. '
+                    "Also accepts SOAP/read envelopes (Lines.FinancialPlanLineDto, "
+                    "Entries.EntryDto) — they are normalized. Prefer discover "
+                    "account_keys + period_keys over feeding a stripped read back."
+                ),
             },
-        },
-        "required": ["entity_key"],
-        "additionalProperties": False,
-    },
-    "load_financial_plan_from_reference": {
-        "type": "object",
-        "properties": {
-            "target_project_id": {"type": "string"},
-            "reference_project_id": {"type": "string"},
-            "version_key": {"type": "string", "default": "key://14/1"},
+            "target_project_id": {
+                "type": ["string", "null"],
+                "description": "Copy target. Defaults to project_id.",
+            },
             "scale_factor": {"type": "number", "default": 1.0},
             "confirm": {
                 "type": "boolean",
                 "default": False,
-                "description": "Must be true to execute copy; false returns preview only.",
+                "description": "copy: false = preview only; true = write.",
             },
         },
-        "required": ["target_project_id", "reference_project_id"],
-        "additionalProperties": False,
-    },
-    "list_objectives": {
-        "type": "object",
-        "properties": {
-            "ids": {"type": ["string", "null"], "description": "Optional comma-separated objective ids."},
-            "limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 500},
-            "offset": {"type": "integer", "default": 0, "minimum": 0},
-        },
-        "additionalProperties": False,
-    },
-    "get_key_results_for_objective": {
-        "type": "object",
-        "properties": {"objective_id": {"type": "integer"}},
-        "required": ["objective_id"],
-        "additionalProperties": False,
-    },
-    "list_all_objectives_with_key_results": {
-        "type": "object",
-        "properties": {
-            "limit": {"type": "integer", "default": 500, "minimum": 1, "maximum": 500},
-            "include_key_results": {"type": "boolean", "default": True},
-        },
+        "required": ["action"],
         "additionalProperties": False,
     },
 }
 
-# Stable registration order (matches former server registration + logical grouping).
 TOOL_NAMES: list[str] = [
-    "oauth_ping",
-    "get_project_attributes",
-    "get_work_attributes",
-    "get_project",
-    "create_project",
-    "update_project",
-    "delete_project",
-    "list_field_reference",
-    "get_project_wbs",
-    "list_work",
-    "update_work",
-    "get_work",
-    "create_task",
-    "batch_create_tasks",
-    "batch_delete_tasks",
-    "read_task",
-    "delete_task",
-    "discover_financial_plan_info",
-    "load_financial_plan_from_reference",
-    "read_financial_plan",
-    "upsert_financial_plan",
-    "list_objectives",
-    "get_key_results_for_objective",
-    "list_all_objectives_with_key_results",
+    "test_connection",
+    "manage_project",
+    "inspect_work",
+    "manage_tasks",
+    "manage_financial_plan",
 ]
 
 

@@ -4,16 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **local** Model Context Protocol (MCP) server for Planview Portfolios, built with the official `mcp` Python SDK (stdio transport). It exposes **write & action tools** — project CRUD, task management (SOAP), financial plans (SOAP), OKRs, and work hierarchy access — that complement the read-only **Beta MCP** server (`Planview Portfolios US`) hosted by Planview.
+This is a **local** Model Context Protocol (MCP) server for Planview Portfolios, built with the official `mcp` Python SDK (stdio transport). It exposes **write & action tools** — project CRUD, task management (SOAP), financial plans (SOAP), and work hierarchy access — that complement the read-only **Anvi Prod** server.
 
 ### Two-Server Architecture
 
 | Server | Role | Tools | Transport |
 |--------|------|-------|-----------|
-| **Beta MCP** (`Planview Portfolios US`) | Read — portfolios, search, cross-tabs, strategies, resources, dependencies, hierarchy trees | 29 | Planview-hosted (remote) |
-| **Local MCP** (`planview-portfolios-actions`) | Write — create/update/delete projects, SOAP tasks, financial plans, OKRs, work node access | 24 | Local stdio |
+| **Anvi Prod** | Read — portfolios, search, cross-tabs, strategies, resources, dependencies, hierarchy trees | read catalog | Remote |
+| **Local MCP** (`portfoliosMCP_v2`) | Write — create/update/delete projects, SOAP tasks, financial plans, work node access | 5 | Local stdio |
 
-**Routing rule:** All tool descriptions include `[LOCAL — ...]` hints. If a hint says "use Beta MCP's X instead," prefer that tool for the read path. This server owns all writes and anything SOAP/OKR/financial-plan related.
+**Routing rule:** All tool descriptions include `[LOCAL — ...]` hints. If a hint says "use Anvi Prod's X instead," prefer that tool for the read path. This server owns all writes and anything SOAP/financial-plan related.
+
+**Create requires a UI parent code.** `manage_project` create needs `parent.structureCode` from the Planview UI: the **work hierarchy** ($Plan) folder one level above Primary Planning Level (PPL-1). This MCP cannot list the Plan tree. **Strategy hierarchy (`$Strategy`) is out of scope** — use Anvi Prod for strategy reads.
+
+**Financial discover:** returns `accounts` / `periods` as `[{key, description}]` plus bare key lists. Period ids are not contiguous across fiscal years — never invent by incrementing. Region is optional on create; tenant `InvalidDefaultValues` for optional defaults is `demo_safe` — do not treat as create failure.
 
 ## Development Commands
 
@@ -32,10 +36,10 @@ python -m planview_portfolios_mcp
 
 # Alternative entry points
 python -m planview_portfolios_mcp.server
-planview-portfolios-actions  # console script if installed
+portfoliosMCP_v2  # console script if installed
 ```
 
-The server speaks MCP JSON-RPC over stdin/stdout. It registers 24 tools on startup.
+The server speaks MCP JSON-RPC over stdin/stdout. It registers 5 job-shaped tools on startup.
 
 ### Testing
 ```bash
@@ -54,9 +58,9 @@ black src/ && ruff check src/ && mypy src/
 
 ### Core Components
 
-**server.py**: MCP Server initialization (`Server(settings.server_name)` — default `planview-portfolios-actions`), `@server.list_tools()` and `@server.call_tool()` handlers, stdio transport via `stdio_server()`. Includes SOAP warm-up on startup and `atexit` cleanup.
+**server.py**: MCP Server initialization (`Server(settings.server_name)` — default `portfoliosMCP_v2`), `@server.list_tools()` and `@server.call_tool()` handlers, stdio transport via `stdio_server()`. Includes SOAP warm-up on startup and `atexit` cleanup.
 
-**tool_registry.py**: Central registry for all 24 tools. Contains `ROUTING_HINTS` (per-tool `[LOCAL — ...]` prefixes), `INPUT_SCHEMAS` (JSON Schema for each tool), `build_tool_definitions()` (returns `Tool` objects), `bind_arguments()` (maps incoming args to function params), and `TOOL_NAMES` ordering.
+**tool_registry.py**: Central registry for the 5 model-facing tools. Contains `ROUTING_HINTS` (per-tool `[LOCAL — ...]` prefixes), `INPUT_SCHEMAS` (JSON Schema for each tool), `build_tool_definitions()` (returns `Tool` objects), `bind_arguments()` (maps incoming args to function params), and `TOOL_NAMES` ordering.
 
 **config.py**: Centralized configuration using Pydantic Settings. The `PlanviewSettings` class loads from `.env` and provides validated config. A global `settings` instance is imported throughout.
 
@@ -70,14 +74,14 @@ black src/ && ruff check src/ && mypy src/
 
 **logging_config.py**: Structured logging with JSON formatter support.
 
-**tools/**: Tool implementations organized by domain:
-- `projects.py`: Project CRUD + WBS + field reference
-- `work.py`: Work hierarchy read/update
-- `tasks.py`: Task CRUD via SOAP (TaskService)
-- `financial_plan.py`: Financial plan read/write via SOAP (FinancialPlanService)
-- `okrs.py`: OKR objectives and key results
-- `ping.py`: OAuth health check
-- `resources.py`: Shared REST helpers for `/public-api/v1/resources` (list/get/allocate)—kept for scripts, tests, or future use; **not** registered in `server.py` / `tool_registry.py`, so they never appear in MCP `list_tools`.
+**tools/**: Job-shaped MCP tools plus internal endpoint implementations:
+- `ping.py`: `test_connection` OAuth diagnostic (registered)
+- `manage_project.py` / `inspect_work.py` / `manage_tasks.py` / `manage_financial_plan.py`: registered dispatchers (`action` param)
+- `projects.py`: Project CRUD + WBS + field reference (internal)
+- `work.py`: Work hierarchy read/update (internal)
+- `tasks.py`: Task CRUD via SOAP TaskService (internal)
+- `financial_plan.py`: Financial plan read/write via SOAP FinancialPlanService (internal)
+- `resources.py`: Shared REST helpers for `/public-api/v1/resources` (list/get/allocate)—kept for scripts, tests, or future use; **not** registered
 
 ### Tool Pattern
 
@@ -89,6 +93,7 @@ All tools follow a consistent async pattern:
 5. Raise custom exceptions from `exceptions.py`
 
 ### Adding a New Tool
+Prefer a new `action` on an existing job tool over a new `list_tools` name. If a new tool is required:
 1. Create async function in the appropriate `tools/` module
 2. Add entry to `ROUTING_HINTS` in `tool_registry.py`
 3. Add entry to `INPUT_SCHEMAS` in `tool_registry.py`
@@ -115,7 +120,7 @@ Required env vars:
 ```json
 {
   "mcpServers": {
-    "planview-portfolios-actions": {
+    "portfoliosMCP_v2": {
       "command": "/path/to/venv/bin/python3",
       "args": ["-m", "planview_portfolios_mcp"],
       "env": {
@@ -148,27 +153,16 @@ Required env vars:
 
 ### Tool-to-API Mapping
 
-**REST:**
-- `get_project` → `GET /projects/{id}`
-- `create_project` → `POST /projects`
-- `update_project` → `PATCH /projects/{id}`
-- `delete_project` → `DELETE /projects/{id}`
-- `list_work` → `GET /work` (with filter)
-- `get_work` → `GET /work/{id}`
-- `update_work` → `PATCH /work/{id}`
+**Registered tools (model-facing):**
+- `test_connection` → `POST /oauth/token` then `GET /oauth/ping`
+- `manage_project` `create|get|update|delete|fields` → REST `/projects` (+ SOAP task seed on create)
+- `inspect_work` `wbs|get|list|update` → REST `/work` (WBS composes list + tree)
+- `manage_tasks` `create|read|delete` → SOAP `ITaskService3` Create/Read/Delete (lists; batch is internal)
+- `manage_financial_plan` `read|discover|upsert|copy` → SOAP `IFinancialPlanService` Read/Upsert
 
-**SOAP:**
-- `create_task` / `batch_create_tasks` → `ITaskService3.Create`
-- `read_task` → `ITaskService3.Read`
-- `delete_task` / `batch_delete_tasks` → `ITaskService3.Delete`
-- `read_financial_plan` → `IFinancialPlanService.Read`
-- `upsert_financial_plan` → `IFinancialPlanService.Upsert`
-- `load_financial_plan_from_reference` → `IFinancialPlanService.Read` + `Upsert`
-
-**OKRs (REST):**
-- `list_objectives` → `GET /okr/objectives`
-- `list_all_objectives_with_key_results` → `GET /okr/objectives` + `/okr/objectives/{id}/key-results`
-- `get_key_results_for_objective` → `GET /okr/objectives/{id}/key-results`
+**Internal helpers (not in `list_tools`):**
+- REST: `GET/POST/PATCH/DELETE /projects/{id}`, `GET /work`, `GET/PATCH /work/{id}`
+- SOAP: `ITaskService3.Create|Read|Delete`, `IFinancialPlanService.Read|Upsert`
 
 ## Type Annotations
 
@@ -192,7 +186,6 @@ src/planview_portfolios_mcp/
     ├── work.py
     ├── tasks.py
     ├── financial_plan.py
-    ├── okrs.py
     ├── ping.py
     ├── resources.py    # internal /resources REST helpers only
     └── __init__.py

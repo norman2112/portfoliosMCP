@@ -44,35 +44,52 @@ def _filter_financial_plan_response(
         return result
     data = result["data"]
     if summary:
-        # Minimal: account keys and period keys only
-        lines = data.get("Lines") or data.get("lines") or {}
-        line_dtos = lines.get("FinancialPlanLineDto") or lines.get("financialPlanLineDto") or []
-        account_keys = []
-        period_keys_set = set()
-        for line in line_dtos:
-            if not isinstance(line, dict):
-                continue
-            ak = line.get("AccountKey") or line.get("accountKey")
-            if ak:
-                account_keys.append(ak)
-            for entry in line.get("Entries") or line.get("entries") or []:
-                if not isinstance(entry, dict):
-                    continue
-                pk = entry.get("PeriodKey") or entry.get("periodKey")
-                if pk:
-                    period_keys_set.add(pk)
+        # Prefer keys already annotated (discover); else derive from Lines/Entries.
+        existing_accounts = data.get("accounts")
+        existing_periods = data.get("periods")
+        existing_account_keys = data.get("account_keys")
+        existing_period_keys = data.get("period_keys")
+        accounts: list[Any]
+        periods: list[Any]
+        if isinstance(existing_accounts, list) and existing_accounts:
+            accounts = list(existing_accounts)
+        else:
+            accounts, _ = _extract_labeled_accounts_and_periods(data)
+        if isinstance(existing_periods, list) and existing_periods:
+            periods = list(existing_periods)
+        else:
+            _, periods = _extract_labeled_accounts_and_periods(data)
+        account_keys: list[str] = (
+            list(existing_account_keys)
+            if isinstance(existing_account_keys, list) and existing_account_keys
+            else [a["key"] for a in accounts if isinstance(a, dict) and a.get("key")]
+        )
+        period_keys: list[str] = (
+            list(existing_period_keys)
+            if isinstance(existing_period_keys, list) and existing_period_keys
+            else [p["key"] for p in periods if isinstance(p, dict) and p.get("key")]
+        )
         return {
             "success": result.get("success", True),
             "data": {
                 "EntityKey": data.get("EntityKey"),
                 "VersionKey": data.get("VersionKey"),
                 "Source": data.get("Source"),
+                "ReferenceEntityKey": data.get("ReferenceEntityKey"),
                 "Accounts": data.get("Accounts"),
                 "Periods": data.get("Periods"),
+                "accounts": accounts,
+                "periods": periods,
                 "account_keys": account_keys,
-                "period_keys": sorted(period_keys_set),
+                "period_keys": period_keys,
+                "period_keys_note": data.get("period_keys_note")
+                or (
+                    "Period key ids are not contiguous across fiscal-year boundaries. "
+                    "Never invent PeriodKeys by incrementing; use data.periods only."
+                ),
             },
             "warnings": result.get("warnings", []),
+            **({k: result[k] for k in ("source", "hint") if k in result}),
         }
     out_data = dict(data)
     lines = out_data.get("Lines") or out_data.get("lines")
@@ -88,13 +105,363 @@ def _filter_financial_plan_response(
             lines["financialPlanLineDto"] = line_dtos
     if fields is not None and fields:
         allowed = set(f.lower() for f in fields)
+        # Always keep discovery key lists when present.
+        allowed |= {
+            "account_keys",
+            "period_keys",
+            "accounts",
+            "periods",
+            "period_keys_note",
+            "source",
+            "referenceentitykey",
+        }
         out_data = {k: v for k, v in out_data.items() if k.lower() in allowed}
-    return {"success": result.get("success", True), "data": out_data, "warnings": result.get("warnings", [])}
+    filtered = {
+        "success": result.get("success", True),
+        "data": out_data,
+        "warnings": result.get("warnings", []),
+    }
+    for k in ("source", "hint"):
+        if k in result:
+            filtered[k] = result[k]
+    return filtered
+
 
 # Service name and port for FinancialPlanService
 # The WSDL defines service "FinancialPlanService" with interface "IFinancialPlanService2"
 FINANCIAL_PLAN_SERVICE_NAME = "FinancialPlanService"
 FINANCIAL_PLAN_SERVICE_PORT = "BasicHttpBinding_IFinancialPlanService2"
+
+
+def _unwrap_dto_list(value: Any, *container_keys: str) -> list[Any] | None:
+    """Return a list from a flat list or a SOAP ``{DtoName: [...]}`` envelope."""
+    if isinstance(value, list):
+        return value
+    if isinstance(value, dict):
+        for key in container_keys:
+            nested = value.get(key)
+            if isinstance(nested, list):
+                return nested
+        # Single DTO object mistakenly nested under the container key.
+        for key in container_keys:
+            nested = value.get(key)
+            if isinstance(nested, dict):
+                return [nested]
+        # Bare single DTO (has AccountKey / PeriodKey).
+        if any(k.lower() in {"accountkey", "periodkey", "unit", "value"} for k in value):
+            return [value]
+    return None
+
+
+def _period_sort_key(uri: str) -> tuple[int, str]:
+    """Sort period URIs by numeric id when present (key://16/183 before key://16/9 lexically fails)."""
+    try:
+        tail = str(uri).rstrip("/").rsplit("/", 1)[-1]
+        return (int(tail), str(uri))
+    except (TypeError, ValueError):
+        return (10**12, str(uri))
+
+
+def _period_description_from_dto(p: dict[str, Any]) -> str | None:
+    for k in (
+        "Description",
+        "description",
+        "PeriodDescription",
+        "periodDescription",
+        "Name",
+        "name",
+        "Label",
+        "label",
+        "Title",
+        "title",
+    ):
+        v = p.get(k)
+        if v is not None and str(v).strip():
+            return str(v).strip()
+    start = p.get("StartDate") or p.get("startDate") or p.get("PeriodStart") or p.get("periodStart")
+    finish = p.get("FinishDate") or p.get("finishDate") or p.get("PeriodFinish") or p.get("periodFinish")
+    if start or finish:
+        return f"{start or '?'} – {finish or '?'}".strip()
+    return None
+
+
+def _extract_period_keys(periods_obj: Any) -> list[str]:
+    """Extract PeriodKey URIs from SOAP Periods shapes (list, nested DTO, or scalar)."""
+    labeled = _extract_labeled_periods(periods_obj)
+    return [p["key"] for p in labeled]
+
+
+def _extract_labeled_periods(periods_obj: Any) -> list[dict[str, str | None]]:
+    """Return [{key, description}] from SOAP Periods / config maps / bare keys."""
+
+    def _from_list(lst: list[Any]) -> list[dict[str, str | None]]:
+        out: list[dict[str, str | None]] = []
+        for p in lst:
+            if isinstance(p, dict):
+                pk = (
+                    p.get("PeriodKey")
+                    or p.get("periodKey")
+                    or p.get("Key")
+                    or p.get("key")
+                )
+                if pk:
+                    out.append(
+                        {"key": str(pk), "description": _period_description_from_dto(p)}
+                    )
+            elif p is not None:
+                out.append({"key": str(p), "description": None})
+        return out
+
+    if isinstance(periods_obj, list):
+        return _from_list(periods_obj)
+    if isinstance(periods_obj, dict):
+        for k in (
+            "FinancialPlanPeriodDto",
+            "financialPlanPeriodDto",
+            "PeriodDto",
+            "Periods",
+            "periodDtos",
+            "periods",
+        ):
+            if k in periods_obj and isinstance(periods_obj[k], list):
+                return _from_list(periods_obj[k])
+        if periods_obj.get("PeriodKey"):
+            return [
+                {
+                    "key": str(periods_obj["PeriodKey"]),
+                    "description": _period_description_from_dto(periods_obj),
+                }
+            ]
+        # Config-shaped {name: "key://16/..."} or {name: {key, description}}
+        if periods_obj and not any(
+            k.lower() in {"periodkey", "financialplanperioddto", "perioddto"}
+            for k in periods_obj
+        ):
+            out: list[dict[str, str | None]] = []
+            for name, v in periods_obj.items():
+                if isinstance(v, str) and v.startswith("key://"):
+                    out.append({"key": v, "description": str(name)})
+                elif isinstance(v, dict):
+                    key = v.get("key") or v.get("Key") or v.get("PeriodKey")
+                    if key:
+                        desc = (
+                            v.get("description")
+                            or v.get("Description")
+                            or _period_description_from_dto(v)
+                            or str(name)
+                        )
+                        out.append({"key": str(key), "description": str(desc)})
+            if out:
+                return out
+    if isinstance(periods_obj, str) and periods_obj.strip():
+        return [{"key": periods_obj, "description": None}]
+    return []
+
+
+def _extract_labeled_accounts_and_periods(
+    data: dict[str, Any],
+) -> tuple[list[dict[str, str | None]], list[dict[str, str | None]]]:
+    """Collect labeled AccountKey / PeriodKey objects from a financial-plan data dict."""
+    accounts_by_key: dict[str, dict[str, str | None]] = {}
+    periods_by_key: dict[str, dict[str, str | None]] = {}
+
+    def _add_account(key: str, description: str | None = None) -> None:
+        existing = accounts_by_key.get(key)
+        if existing is None:
+            accounts_by_key[key] = {"key": key, "description": description}
+        elif description and not existing.get("description"):
+            existing["description"] = description
+
+    def _add_period(key: str, description: str | None = None) -> None:
+        existing = periods_by_key.get(key)
+        if existing is None:
+            periods_by_key[key] = {"key": key, "description": description}
+        elif description and not existing.get("description"):
+            existing["description"] = description
+
+    lines = data.get("Lines") or data.get("lines")
+    line_dtos = _unwrap_dto_list(
+        lines, "FinancialPlanLineDto", "financialPlanLineDto"
+    ) or []
+    for line in line_dtos:
+        if not isinstance(line, dict):
+            continue
+        ak = line.get("AccountKey") or line.get("accountKey")
+        if ak:
+            desc = (
+                line.get("AccountDescription")
+                or line.get("accountDescription")
+                or line.get("AccountParentDescription")
+                or line.get("accountParentDescription")
+            )
+            _add_account(str(ak), str(desc).strip() if desc else None)
+        entries = _unwrap_dto_list(
+            line.get("Entries") or line.get("entries"),
+            "EntryDto",
+            "entryDto",
+            "FinancialPlanEntryDto",
+        ) or []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            pk = entry.get("PeriodKey") or entry.get("periodKey")
+            if pk:
+                desc = _period_description_from_dto(entry)
+                _add_period(str(pk), desc)
+
+    for item in _extract_labeled_periods(data.get("Periods") or data.get("periods")):
+        _add_period(str(item["key"]), item.get("description"))
+
+    accounts = data.get("Accounts") or data.get("accounts")
+    if isinstance(accounts, dict):
+        for name, info in accounts.items():
+            if isinstance(info, dict):
+                key = info.get("key") or info.get("Key") or info.get("AccountKey")
+                if key:
+                    desc = (
+                        info.get("description")
+                        or info.get("Description")
+                        or str(name)
+                    )
+                    _add_account(str(key), str(desc) if desc else None)
+            elif isinstance(info, str):
+                _add_account(info, str(name))
+
+    account_list = list(accounts_by_key.values())
+    period_list = sorted(
+        periods_by_key.values(), key=lambda p: _period_sort_key(str(p["key"]))
+    )
+    return account_list, period_list
+
+
+def _extract_account_and_period_keys(data: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """Collect bare AccountKey / PeriodKey URI lists (upsert convenience)."""
+    accounts, periods = _extract_labeled_accounts_and_periods(data)
+    return [a["key"] for a in accounts if a.get("key")], [
+        p["key"] for p in periods if p.get("key")
+    ]
+
+
+def _normalize_upsert_plan_data(plan_data: dict[str, Any]) -> dict[str, Any]:
+    """Accept flat upsert payloads or SOAP/read envelopes; return flat upsert shape.
+
+    Read returns ``Lines: {FinancialPlanLineDto: [...]}`` (and often nested
+    ``Entries: {EntryDto: [...]}``). Upsert historically required a flat list.
+    Feeding read output back used to fail with ``Lines must be a list``.
+    """
+    if not isinstance(plan_data, dict):
+        raise PlanviewValidationError(
+            f"plan_data must be a dictionary. Got: {type(plan_data).__name__}"
+        )
+
+    payload = dict(plan_data)
+
+    # Unwrap manage_financial_plan / read envelope: {success, data: {...}}.
+    nested = payload.get("data")
+    if isinstance(nested, dict) and not any(
+        k.lower() in {"lines", "key", "entitykey", "versionkey"} for k in payload
+    ):
+        payload = dict(nested)
+
+    lines_raw = payload.get("Lines") if "Lines" in payload else payload.get("lines")
+    lines = _unwrap_dto_list(lines_raw, "FinancialPlanLineDto", "financialPlanLineDto")
+    if lines is None:
+        if lines_raw is None:
+            raise PlanviewValidationError(
+                "Lines field is required with at least one line. "
+                "Expected a flat list, or a SOAP/read envelope like "
+                '{"Lines": {"FinancialPlanLineDto": [...]}}. '
+                f"Available keys: {list(payload.keys())}"
+            )
+        raise PlanviewValidationError(
+            "Lines must be a list of line objects, or a SOAP envelope "
+            '{"FinancialPlanLineDto": [...]}. '
+            "Do not pass the raw manage_financial_plan response wrapper; "
+            "pass plan_data as the plan object (or use data.Lines). "
+            f"Got Lines type={type(lines_raw).__name__}."
+        )
+
+    normalized_lines: list[dict[str, Any]] = []
+    for idx, line in enumerate(lines):
+        if not isinstance(line, dict):
+            raise PlanviewValidationError(f"Line[{idx}] must be a dictionary")
+        line_out = dict(line)
+        entries_raw = line_out.get("Entries") if "Entries" in line_out else line_out.get("entries")
+        entries = _unwrap_dto_list(
+            entries_raw, "EntryDto", "entryDto", "FinancialPlanEntryDto"
+        )
+        if entries is None:
+            raise PlanviewValidationError(
+                f"Line[{idx}] Entries must be a non-empty list "
+                '(or SOAP {"EntryDto": [...]}). '
+                "If this came from action=read/discover with include_entries=false, "
+                "re-read with include_entries=true or use discover account_keys/period_keys "
+                "to build a new flat upsert payload."
+            )
+        line_out["Entries"] = entries
+        # Prefer PascalCase keys for the rest of the pipeline.
+        if "entries" in line_out and "Entries" in line_out:
+            line_out.pop("entries", None)
+        normalized_lines.append(line_out)
+
+    payload["Lines"] = normalized_lines
+    if "lines" in payload and "Lines" in payload:
+        payload.pop("lines", None)
+    return payload
+
+
+def _annotate_discovery_result(
+    result: dict[str, Any],
+    *,
+    source: str,
+    target_entity_key: str,
+    version_key: str,
+    reference_entity_key: str | None = None,
+) -> dict[str, Any]:
+    """Ensure discover exposes labeled accounts/periods plus bare key lists."""
+    if not isinstance(result, dict):
+        return result
+    out = dict(result)
+    data = out.get("data")
+    if not isinstance(data, dict):
+        data = {}
+    else:
+        data = dict(data)
+
+    accounts, periods = _extract_labeled_accounts_and_periods(data)
+    account_keys = [a["key"] for a in accounts if a.get("key")]
+    period_keys = [p["key"] for p in periods if p.get("key")]
+
+    data["Source"] = source
+    data["EntityKey"] = data.get("EntityKey") or target_entity_key
+    data["VersionKey"] = data.get("VersionKey") or version_key
+    if reference_entity_key and source == "reference":
+        data["ReferenceEntityKey"] = reference_entity_key
+    data["accounts"] = accounts
+    data["periods"] = periods
+    data["account_keys"] = account_keys
+    data["period_keys"] = period_keys
+    data["period_keys_note"] = (
+        "Period key ids are not contiguous across fiscal-year boundaries "
+        "(e.g. …181,182,183…187 then 193). Never invent PeriodKeys by incrementing; "
+        "only use keys returned here (or from read). Prefer data.periods[{key,description}] "
+        "to pick months — bare period_keys alone are not labeled."
+    )
+    out["data"] = data
+    out["source"] = source
+    if source == "reference":
+        out["hint"] = (
+            "Keys came from the reference project, not the target. "
+            "Use data.accounts / data.periods (or account_keys / period_keys) to build a "
+            "flat upsert for the target EntityKey. Do not treat reference amounts as the target's. "
+            "Period ids may skip across fiscal years — do not assume sequential keys."
+        )
+    elif not period_keys:
+        out["hint"] = (
+            "accounts were found but periods are empty. "
+            "Pass a reference_project_id that already has a financial plan with entries."
+        )
+    return out
 
 
 def _validate_financial_plan_fields(plan_data: dict[str, Any]) -> None:
@@ -182,23 +549,42 @@ def _validate_financial_plan_line(line_data: dict[str, Any]) -> None:
 async def upsert_financial_plan(
     plan_data: dict[str, Any],
 ) -> dict[str, Any]:
-    """[LOCAL — SOAP financial plan write. No Beta MCP equivalent exists for financial plans.]
+    """[LOCAL — SOAP financial plan write. No Anvi Prod equivalent exists for financial plans.]
 
     Upsert (create or update) a financial plan using SOAP FinancialPlanService.
 
     Creates or updates a financial plan in Planview Portfolios using the SOAP API.
     This is a single-line update tool optimized for simple use cases.
 
+    plan_data shape (preferred — flat):
+        {
+          "EntityKey": "key://2/$Plan/17286",
+          "VersionKey": "key://14/1",
+          "Lines": [{
+            "AccountKey": "key://2/$Account/13607",
+            "Unit": "Currency",
+            "CurrencyKey": "key://1/USD",
+            "Entries": [{"PeriodKey": "key://16/197", "Value": 10000}]
+          }]
+        }
+
+    Also accepted: SOAP/read envelopes. action=read returns
+    Lines as {"FinancialPlanLineDto": [...]} (and sometimes nested EntryDto).
+    Those are normalized to the flat shape above before upsert. Prefer building
+    a flat payload from discover's account_keys + period_keys rather than
+    round-tripping a stripped read (include_entries=false removes Entries).
+
     Args:
         plan_data: Financial plan data dictionary. Required fields:
             - Key: Financial plan key URI (e.g., "ekey://12/MyPlan") OR
             - EntityKey: Entity key URI (e.g., "key://2/$Plan/17286") AND
             - VersionKey: Version key URI (e.g., "key://14/57")
-            - Lines: List of FinancialPlanLineDto dictionaries
+            - Lines: List of FinancialPlanLineDto dictionaries (or SOAP
+              {"FinancialPlanLineDto": [...]} envelope from read)
         Each FinancialPlanLineDto requires:
             - AccountKey: Account key URI (e.g., "key://2/$Account/13607")
             - Unit: Unit type ("Currency", "Units", "Unit Cost", "Unit Price", "FTE", "Hours")
-            - Entries: List of EntryDto dictionaries
+            - Entries: List of EntryDto dictionaries (or SOAP EntryDto envelope)
             - CurrencyKey: Currency key URI (defaults to "key://1/USD" if not provided)
             - Attributes: Optional list of LineAttributeDto dictionaries
         Each EntryDto requires:
@@ -274,7 +660,8 @@ async def upsert_financial_plan(
     logger.info("Upserting financial plan", extra={"tool_name": "upsert_financial_plan"})
 
     try:
-        # Validate required fields
+        # Accept flat upsert payloads or SOAP/read envelopes.
+        plan_data = _normalize_upsert_plan_data(plan_data)
         _validate_financial_plan_fields(plan_data)
 
         # Normalize field names to PascalCase and prepare the payload
@@ -569,18 +956,20 @@ async def discover_financial_plan_info(
     summary: bool = False,
     fields: list[str] | None = None,
 ) -> dict[str, Any] | None:
-    """[LOCAL — financial plan discovery with smart fallback. No Beta MCP equivalent exists for financial plans.]
+    """[LOCAL — financial plan discovery with smart fallback. No Anvi Prod equivalent exists for financial plans.]
     
     Discover financial plan information with smart fallback.
-    
+
     Attempts to read the financial plan for the target project. If that fails
     (e.g., project is too new), falls back to reading a reference project's
-    financial plan to discover available accounts and periods.
-    
-    Optimized to check config data first (instant), and skip slow target reads
-    for new projects when skip_target_read=True. Use include_entries=False
-    (default for this tool) to avoid large EntryDto arrays and reduce payload size.
-    
+    financial plan, then config defaults.
+
+    Always returns labeled ``accounts`` / ``periods`` as ``[{key, description}]``
+    plus bare ``account_keys`` / ``period_keys`` for upsert. Prefer the labeled
+    lists to map months — period id sequences are not contiguous across fiscal
+    years (never invent keys by incrementing).
+    Reference and config results are tagged with ``Source`` / ``source``.
+
     Args:
         entity_key: Target project entity key (e.g., "key://2/$Plan/17291")
         version_key: Financial plan version key (default: "key://14/1" for Actual/Forecast)
@@ -588,12 +977,15 @@ async def discover_financial_plan_info(
             Defaults to None - if not provided and target read fails, returns config data.
         skip_target_read: If True, skip reading target project's plan (much faster for new projects).
             Defaults to False for backward compatibility.
-        include_entries: If False, strip EntryDto arrays from each line (default False for smaller response).
+        include_entries: If False, strip EntryDto arrays from each line in the
+            returned Lines (default False for smaller response). Key lists are
+            still extracted from a full read internally.
         summary: If True, return only account_keys and period_keys (minimal response).
         fields: If set, return only these top-level data fields.
-        
+
     Returns:
-        Dict with financial plan data including accounts and periods, or None if unavailable.
+        Dict with financial plan discovery data including account_keys and
+        period_keys, or None if unavailable.
         May return config-based data structure for fast path.
         
     Example:
@@ -611,23 +1003,85 @@ async def discover_financial_plan_info(
         )
         
         if plan_info:
-            # Extract accounts and periods
+            # Prefer labeled lists for month mapping:
+            # periods = plan_info["data"]["periods"]  # [{key, description}, ...]
+            # account_keys / period_keys remain bare URIs for upsert PeriodKey fields.
             lines = plan_info.get("data", {}).get("Lines", {}).get("FinancialPlanLineDto", [])
     """
-    # Fast path: If we're skipping target read, go straight to reference or config
+
+    async def _read_for_discovery(read_key: str) -> dict[str, Any]:
+        # Always pull entries so period keys can be extracted in one shot.
+        # Caller-facing include_entries/summary applied after annotation.
+        return await read_financial_plan(
+            read_key,
+            version_key,
+            include_entries=True,
+            summary=False,
+            fields=None,
+        )
+
+    def _finish(
+        result: dict[str, Any],
+        *,
+        source: str,
+        reference_key: str | None = None,
+    ) -> dict[str, Any]:
+        annotated = _annotate_discovery_result(
+            result,
+            source=source,
+            target_entity_key=entity_key,
+            version_key=version_key,
+            reference_entity_key=reference_key,
+        )
+        return _filter_financial_plan_response(
+            annotated,
+            include_entries=include_entries,
+            summary=summary,
+            fields=fields,
+        )
+
+    def _config_result() -> dict[str, Any] | None:
+        try:
+            from ..financial_plan_config import list_available_accounts, list_available_periods
+
+            accounts = list_available_accounts()
+            periods = list_available_periods()
+            if not accounts and not periods:
+                return None
+            logger.info("Returning config-based financial plan info")
+            config_result = {
+                "success": True,
+                "data": {
+                    "EntityKey": entity_key,
+                    "VersionKey": version_key,
+                    "Accounts": accounts,
+                    "Periods": periods,
+                    "Source": "config",
+                },
+                "warnings": [],
+            }
+            return _finish(config_result, source="config")
+        except (ImportError, OSError, TypeError, ValueError, KeyError) as config_error:
+            logger.debug(
+                "Could not get config data: %s: %s",
+                type(config_error).__name__,
+                config_error,
+                exc_info=True,
+            )
+            return None
+
     if skip_target_read:
         logger.info(f"Skipping target project read for {entity_key} (optimization)")
-        
-        # Try reference project first (if provided)
         if reference_entity_key:
             try:
-                logger.info(f"Reading reference project {reference_entity_key} for account discovery")
-                result = await read_financial_plan(
-                    reference_entity_key, version_key,
-                    include_entries=include_entries, summary=summary, fields=fields,
+                logger.info(
+                    f"Reading reference project {reference_entity_key} for account/period discovery"
                 )
+                result = await _read_for_discovery(reference_entity_key)
                 logger.info("Successfully read reference project financial plan")
-                return result
+                return _finish(
+                    result, source="reference", reference_key=reference_entity_key
+                )
             except (PlanviewError, OSError, ValueError, TypeError, KeyError) as ref_error:
                 logger.debug(
                     "Could not read reference project %s: %s: %s",
@@ -636,55 +1090,19 @@ async def discover_financial_plan_info(
                     ref_error,
                     exc_info=True,
                 )
-        
-        # Fallback to config data (instant, no API call)
-        try:
-            from ..financial_plan_config import list_available_accounts, list_available_periods
-            
-            accounts = list_available_accounts()
-            periods = list_available_periods()
-            
-            if accounts or periods:
-                logger.info("Returning config-based financial plan info (fast path)")
-                config_result = {
-                    "success": True,
-                    "data": {
-                        "EntityKey": entity_key,
-                        "VersionKey": version_key,
-                        "Accounts": accounts,
-                        "Periods": periods,
-                        "Source": "config",
-                    },
-                    "warnings": [],
-                }
-                return _filter_financial_plan_response(
-                    config_result,
-                    include_entries=include_entries,
-                    summary=summary,
-                    fields=fields,
-                )
-        except (ImportError, OSError, TypeError, ValueError, KeyError) as config_error:
-            logger.debug(
-                "Could not get config data: %s: %s",
-                type(config_error).__name__,
-                config_error,
-                exc_info=True,
-            )
-        
+        config = _config_result()
+        if config is not None:
+            return config
         logger.info(
             f"Could not discover financial plan info for {entity_key}. "
             f"Use known account/period keys or configure defaults."
         )
         return None
-    
-    # Standard path: Try reading the target project first
+
     try:
-        result = await read_financial_plan(
-            entity_key, version_key,
-            include_entries=include_entries, summary=summary, fields=fields,
-        )
+        result = await _read_for_discovery(entity_key)
         logger.info(f"Successfully read financial plan for {entity_key}")
-        return result
+        return _finish(result, source="target")
     except (PlanviewError, OSError, ValueError, TypeError, KeyError) as e:
         logger.debug(
             "Could not read financial plan for %s: %s: %s",
@@ -693,20 +1111,18 @@ async def discover_financial_plan_info(
             e,
             exc_info=True,
         )
-        
-        # If target project has no plan yet, try reference project
+
         if reference_entity_key:
             try:
                 logger.info(
                     f"Falling back to reference project {reference_entity_key} "
-                    f"for account discovery"
+                    f"for account/period discovery"
                 )
-                result = await read_financial_plan(
-                    reference_entity_key, version_key,
-                    include_entries=include_entries, summary=summary, fields=fields,
+                result = await _read_for_discovery(reference_entity_key)
+                logger.info("Successfully read reference project financial plan")
+                return _finish(
+                    result, source="reference", reference_key=reference_entity_key
                 )
-                logger.info(f"Successfully read reference project financial plan")
-                return result
             except (PlanviewError, OSError, ValueError, TypeError, KeyError) as ref_error:
                 logger.debug(
                     "Could not read reference project %s: %s: %s",
@@ -715,35 +1131,11 @@ async def discover_financial_plan_info(
                     ref_error,
                     exc_info=True,
                 )
-        
-        # Final fallback: Return config data (instant, no API call)
-        try:
-            from ..financial_plan_config import list_available_accounts, list_available_periods
-            
-            accounts = list_available_accounts()
-            periods = list_available_periods()
-            
-            if accounts or periods:
-                logger.info("Returning config-based financial plan info (fallback)")
-                return {
-                    "success": True,
-                    "data": {
-                        "EntityKey": entity_key,
-                        "VersionKey": version_key,
-                        "Accounts": accounts,
-                        "Periods": periods,
-                        "Source": "config",
-                    },
-                    "warnings": [],
-                }
-        except (ImportError, OSError, TypeError, ValueError, KeyError) as config_error:
-            logger.debug(
-                "Could not get config data: %s: %s",
-                type(config_error).__name__,
-                config_error,
-                exc_info=True,
-            )
-        
+
+        config = _config_result()
+        if config is not None:
+            return config
+
         logger.info(
             f"Could not discover financial plan info for {entity_key}. "
             f"Use known account/period keys or configure defaults."
@@ -759,7 +1151,7 @@ async def read_financial_plan(
     summary: bool = False,
     fields: list[str] | None = None,
 ) -> dict[str, Any]:
-    """[LOCAL — SOAP financial plan read. No Beta MCP equivalent exists for financial plans.]
+    """[LOCAL — SOAP financial plan read. No Anvi Prod equivalent exists for financial plans.]
 
     Read a financial plan for a project using SOAP FinancialPlanService.
 
@@ -945,7 +1337,7 @@ async def load_financial_plan_from_reference(
     scale_factor: float = 1.0,
     confirm: bool = False,
 ) -> dict[str, Any]:
-    """[LOCAL — copy financial plan from reference project. No Beta MCP equivalent exists for financial plans.]
+    """[LOCAL — copy financial plan from reference project. No Anvi Prod equivalent exists for financial plans.]
 
     Load a financial plan onto a project by copying the account structure and values
 from a reference project. Defaults to dry-run mode (confirm=False) which shows
@@ -1003,52 +1395,6 @@ This is a heavy operation — always preview first unless you're sure.
         if not start_d or not end_d:
             return fallback
         return (end_d.year - start_d.year) * 12 + (end_d.month - start_d.month) + 1
-
-    def _extract_period_keys(periods_obj: Any) -> list[str]:
-        """
-        Periods is a SOAP DTO that can show up as:
-        - list[dict] (each dict includes PeriodKey)
-        - list[str] of period keys
-        - dict containing nested DTO arrays
-        """
-
-        def _extract_from_list(lst: list[Any]) -> list[str]:
-            out: list[str] = []
-            for p in lst:
-                if isinstance(p, dict):
-                    pk = (
-                        p.get("PeriodKey")
-                        or p.get("periodKey")
-                        or p.get("Key")
-                        or p.get("key")
-                    )
-                    if pk:
-                        out.append(str(pk))
-                else:
-                    if p is not None:
-                        out.append(str(p))
-            return out
-
-        if isinstance(periods_obj, list):
-            return _extract_from_list(periods_obj)
-        if isinstance(periods_obj, dict):
-            # Try common container field names.
-            for k in [
-                "FinancialPlanPeriodDto",
-                "financialPlanPeriodDto",
-                "PeriodDto",
-                "Periods",
-                "periodDtos",
-                "periods",
-            ]:
-                if k in periods_obj and isinstance(periods_obj[k], list):
-                    return _extract_from_list(periods_obj[k])
-            # Fall back to scalar/dict keys.
-            if "PeriodKey" in periods_obj and periods_obj.get("PeriodKey"):
-                return [str(periods_obj["PeriodKey"])]
-        if isinstance(periods_obj, str):
-            return [periods_obj]
-        return []
 
     # Read schedule dates (for month-offset preview messaging and truncation).
     target_project = await get_project(target_project_id, attributes=["scheduleStart", "scheduleFinish"])

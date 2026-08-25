@@ -9,6 +9,7 @@ from typing import Any
 from ..client import get_client, make_request
 from ..exceptions import PlanviewError, PlanviewValidationError
 from ..performance import log_performance
+from ..utils.key_uri import mint_task_ekey
 from field_reference import FIELD_CATEGORIES, build_tool_description_appendix, get_fields_by_category
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,7 @@ def _format_attributes(attributes: list[str] | str | None) -> dict[str, str]:
 async def get_project(
     project_id: str, attributes: list[str] | str | None = None
 ) -> dict[str, Any]:
-    """[LOCAL — single project read by ID. For listing/searching projects across a portfolio, use Beta MCP's listProjectsByPortfolioId or searchProjectByName instead.]
+    """[LOCAL — single project read by ID. For listing/searching projects across a portfolio, use Anvi Prod's listProjectsByPortfolioId or searchProjectByName instead.]
 
     Get a single project by id."""
     start_time = time()
@@ -139,7 +140,7 @@ async def get_project(
 
 @log_performance
 async def get_project_attributes() -> dict[str, Any]:
-    """[LOCAL — raw attribute list. For natural-language attribute search, use Beta MCP's searchAttributes instead.]
+    """[LOCAL — raw attribute list. For natural-language attribute search, use Anvi Prod's searchAttributes instead.]
 
     List available project attributes."""
     start_time = time()
@@ -247,24 +248,29 @@ async def _create_default_tasks(
                 task_data["ScheduleStartDate"] = start_d
             if finish_d:
                 task_data["ScheduleFinishDate"] = finish_d
+            task_data["Key"] = mint_task_ekey("default-task")
             tasks.append(task_data)
 
         batch_result = await batch_create_tasks(tasks=tasks)
-        successes = batch_result.get("successes") or []
-        if not isinstance(successes, list):
-            successes = []
+        created_list = batch_result.get("created") or batch_result.get("successes") or []
+        if not isinstance(created_list, list):
+            created_list = []
 
         created_tasks = []
         for i, desc in enumerate(descriptions):
-            item = successes[i] if i < len(successes) else None
+            item = created_list[i] if i < len(created_list) else None
             key = "N/A"
+            status = "failed"
             if isinstance(item, dict):
+                key = item.get("key") or "N/A"
+                status = item.get("status") or ("success" if key != "N/A" else "failed")
                 dto = item.get("dto") or item
-                if isinstance(dto, dict):
+                if isinstance(dto, dict) and key == "N/A":
                     key = dto.get("Key") or dto.get("key") or key
             created_tasks.append({
                 "task_number": i + 1,
                 "description": desc,
+                "status": status,
                 "result": {"data": {"Key": key}},
             })
 
@@ -301,7 +307,7 @@ async def create_project(
     attributes: list[str] | str | None = None,
     create_default_tasks: bool = False,
 ) -> dict[str, Any]:
-    """[LOCAL — write operation. Beta MCP is read-only and cannot create projects.]
+    """[LOCAL — write operation. Anvi Prod is read-only and cannot create projects.]
 
     Create a new project.
     
@@ -314,7 +320,8 @@ async def create_project(
     Args:
         data: Project creation payload. Minimum required fields:
             - description: Project name/description (required)
-            - parent: Object with structureCode (required)
+            - parent: Object with structureCode of the **work-hierarchy** parent
+              (PPL-1). Copy from the Planview UI. Not a strategy ($Strategy) code.
             Optional fields:
             - scheduleStart: Start date (ISO 8601 format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)
             - scheduleFinish: Finish date (ISO 8601 format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)
@@ -355,6 +362,22 @@ async def create_project(
 
     if not isinstance(data, dict):
         raise PlanviewValidationError("data must be a JSON object")
+
+    parent = data.get("parent")
+    parent_code = None
+    if isinstance(parent, dict):
+        parent_code = parent.get("structureCode")
+    elif isinstance(parent, str):
+        parent_code = parent
+    if not str(parent_code or "").strip():
+        raise PlanviewValidationError(
+            "parent.structureCode is required to create a project. "
+            "Copy it from the Planview UI: Plan structure → the work-hierarchy "
+            "folder one level above Primary Planning Level (PPL-1). "
+            "This MCP cannot list the work tree or the strategy hierarchy "
+            "($Strategy). Do not guess a code and do not use a strategy code. "
+            "Ask the user for the PPL-1 work parent structure code."
+        )
 
     # Ensure we have a copy so we don't modify the original
     project_data = dict(data)
@@ -679,7 +702,7 @@ async def get_project_wbs(
     include_milestones: bool = True,
     max_depth: int | None = None,
 ) -> dict[str, Any]:
-    """[LOCAL — nested WBS tree with schedule data. For a flat hierarchy view, Beta MCP's getWorkHierarchy is an alternative.]
+    """[LOCAL — nested WBS tree with schedule data. For a flat hierarchy view, Anvi Prod's getWorkHierarchy is an alternative.]
 
     Get a project's WBS as a nested, lean tree.
 
@@ -867,7 +890,7 @@ async def get_project_wbs(
 async def list_field_reference(
     category: str | None = None,
 ) -> dict[str, Any]:
-    """[LOCAL — field discovery for write operations. For read-side attribute discovery, use Beta MCP's searchAttributes instead.]
+    """[LOCAL — field discovery for write operations. For read-side attribute discovery, use Anvi Prod's searchAttributes instead.]
 
     List available writable project fields organized by category.
 
@@ -895,7 +918,13 @@ async def list_field_reference(
             "category": category,
             "description": cat_info,
             "fields": {
-                fid: {"title": t, "type": ft, "default": d, "ppl_only": p}
+                fid: {
+                    "title": t,
+                    "type": ft,
+                    "example": d,
+                    "ppl_only": p,
+                    "do_not_send_on_create": ft == "StructureCode",
+                }
                 for fid, (t, ft, d, p) in fields.items()
             },
         }
@@ -909,7 +938,13 @@ async def list_field_reference(
             "description": desc,
             "field_count": len(fields),
             "fields": {
-                fid: {"title": t, "type": ft, "default": d, "ppl_only": p}
+                fid: {
+                    "title": t,
+                    "type": ft,
+                    "example": d,
+                    "ppl_only": p,
+                    "do_not_send_on_create": ft == "StructureCode",
+                }
                 for fid, (t, ft, d, p) in fields.items()
             },
         }
@@ -919,7 +954,8 @@ async def list_field_reference(
 # --- Tool description augmentation (static curated field reference) ---
 _CREATE_PROJECT_NOTE = (
     "\n\nNote: On create, you MUST provide 'description' (project name) and "
-    "'parent' (structureCode of parent work item).\n"
+    "'parent.structureCode' (work-hierarchy PPL-1 folder from the Planview UI). "
+    "This MCP cannot list parents or the strategy hierarchy ($Strategy).\n"
     "Optional: scheduleStart, scheduleFinish (default to today and +6 months).\n"
     "For available writable fields, call `list_field_reference()` to browse by category:\n"
     "core_identity, dates, progress, status_assessments, investment_scoring,\n"
