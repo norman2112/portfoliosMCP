@@ -34,13 +34,35 @@ async def main():
     for check in result.get("checks", []):
         status = "OK" if check.get("ok") else "FAIL"
         print(f"  [{status}] {check.get('name')}: {check.get('detail')}")
+
+    diagnosis = result.get("diagnosis") or {}
+    if diagnosis:
+        print(f"\nVerdict: {diagnosis.get('verdict')}")
+        print(f"Summary: {diagnosis.get('summary')}")
+        if diagnosis.get("note"):
+            print(f"Note: {diagnosis['note']}")
+        if diagnosis.get("next_step"):
+            print(f"Next: {diagnosis['next_step']}")
+
+    attempts = result.get("token_attempts") or []
+    if attempts:
+        print("\nToken attempts:")
+        for a in attempts:
+            print(
+                f"  - {a.get('encoding')}: HTTP {a.get('status_code')} "
+                f"[{a.get('classification')}] credentials_evaluated="
+                f"{a.get('credentials_evaluated')}"
+            )
+            print(f"    body: {a.get('body_preview')}")
+
+    if result.get("authenticated_as"):
+        print("\nAuthenticated as:")
+        print(json.dumps(result["authenticated_as"], indent=2))
+
     if result.get("ok"):
         print("\nConnected.")
         return 0
-    error = result.get("error") or {}
-    print(f"\nFailed: {error.get('error') or error.get('message') or error}")
-    if error.get("hint"):
-        print(f"Hint: {error['hint']}")
+    print("\nFailed. diagnostic_bundle keys:", list((result.get("diagnostic_bundle") or {}).keys()))
     return 1
 
 

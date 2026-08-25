@@ -13,7 +13,8 @@ import mcp.types as types
 ROUTING_HINTS: dict[str, str] = {
     "test_connection": (
         "[LOCAL — diagnose this server's Planview OAuth connection. "
-        "Returns structured checks (config, token, ping) instead of a bare 401.] "
+        "Returns per-attempt token results, a cross-attempt diagnosis (not last-error-wins), "
+        "config fingerprints, and a diagnostic_bundle. Use diagnosis.next_step.] "
     ),
     "manage_project": (
         "[LOCAL — create/get/update/delete a project, or list writable fields. "

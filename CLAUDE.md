@@ -154,7 +154,7 @@ Required env vars:
 ### Tool-to-API Mapping
 
 **Registered tools (model-facing):**
-- `test_connection` → `POST /oauth/token` then `GET /oauth/ping`
+- `test_connection` → `POST /oauth/token` then `GET /oauth/ping`. Returns per-attempt token results, cross-attempt `diagnosis` (not last-error-wins), config fingerprints, and a `diagnostic_bundle`. Access tokens are masked on success. Token encoding: multipart, then form only if unbound — never JSON.
 - `manage_project` `create|get|update|delete|fields` → REST `/projects` (+ SOAP task seed on create)
 - `inspect_work` `wbs|get|list|update` → REST `/work` (WBS composes list + tree)
 - `manage_tasks` `create|read|delete` → SOAP `ITaskService3` Create/Read/Delete (lists; batch is internal)

@@ -223,7 +223,7 @@ Ask Claude: `"Use test_connection to check my Planview connection"`
 | `python` or `pip` is "not recognized" | Python isn't installed or isn't on PATH | Reinstall Python from python.org — check **"Add Python to PATH"** |
 | "Bad escaped character in JSON" | Single backslashes in the config file | Change every `\` to `\\` in the `command` path |
 | "No module named planview_portfolios_mcp" | Package not installed into the venv | Run `pip install -e .` from the repo folder (not `pip install -r requirements.txt`) |
-| OAuth 400 error | Bad credentials, uppercase API URL, or a bearer token in CLIENT_SECRET | Run `test_connection`. URL must be **lowercase** and end with `/polaris`. `PLANVIEW_CLIENT_SECRET` is the OAuth client secret from Admin — not a freshly issued access token |
+| OAuth 400 error | Bad credentials, uppercase API URL, bearer token in CLIENT_SECRET, or (rarer) endpoint not binding the grant | Run `test_connection` and read `diagnosis.verdict` / `next_step`. `credentials_rejected` → fix id/secret. `request_not_bound` → support ticket (not a password problem). Compare config `sha256_8` fingerprints for stale values |
 | 401 after a new token | Token issued, ping rejected | Almost always `PLANVIEW_TENANT_ID`. Run `test_connection` — if the token check is OK and ping fails, fix the tenant ID |
 | 401 Unauthorized | Wrong Client ID, Secret, or Tenant ID | Re-verify all credentials. Watch for extra spaces when pasting |
 | `CERTIFICATE_VERIFY_FAILED` | Corporate proxy/self-signed certificate not trusted locally | Set `PLANVIEW_CA_BUNDLE` to your corporate CA `.pem`, or use `PLANVIEW_SSL_VERIFY=false` only as a last resort |
